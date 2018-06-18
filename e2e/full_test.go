@@ -172,7 +172,7 @@ func statusWithNoExpectedDrift(t *testing.T, ocDiffBinary string) {
 	cmd := exec.Command(ocDiffBinary, []string{"status"}...)
 	out, err := cmd.CombinedOutput()
 	if err != nil {
-		t.Fatalf("Could not get status in test project")
+		t.Fatalf("Could not get status in test project: %s", out)
 	}
 	fmt.Println("Got status in test project (should have no drift)")
 	if strings.Contains(string(out), "to be created") {

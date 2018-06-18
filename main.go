@@ -36,11 +36,11 @@ var (
 	templateDirFlag = app.Flag(
 		"template-dir",
 		"Path to local templates",
-	).Short('t').Default(".").String()
+	).Short('t').Default(".").Strings()
 	paramDirFlag = app.Flag(
 		"param-dir",
 		"Path to param files for local templates",
-	).Short('p').Default(".").String()
+	).Short('p').Default(".").Strings()
 
 	versionCommand = app.Command(
 		"version",
@@ -155,7 +155,8 @@ func main() {
 
 	cli.SetOptions(*verboseFlag, *namespaceFlag, *selectorFlag)
 
-	if *paramDirFlag != "." && (len(*statusParamFileFlag) > 0 || len(*updateParamFileFlag) > 0) {
+	paramDir := *paramDirFlag
+	if (len(paramDir) > 1 || paramDir[0] != ".") && (len(*statusParamFileFlag) > 0 || len(*updateParamFileFlag) > 0) {
 		log.Fatalln("You cannot specify both --param-dir and --param-flag.")
 	}
 
@@ -230,7 +231,7 @@ func main() {
 	}
 }
 
-func calculateChangesets(resource string, selectorFlag string, templateDir string, paramDir string, label string, params []string, paramFile string, ignoreUnknownParameters bool, upsertOnly bool) (bool, map[string]*openshift.Changeset, error) {
+func calculateChangesets(resource string, selectorFlag string, templateDirs []string, paramDirs []string, label string, params []string, paramFile string, ignoreUnknownParameters bool, upsertOnly bool) (bool, map[string]*openshift.Changeset, error) {
 	changesets := make(map[string]*openshift.Changeset)
 	updateRequired := false
 
@@ -241,8 +242,8 @@ func calculateChangesets(resource string, selectorFlag string, templateDir strin
 
 	localResourceLists := assembleLocalResourceLists(
 		filters,
-		templateDir,
-		paramDir,
+		templateDirs,
+		paramDirs,
 		label,
 		params,
 		paramFile,
@@ -328,28 +329,30 @@ func checkLoggedIn() {
 	}
 }
 
-func assembleLocalResourceLists(filters map[string]*openshift.ResourceFilter, templateDir string, paramDir string, label string, params []string, paramFile string, ignoreUnknownParameters bool) map[string]*openshift.ResourceList {
+func assembleLocalResourceLists(filters map[string]*openshift.ResourceFilter, templateDirs []string, paramDirs []string, label string, params []string, paramFile string, ignoreUnknownParameters bool) map[string]*openshift.ResourceList {
 	lists := initResourceLists(filters)
 
-	// read files in folder and assemble lists for kinds
-	files, err := ioutil.ReadDir(templateDir)
-	if err != nil {
-		log.Fatal(err)
-	}
-	filePattern := ".*\\.ya?ml"
-	for _, file := range files {
-		matched, _ := regexp.MatchString(filePattern, file.Name())
-		if !matched {
-			continue
-		}
-		cli.VerboseMsg("Reading", file.Name())
-		processedOut, err := openshift.ProcessTemplate(templateDir, file.Name(), paramDir, label, params, paramFile, ignoreUnknownParameters)
+	// read files in folders and assemble lists for kinds
+	for i, templateDir := range templateDirs {
+		files, err := ioutil.ReadDir(templateDir)
 		if err != nil {
-			log.Fatalln("Could not process", file.Name(), " template.")
+			log.Fatal(err)
 		}
-		processedConfig := openshift.NewConfigFromList(processedOut)
-		for _, l := range lists {
-			l.AppendItems(processedConfig)
+		filePattern := ".*\\.ya?ml"
+		for _, file := range files {
+			matched, _ := regexp.MatchString(filePattern, file.Name())
+			if !matched {
+				continue
+			}
+			cli.VerboseMsg("Reading", file.Name())
+			processedOut, err := openshift.ProcessTemplate(templateDir, file.Name(), paramDirs[i], label, params, paramFile, ignoreUnknownParameters)
+			if err != nil {
+				log.Fatalln("Could not process", file.Name(), " template.")
+			}
+			processedConfig := openshift.NewConfigFromList(processedOut)
+			for _, l := range lists {
+				l.AppendItems(processedConfig)
+			}
 		}
 	}
 
