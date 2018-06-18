@@ -67,6 +67,10 @@ var (
 		"ignore-unknown-parameters",
 		"If true, will not stop processing if a provided parameter does not exist in the template.",
 	).Bool()
+	statusUpsertOnlyFlag = statusCommand.Flag(
+		"upsert-only",
+		"Don't delete resource, only create / update.",
+	).Short('u').Bool()
 	statusResourceArg = statusCommand.Arg(
 		"resource", "Remote resource (defaults to all)",
 	).String()
@@ -91,6 +95,10 @@ var (
 		"ignore-unknown-parameters",
 		"If true, will not stop processing if a provided parameter does not exist in the template.",
 	).Bool()
+	updateUpsertOnlyFlag = updateCommand.Flag(
+		"upsert-only",
+		"Don't delete resource, only create / update.",
+	).Short('u').Bool()
 	updateResourceArg = updateCommand.Arg(
 		"resource", "Remote resource (defaults to all)",
 	).String()
@@ -168,6 +176,7 @@ func main() {
 			*statusParamFlag,
 			*statusParamFileFlag,
 			*statusIgnoreUnknownParametersFlag,
+			*statusUpsertOnlyFlag,
 		)
 		if err != nil {
 			log.Fatalln(err.Error())
@@ -202,6 +211,7 @@ func main() {
 			*updateParamFlag,
 			*updateParamFileFlag,
 			*updateIgnoreUnknownParametersFlag,
+			*updateUpsertOnlyFlag,
 		)
 		if err != nil {
 			log.Fatalln(err.Error())
@@ -220,7 +230,7 @@ func main() {
 	}
 }
 
-func calculateChangesets(resource string, selectorFlag string, templateDir string, paramDir string, label string, params []string, paramFile string, ignoreUnknownParameters bool) (bool, map[string]*openshift.Changeset, error) {
+func calculateChangesets(resource string, selectorFlag string, templateDir string, paramDir string, label string, params []string, paramFile string, ignoreUnknownParameters bool, upsertOnly bool) (bool, map[string]*openshift.Changeset, error) {
 	changesets := make(map[string]*openshift.Changeset)
 	updateRequired := false
 
@@ -241,7 +251,7 @@ func calculateChangesets(resource string, selectorFlag string, templateDir strin
 	remoteResourceLists := assembleRemoteResourceLists(filters)
 
 	for k, _ := range filters {
-		changesets[k] = compare(k, remoteResourceLists[k], localResourceLists[k])
+		changesets[k] = compare(k, remoteResourceLists[k], localResourceLists[k], upsertOnly)
 		if !changesets[k].Blank() {
 			updateRequired = true
 		}
@@ -391,10 +401,10 @@ func initResourceLists(filters map[string]*openshift.ResourceFilter) map[string]
 	return lists
 }
 
-func compare(kind string, remoteResourceList *openshift.ResourceList, localResourceList *openshift.ResourceList) *openshift.Changeset {
+func compare(kind string, remoteResourceList *openshift.ResourceList, localResourceList *openshift.ResourceList, upsertOnly bool) *openshift.Changeset {
 	fmt.Println("\n==========", kind, "resources", "==========")
 
-	changeset := openshift.NewChangeset(remoteResourceList, localResourceList)
+	changeset := openshift.NewChangeset(remoteResourceList, localResourceList, upsertOnly)
 
 	for itemName, _ := range changeset.Noop {
 		fmt.Printf("* %s is in sync\n", itemName)

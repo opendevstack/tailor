@@ -61,7 +61,7 @@ metadata: {}
 	localConfig := NewConfigFromList(localProcessedTemplate)
 	remoteResourceList := NewResourceList("PersistentVolumeClaim", remoteConfig)
 	localResourceList := NewResourceList("PersistentVolumeClaim", localConfig)
-	changeset := NewChangeset(remoteResourceList, localResourceList)
+	changeset := NewChangeset(remoteResourceList, localResourceList, false)
 
 	if !changeset.Blank() {
 		t.Errorf("Changeset is not blank")
@@ -117,7 +117,7 @@ metadata: {}
 	localConfig := NewConfigFromList(localProcessedTemplate)
 	remoteResourceList := NewResourceList("PersistentVolumeClaim", remoteConfig)
 	localResourceList := NewResourceList("PersistentVolumeClaim", localConfig)
-	changeset := NewChangeset(remoteResourceList, localResourceList)
+	changeset := NewChangeset(remoteResourceList, localResourceList, false)
 
 	if len(changeset.Update) != 1 {
 		t.Errorf("Changeset.Update is blank but should not be")
@@ -170,7 +170,7 @@ metadata: {}
 	localConfig := NewConfigFromList(localProcessedTemplate)
 	remoteResourceList := NewResourceList("PersistentVolumeClaim", remoteConfig)
 	localResourceList := NewResourceList("PersistentVolumeClaim", localConfig)
-	changeset := NewChangeset(remoteResourceList, localResourceList)
+	changeset := NewChangeset(remoteResourceList, localResourceList, false)
 
 	if len(changeset.Create) != 1 {
 		t.Errorf("Changeset.Create is blank but should not be")
@@ -205,7 +205,7 @@ metadata: {}
 	localConfig := NewConfigFromList(localProcessedTemplate)
 	remoteResourceList := NewResourceList("PersistentVolumeClaim", remoteConfig)
 	localResourceList := NewResourceList("PersistentVolumeClaim", localConfig)
-	changeset := NewChangeset(remoteResourceList, localResourceList)
+	changeset := NewChangeset(remoteResourceList, localResourceList, false)
 
 	if len(changeset.Delete) != 1 {
 		t.Errorf("Changeset.Delete is blank but should not be")

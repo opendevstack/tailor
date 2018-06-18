@@ -11,7 +11,7 @@ func (c *Changeset) Blank() bool {
 	return len(c.Create) == 0 && len(c.Update) == 0 && len(c.Delete) == 0
 }
 
-func NewChangeset(remoteResourceList, localResourceList *ResourceList) *Changeset {
+func NewChangeset(remoteResourceList, localResourceList *ResourceList, upsertOnly bool) *Changeset {
 	changeset := &Changeset{
 		Create: make(map[string][]string),
 		Delete: make(map[string][]string),
@@ -20,9 +20,11 @@ func NewChangeset(remoteResourceList, localResourceList *ResourceList) *Changese
 	}
 
 	// items to delete
-	for _, item := range remoteResourceList.Items {
-		if _, err := localResourceList.GetItem(item.Name); err != nil {
-			changeset.Delete[item.Name] = []string{item.YamlConfig(), ""}
+	if !upsertOnly {
+		for _, item := range remoteResourceList.Items {
+			if _, err := localResourceList.GetItem(item.Name); err != nil {
+				changeset.Delete[item.Name] = []string{item.YamlConfig(), ""}
+			}
 		}
 	}
 
