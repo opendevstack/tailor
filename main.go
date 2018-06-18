@@ -91,6 +91,10 @@ var (
 		"export",
 		"Export remote state as template",
 	)
+	exportWriteFilesByKindFlag = exportCommand.Flag(
+		"write-files-by-kind",
+		"Write export into one template file per kind.",
+	).Short('w').Bool()
 	exportResourceArg = exportCommand.Arg(
 		"resource", "Remote resource (defaults to all)",
 	).String()
@@ -173,7 +177,7 @@ func main() {
 			log.Fatalln(err.Error())
 		}
 		for _, f := range filters {
-			export(f)
+			export(f, *exportWriteFilesByKindFlag)
 		}
 
 	case updateCommand.FullCommand():
@@ -347,7 +351,7 @@ func assembleRemoteResourceLists(filters map[string]*openshift.ResourceFilter) m
 	return lists
 }
 
-func export(filter *openshift.ResourceFilter) {
+func export(filter *openshift.ResourceFilter, writeFilesByKind bool) {
 	out, err := openshift.ExportAsTemplate(filter)
 	if err != nil {
 		log.Fatalln("Could not export", filter.Kind, "resources as template.")
@@ -359,8 +363,13 @@ func export(filter *openshift.ResourceFilter) {
 	config := openshift.NewConfigFromTemplate(out)
 
 	b, _ := yaml.Marshal(config.Processed)
-	ioutil.WriteFile(kindToShortMapping[filter.Kind]+"-template.yml", b, 0644)
-	fmt.Println("Exported", filter.Kind, "resources")
+	if writeFilesByKind {
+		filename := kindToShortMapping[filter.Kind]+"-template.yml"
+		ioutil.WriteFile(filename, b, 0644)
+		fmt.Println("Exported", filter.Kind, "resources to", filename)
+	} else {
+		fmt.Println(string(b))
+	}
 }
 
 func initResourceLists(filters map[string]*openshift.ResourceFilter) map[string]*openshift.ResourceList {
