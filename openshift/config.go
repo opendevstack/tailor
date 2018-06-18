@@ -15,6 +15,7 @@ var (
 	blacklistedKeys = []string{
 		"metadata/annotations/(kubectl.kubernetes.io|pv.kubernetes.io|openshift.io~1host.generated|openshift.io~1generated-by|openshift.io~1image.dockerRepositoryCheck)",
 		"metadata/generation",
+		"spec/tags",
 		"status",
 		"spec/volumeName",
 	}
