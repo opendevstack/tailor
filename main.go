@@ -63,6 +63,10 @@ var (
 		"param-file",
 		"File containing template parameter values to set/override in the template.",
 	).String()
+	statusIgnoreUnknownParametersFlag = statusCommand.Flag(
+		"ignore-unknown-parameters",
+		"If true, will not stop processing if a provided parameter does not exist in the template.",
+	).Bool()
 	statusResourceArg = statusCommand.Arg(
 		"resource", "Remote resource (defaults to all)",
 	).String()
@@ -83,6 +87,10 @@ var (
 		"param-file",
 		"File containing template parameter values to set/override in the template.",
 	).String()
+	updateIgnoreUnknownParametersFlag = updateCommand.Flag(
+		"ignore-unknown-parameters",
+		"If true, will not stop processing if a provided parameter does not exist in the template.",
+	).Bool()
 	updateResourceArg = updateCommand.Arg(
 		"resource", "Remote resource (defaults to all)",
 	).String()
@@ -159,6 +167,7 @@ func main() {
 			*statusLabelsFlag,
 			*statusParamFlag,
 			*statusParamFileFlag,
+			*statusIgnoreUnknownParametersFlag,
 		)
 		if err != nil {
 			log.Fatalln(err.Error())
@@ -192,6 +201,7 @@ func main() {
 			*updateLabelsFlag,
 			*updateParamFlag,
 			*updateParamFileFlag,
+			*updateIgnoreUnknownParametersFlag,
 		)
 		if err != nil {
 			log.Fatalln(err.Error())
@@ -210,7 +220,7 @@ func main() {
 	}
 }
 
-func calculateChangesets(resource string, selectorFlag string, templateDir string, paramDir string, label string, params []string, paramFile string) (bool, map[string]*openshift.Changeset, error) {
+func calculateChangesets(resource string, selectorFlag string, templateDir string, paramDir string, label string, params []string, paramFile string, ignoreUnknownParameters bool) (bool, map[string]*openshift.Changeset, error) {
 	changesets := make(map[string]*openshift.Changeset)
 	updateRequired := false
 
@@ -226,6 +236,7 @@ func calculateChangesets(resource string, selectorFlag string, templateDir strin
 		label,
 		params,
 		paramFile,
+		ignoreUnknownParameters,
 	)
 	remoteResourceLists := assembleRemoteResourceLists(filters)
 
@@ -307,7 +318,7 @@ func checkLoggedIn() {
 	}
 }
 
-func assembleLocalResourceLists(filters map[string]*openshift.ResourceFilter, templateDir string, paramDir string, label string, params []string, paramFile string) map[string]*openshift.ResourceList {
+func assembleLocalResourceLists(filters map[string]*openshift.ResourceFilter, templateDir string, paramDir string, label string, params []string, paramFile string, ignoreUnknownParameters bool) map[string]*openshift.ResourceList {
 	lists := initResourceLists(filters)
 
 	// read files in folder and assemble lists for kinds
@@ -322,7 +333,7 @@ func assembleLocalResourceLists(filters map[string]*openshift.ResourceFilter, te
 			continue
 		}
 		cli.VerboseMsg("Reading", file.Name())
-		processedOut, err := openshift.ProcessTemplate(templateDir, file.Name(), paramDir, label, params, paramFile)
+		processedOut, err := openshift.ProcessTemplate(templateDir, file.Name(), paramDir, label, params, paramFile, ignoreUnknownParameters)
 		if err != nil {
 			log.Fatalln("Could not process", file.Name(), " template.")
 		}

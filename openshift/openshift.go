@@ -60,7 +60,7 @@ func ExportResource(kind string) ([]byte, error) {
 	return out, err
 }
 
-func ProcessTemplate(templateDir string, name string, paramDir string, label string, params []string, paramFile string) ([]byte, error) {
+func ProcessTemplate(templateDir string, name string, paramDir string, label string, params []string, paramFile string, ignoreUnknownParameters bool) ([]byte, error) {
 	filename := templateDir + "/" + name
 	if _, err := os.Stat(filename); os.IsNotExist(err) {
 		cli.VerboseMsg("Template '" + filename + "' does not exist.")
@@ -83,6 +83,9 @@ func ProcessTemplate(templateDir string, name string, paramDir string, label str
 		if _, err := os.Stat(pFile); err == nil {
 			args = append(args, "--param-file="+pFile)
 		}
+	}
+	if ignoreUnknownParameters {
+		args = append(args, "--ignore-unknown-parameters=true")
 	}
 	cmd := cli.ExecPlainOcCmd(args)
 	out, err := cmd.CombinedOutput()
