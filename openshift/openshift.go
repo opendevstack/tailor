@@ -1,6 +1,7 @@
 package openshift
 
 import (
+	"bytes"
 	"fmt"
 	"github.com/michaelsauter/ocdiff/cli"
 	"io/ioutil"
@@ -137,7 +138,8 @@ func ocDelete(kind string, name string) error {
 
 func ocApply(kind string, name string, config string) error {
 	b := []byte(config)
-	ioutil.WriteFile(".PROCESSED_TEMPLATE", b, 0644)
+	unescapedRaw := bytes.Replace(b, []byte("%%"), []byte("%"), -1)
+	ioutil.WriteFile(".PROCESSED_TEMPLATE", unescapedRaw, 0644)
 
 	args := []string{"apply", "--filename=" + ".PROCESSED_TEMPLATE"}
 	cmd := cli.ExecOcCmd(args)
