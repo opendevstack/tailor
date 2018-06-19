@@ -41,6 +41,14 @@ var (
 		"param-dir",
 		"Path to param files for local templates",
 	).Short('p').Default(".").Strings()
+	publicKeyDirFlag = app.Flag(
+		"public-key-dir",
+		"Path to public key files",
+	).Default(".").String()
+	privateKeyFlag = app.Flag(
+		"private-key",
+		"Path to private key file",
+	).Default("private.key").String()
 
 	versionCommand = app.Command(
 		"version",
@@ -51,14 +59,6 @@ var (
 		"edit",
 		"Edit param file",
 	)
-	publicKeyDirFlag = app.Flag(
-		"public-key-dir",
-		"Path to public key files",
-	).Default(".").String()
-	privateKeyFlag = app.Flag(
-		"private-key",
-		"Path to private key file",
-	).Default("private.key").String()
 	editFileArg = editCommand.Arg(
 		"file", "File to edit",
 	).String()
@@ -209,6 +209,7 @@ func main() {
 			*statusParamFileFlag,
 			*statusIgnoreUnknownParametersFlag,
 			*statusUpsertOnlyFlag,
+			*privateKeyFlag,
 		)
 		if err != nil {
 			log.Fatalln(err.Error())
@@ -244,6 +245,7 @@ func main() {
 			*updateParamFileFlag,
 			*updateIgnoreUnknownParametersFlag,
 			*updateUpsertOnlyFlag,
+			*privateKeyFlag,
 		)
 		if err != nil {
 			log.Fatalln(err.Error())
@@ -262,7 +264,7 @@ func main() {
 	}
 }
 
-func calculateChangesets(resource string, selectorFlag string, templateDirs []string, paramDirs []string, label string, params []string, paramFile string, ignoreUnknownParameters bool, upsertOnly bool) (bool, map[string]*openshift.Changeset, error) {
+func calculateChangesets(resource string, selectorFlag string, templateDirs []string, paramDirs []string, label string, params []string, paramFile string, ignoreUnknownParameters bool, upsertOnly bool, privateKey string) (bool, map[string]*openshift.Changeset, error) {
 	changesets := make(map[string]*openshift.Changeset)
 	updateRequired := false
 
@@ -279,6 +281,7 @@ func calculateChangesets(resource string, selectorFlag string, templateDirs []st
 		params,
 		paramFile,
 		ignoreUnknownParameters,
+		privateKey,
 	)
 	remoteResourceLists := assembleRemoteResourceLists(filters)
 
@@ -360,7 +363,7 @@ func checkLoggedIn() {
 	}
 }
 
-func assembleLocalResourceLists(filters map[string]*openshift.ResourceFilter, templateDirs []string, paramDirs []string, label string, params []string, paramFile string, ignoreUnknownParameters bool) map[string]*openshift.ResourceList {
+func assembleLocalResourceLists(filters map[string]*openshift.ResourceFilter, templateDirs []string, paramDirs []string, label string, params []string, paramFile string, ignoreUnknownParameters bool, privateKey string) map[string]*openshift.ResourceList {
 	lists := initResourceLists(filters)
 
 	// read files in folders and assemble lists for kinds
@@ -376,9 +379,9 @@ func assembleLocalResourceLists(filters map[string]*openshift.ResourceFilter, te
 				continue
 			}
 			cli.VerboseMsg("Reading", file.Name())
-			processedOut, err := openshift.ProcessTemplate(templateDir, file.Name(), paramDirs[i], label, params, paramFile, ignoreUnknownParameters)
+			processedOut, err := openshift.ProcessTemplate(templateDir, file.Name(), paramDirs[i], label, params, paramFile, ignoreUnknownParameters, privateKey)
 			if err != nil {
-				log.Fatalln("Could not process", file.Name(), " template.")
+				log.Fatalln("Could not process", file.Name(), "template:", err.Error())
 			}
 			processedConfig := openshift.NewConfigFromList(processedOut)
 			for _, l := range lists {

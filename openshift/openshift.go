@@ -61,7 +61,7 @@ func ExportResource(kind string) ([]byte, error) {
 	return out, err
 }
 
-func ProcessTemplate(templateDir string, name string, paramDir string, label string, params []string, paramFile string, ignoreUnknownParameters bool) ([]byte, error) {
+func ProcessTemplate(templateDir string, name string, paramDir string, label string, params []string, paramFile string, ignoreUnknownParameters bool, privateKey string) ([]byte, error) {
 	filename := templateDir + string(os.PathSeparator) + name
 	if _, err := os.Stat(filename); os.IsNotExist(err) {
 		cli.VerboseMsg("Template '" + filename + "' does not exist.")
@@ -69,22 +69,46 @@ func ProcessTemplate(templateDir string, name string, paramDir string, label str
 	}
 
 	args := []string{"process", "--filename=" + filename, "--output=yaml"}
+
 	if len(label) > 0 {
 		args = append(args, "--labels="+label)
 	}
+
 	for _, param := range params {
 		args = append(args, "--param="+param)
 	}
-	if len(paramFile) > 0 {
-		args = append(args, "--param-file="+paramFile)
-	} else {
+
+	actualParamFile := paramFile
+	if len(actualParamFile) == 0 {
 		fileParts := strings.Split(name, ".")
 		fileParts[len(fileParts)-1] = "env"
-		pFile := paramDir + string(os.PathSeparator) + strings.Join(fileParts, ".")
-		if _, err := os.Stat(pFile); err == nil {
-			args = append(args, "--param-file="+pFile)
+		f := paramDir + string(os.PathSeparator) + strings.Join(fileParts, ".")
+		if _, err := os.Stat(f); err == nil {
+			actualParamFile = f
 		}
 	}
+	if len(actualParamFile) > 0 {
+		tempParamFile := actualParamFile
+		b, err := ioutil.ReadFile(actualParamFile)
+		if err != nil {
+			return []byte{}, err
+		}
+		paramFileContent := string(b)
+		if strings.Contains(paramFileContent, ".ENC=") {
+			cli.VerboseMsg(actualParamFile, "needs to be decrypted")
+			// TODO: Use already read file contents to avoid reading twice.
+			decrypted, err := cli.ReadEnvFile(actualParamFile, privateKey)
+			if err != nil {
+				return []byte{}, err
+			}
+			decrypted = strings.Replace(decrypted, ".ENC=", "=", -1)
+			tempParamFile = actualParamFile + ".dec"
+			defer os.Remove(tempParamFile)
+			ioutil.WriteFile(tempParamFile, []byte(decrypted), 0644)
+		}
+		args = append(args, "--param-file="+tempParamFile)
+	}
+
 	if ignoreUnknownParameters {
 		args = append(args, "--ignore-unknown-parameters=true")
 	}
