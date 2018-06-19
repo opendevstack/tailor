@@ -3,3 +3,6 @@ e2e/ocdiff-test
 templates-*
 params-*
 TODO.md
+ocdiff_linux_amd64
+ocdiff_darwin_amd64
+ocdiff_windows_amd64.exe
