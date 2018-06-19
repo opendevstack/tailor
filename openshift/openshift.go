@@ -62,7 +62,7 @@ func ExportResource(kind string) ([]byte, error) {
 }
 
 func ProcessTemplate(templateDir string, name string, paramDir string, label string, params []string, paramFile string, ignoreUnknownParameters bool) ([]byte, error) {
-	filename := templateDir + "/" + name
+	filename := templateDir + string(os.PathSeparator) + name
 	if _, err := os.Stat(filename); os.IsNotExist(err) {
 		cli.VerboseMsg("Template '" + filename + "' does not exist.")
 		return []byte{}, nil
@@ -80,7 +80,7 @@ func ProcessTemplate(templateDir string, name string, paramDir string, label str
 	} else {
 		fileParts := strings.Split(name, ".")
 		fileParts[len(fileParts)-1] = "env"
-		pFile := paramDir + "/" + strings.Join(fileParts, ".")
+		pFile := paramDir + string(os.PathSeparator) + strings.Join(fileParts, ".")
 		if _, err := os.Stat(pFile); err == nil {
 			args = append(args, "--param-file="+pFile)
 		}
