@@ -13,11 +13,11 @@ func ExportAsTemplate(filter *ResourceFilter) ([]byte, error) {
 	ret := ""
 	args := []string{"export", "--as-template=" + filter.Kind, "--output=yaml"}
 	if len(filter.Label) > 0 {
-		args = append(args, "--selector=" + filter.Label)
+		args = append(args, "--selector="+filter.Label)
 	}
 	if len(filter.Names) > 0 {
 		for _, name := range filter.Names {
-			args = append(args, filter.Kind + "/" + name)
+			args = append(args, filter.Kind+"/"+name)
 		}
 	} else {
 		args = append(args, filter.Kind)

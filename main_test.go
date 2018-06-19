@@ -1,16 +1,16 @@
 package main
 
 import (
-	"testing"
-	"reflect"
 	"github.com/michaelsauter/ocdiff/openshift"
+	"reflect"
+	"testing"
 )
 
 func TestGetFilters(t *testing.T) {
 	actual, err := getFilters("pvc", "")
 	expected := map[string]*openshift.ResourceFilter{
 		"PersistentVolumeClaim": &openshift.ResourceFilter{
-			Kind: "PersistentVolumeClaim",
+			Kind:  "PersistentVolumeClaim",
 			Names: []string{},
 			Label: "",
 		},
@@ -22,12 +22,12 @@ func TestGetFilters(t *testing.T) {
 	actual, err = getFilters("pvc,dc", "")
 	expected = map[string]*openshift.ResourceFilter{
 		"PersistentVolumeClaim": &openshift.ResourceFilter{
-			Kind: "PersistentVolumeClaim",
+			Kind:  "PersistentVolumeClaim",
 			Names: []string{},
 			Label: "",
 		},
 		"DeploymentConfig": &openshift.ResourceFilter{
-			Kind: "DeploymentConfig",
+			Kind:  "DeploymentConfig",
 			Names: []string{},
 			Label: "",
 		},
@@ -39,7 +39,7 @@ func TestGetFilters(t *testing.T) {
 	actual, err = getFilters("pvc,persistentvolumeclaim,PersistentVolumeClaim", "")
 	expected = map[string]*openshift.ResourceFilter{
 		"PersistentVolumeClaim": &openshift.ResourceFilter{
-			Kind: "PersistentVolumeClaim",
+			Kind:  "PersistentVolumeClaim",
 			Names: []string{},
 			Label: "",
 		},
@@ -57,7 +57,7 @@ func TestGetFilters(t *testing.T) {
 	actual, err = getFilters("dc/foo", "")
 	expected = map[string]*openshift.ResourceFilter{
 		"DeploymentConfig": &openshift.ResourceFilter{
-			Kind: "DeploymentConfig",
+			Kind:  "DeploymentConfig",
 			Names: []string{"foo"},
 			Label: "",
 		},
@@ -69,7 +69,7 @@ func TestGetFilters(t *testing.T) {
 	actual, err = getFilters("dc/foo,dc/bar", "")
 	expected = map[string]*openshift.ResourceFilter{
 		"DeploymentConfig": &openshift.ResourceFilter{
-			Kind: "DeploymentConfig",
+			Kind:  "DeploymentConfig",
 			Names: []string{"foo", "bar"},
 			Label: "",
 		},
@@ -81,12 +81,12 @@ func TestGetFilters(t *testing.T) {
 	actual, err = getFilters("dc/foo,bc/bar", "")
 	expected = map[string]*openshift.ResourceFilter{
 		"DeploymentConfig": &openshift.ResourceFilter{
-			Kind: "DeploymentConfig",
+			Kind:  "DeploymentConfig",
 			Names: []string{"foo"},
 			Label: "",
 		},
 		"BuildConfig": &openshift.ResourceFilter{
-			Kind: "BuildConfig",
+			Kind:  "BuildConfig",
 			Names: []string{"bar"},
 			Label: "",
 		},
@@ -98,7 +98,7 @@ func TestGetFilters(t *testing.T) {
 	actual, err = getFilters("pvc", "name=foo")
 	expected = map[string]*openshift.ResourceFilter{
 		"PersistentVolumeClaim": &openshift.ResourceFilter{
-			Kind: "PersistentVolumeClaim",
+			Kind:  "PersistentVolumeClaim",
 			Names: []string{},
 			Label: "name=foo",
 		},
@@ -110,12 +110,12 @@ func TestGetFilters(t *testing.T) {
 	actual, err = getFilters("pvc,dc/foobar", "name=foo")
 	expected = map[string]*openshift.ResourceFilter{
 		"PersistentVolumeClaim": &openshift.ResourceFilter{
-			Kind: "PersistentVolumeClaim",
+			Kind:  "PersistentVolumeClaim",
 			Names: []string{},
 			Label: "name=foo",
 		},
 		"DeploymentConfig": &openshift.ResourceFilter{
-			Kind: "DeploymentConfig",
+			Kind:  "DeploymentConfig",
 			Names: []string{"foobar"},
 			Label: "name=foo",
 		},

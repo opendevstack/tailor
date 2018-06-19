@@ -292,7 +292,7 @@ func getFilters(kindArg string, selectorFlag string) (map[string]*openshift.Reso
 						targeted[kindMapping[kind]] = []string{}
 					}
 				}
-				
+
 			}
 		}
 	} else {
@@ -309,7 +309,7 @@ func getFilters(kindArg string, selectorFlag string) (map[string]*openshift.Reso
 
 	for kind, names := range targeted {
 		filter := &openshift.ResourceFilter{
-			Kind: kind,
+			Kind:  kind,
 			Names: names,
 			Label: selectorFlag,
 		}
@@ -388,7 +388,7 @@ func export(filter *openshift.ResourceFilter, writeFilesByKind bool) {
 
 	b, _ := yaml.Marshal(config.Processed)
 	if writeFilesByKind {
-		filename := kindToShortMapping[filter.Kind]+"-template.yml"
+		filename := kindToShortMapping[filter.Kind] + "-template.yml"
 		ioutil.WriteFile(filename, b, 0644)
 		fmt.Println("Exported", filter.Kind, "resources to", filename)
 	} else {

@@ -8,7 +8,7 @@ import (
 
 type ResourceList struct {
 	Filter *ResourceFilter
-	Items []*ResourceItem
+	Items  []*ResourceItem
 }
 
 func NewResourceList(kind string, config *Config) *ResourceList {
