@@ -35,6 +35,14 @@ All options can be inspected with `ocdiff help`.
 
 ## Background
 
+### Working with PGP Keys
+
+To generate a new keypair, follow https://help.github.com/articles/generating-a-new-gpg-key/. For now, it is not possible to use a passphrase so leave that empty.
+
+Once you have that, export the public key with `gpg --armor --export john.doe@domain.com >> john-doe.key`. This file should be committed.
+
+Finally, when using `ocdiff edit`, you will need access to your private key, which can be exported with: `gpg --export-secret-key -a "john.doe@domain.com" > private.key`. This file must not be committed.
+
 ### Problem
 
 Kubernetes and Openshift insert additional properties and modify existing ones automatically. Configuration files under version control cannot simply replace the "live" ones, but need to be merge in. However, the `export` command OC already strips the config from most unwanted things.
