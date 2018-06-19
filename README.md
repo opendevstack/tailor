@@ -16,7 +16,7 @@ Allow developers to work with version controlled configuration files. All resour
 
 ## Usage
 
-There are three main commands: `export`, `status` and `update`.
+There are four main commands: `export`, `status`, `update` and `edit`.
 
 `export` allows you to export configuration found in an OC project to YAML templates. Those templates are cleaned automatically.
 
@@ -25,7 +25,9 @@ There are three main commands: `export`, `status` and `update`.
 2. The desired configuration is computed by processing the local YAML templates. It is possible to pass `--labels`, `--param` and `--param-file` to the `status` command to influence the generated config. Those 3 flags are passed as-is to the underlying `oc process` command. As `ocdiff` allows you to work with multiple templates, there is an additional `--param-dir` flag, which you can use to point to a folder containing param files for each template (they are connected by naming convention, so for template `foo.yml` the corresponding param file would be `foo.env`). When passing `--param` or `--param-file`, you might encounter that not all of your templates declare the same parameters, which leads to Openshift aborting the operation. Use `--ignore-unknown-parameters` to prevent this.
 3. In order to calculate drift correctly, the whole OC project is compared against your configuration. If you want to compare a subset only (e.g. all resources related to one microservice), it is possible to narrow the scope by passing `--selector`. Further, you can specify individual resources, e.g. `dc/foo,bc/bar`. If for some reason you do not have all resources described in your local configuration, but want to prevent deletion of resources in Openshift, use `--upsert-only`.
 
-Finally, `update` will compare current vs. desired configuration exactly like `status` does, but if any drift is detected, it asks to update the OC project with your desired state. A subsequent run of either `status` or `update` should show no drift. To help usage inside of scripts, the confirmation can be disabled with `--non-interactive`.
+`update` will compare current vs. desired configuration exactly like `status` does, but if any drift is detected, it asks to update the OC project with your desired state. A subsequent run of either `status` or `update` should show no drift. To help usage inside of scripts, the confirmation can be disabled with `--non-interactive`.
+
+Finally, `edit` allows you to work with encrypted secrets. When keeping secrets under version control, it is considered a best practice to avoid storing them in clear text. Unfortunately, Openshift does not have a solution for this (the secrets are base64-encoded only). `ocdiff edit foo.env` allows you to encrypt individual parameters with PGP by adding `.ENC` to the param name, e.g. `PASSWORD.ENC=secret`. When saved, the param value will be encrypted for all public keys in `--public-key-dir` (defaulting to the current directory). To read a file with encryptedd params, put your private key into `--private-key` (defaulting to `private.key`).
 
 All commands depend on a current OC session and accept a `--namespace` (if none is given, the current one is used). To help with debugging (e.g. to see the commands which are executed in the background), use `--verbose`.
 

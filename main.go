@@ -44,12 +44,28 @@ var (
 
 	versionCommand = app.Command(
 		"version",
-		"Shows version",
+		"Show version",
 	)
+
+	editCommand = app.Command(
+		"edit",
+		"Edit param file",
+	)
+	publicKeyDirFlag = app.Flag(
+		"public-key-dir",
+		"Path to public key files",
+	).Default(".").String()
+	privateKeyFlag = app.Flag(
+		"private-key",
+		"Path to private key file",
+	).Default("private.key").String()
+	editFileArg = editCommand.Arg(
+		"file", "File to edit",
+	).String()
 
 	statusCommand = app.Command(
 		"status",
-		"Shows diff between remote and local",
+		"Show diff between remote and local",
 	)
 	statusLabelsFlag = statusCommand.Flag(
 		"labels",
@@ -163,6 +179,21 @@ func main() {
 	switch command {
 	case versionCommand.FullCommand():
 		fmt.Println("0.1.0")
+
+	case editCommand.FullCommand():
+		cli.VerboseMsg("edit")
+		data, err := cli.ReadEnvFile(*editFileArg, *privateKeyFlag)
+		if err != nil {
+			log.Fatalf("Could not read file: %s.", err.Error())
+		}
+		content, err := cli.EditEnvFile(data)
+		if err != nil {
+			log.Fatalf("Could not edit file: %s.", err.Error())
+		}
+		err = cli.WriteEnvFile(*editFileArg, content, *publicKeyDirFlag)
+		if err != nil {
+			log.Fatalf("Could not write file: %s.", err.Error())
+		}
 
 	case statusCommand.FullCommand():
 		cli.VerboseMsg("status")

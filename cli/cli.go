@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/fatih/color"
 	"github.com/pmezard/go-difflib/difflib"
+	"io/ioutil"
 	"log"
 	"os"
 	"os/exec"
@@ -105,4 +106,81 @@ func AskForConfirmation(s string) bool {
 			return false
 		}
 	}
+}
+
+func ReadEnvFile(filename string, privateKey string) (string, error) {
+	content, err := ioutil.ReadFile(filename)
+	if err != nil {
+		return "", err
+	}
+	text := strings.TrimSuffix(string(content), "\n")
+	lines := strings.Split(text, "\n")
+
+	decryptedLines := []string{}
+
+	for _, line := range lines {
+		pair := strings.SplitN(line, "=", 2)
+		key := pair[0]
+		value := pair[1]
+		if !strings.HasSuffix(key, ".ENC") {
+			decryptedLines = append(decryptedLines, key+"="+value)
+			continue
+		}
+
+		decrypted, err := Decrypt(value, privateKey)
+		if err != nil {
+			return "", err
+		}
+		decryptedLines = append(decryptedLines, key+"="+decrypted)
+	}
+
+	return strings.Join(decryptedLines, "\n"), nil
+}
+
+func EditEnvFile(content string) (string, error) {
+	ioutil.WriteFile(".ENV.DEC", []byte(content), 0644)
+	editor := os.Getenv("EDITOR")
+	if len(editor) == 0 {
+		editor = "vim"
+	}
+	cmd := exec.Command(editor, ".ENV.DEC")
+	cmd.Stdin = os.Stdin
+	cmd.Stdout = os.Stdout
+	err := cmd.Run()
+	if err != nil {
+		return "", err
+	}
+	data, err := ioutil.ReadFile(".ENV.DEC")
+	if err != nil {
+		return "", err
+	}
+	os.Remove(".ENV.DEC")
+	return string(data), nil
+}
+
+func WriteEnvFile(filename string, content string, publicKeyDir string) error {
+	text := strings.TrimSuffix(content, "\n")
+	lines := strings.Split(text, "\n")
+
+	encryptedLines := []string{}
+
+	for _, line := range lines {
+		pair := strings.SplitN(line, "=", 2)
+		key := pair[0]
+		value := pair[1]
+		if !strings.HasSuffix(key, ".ENC") {
+			encryptedLines = append(encryptedLines, key+"="+value)
+			continue
+		}
+
+		encrypted, err := Encrypt(value, publicKeyDir)
+		if err != nil {
+			return err
+		}
+		encryptedLines = append(encryptedLines, key+"="+encrypted)
+	}
+
+	data := strings.Join(encryptedLines, "\n")
+	err := ioutil.WriteFile(filename, []byte(data+"\n"), 0644)
+	return err
 }
