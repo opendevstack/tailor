@@ -63,6 +63,11 @@ var (
 		"file", "File to edit",
 	).String()
 
+	reEncryptCommand = app.Command(
+		"re-encrypt",
+		"Re-Encrypt param files",
+	)
+
 	statusCommand = app.Command(
 		"status",
 		"Show diff between remote and local",
@@ -182,17 +187,42 @@ func main() {
 
 	case editCommand.FullCommand():
 		cli.VerboseMsg("edit")
-		data, err := cli.ReadEnvFile(*editFileArg, *privateKeyFlag)
+		readContent, err := cli.ReadEnvFile(*editFileArg, *privateKeyFlag)
 		if err != nil {
 			log.Fatalf("Could not read file: %s.", err.Error())
 		}
-		content, err := cli.EditEnvFile(data)
+		editedContent, err := cli.EditEnvFile(readContent)
 		if err != nil {
 			log.Fatalf("Could not edit file: %s.", err.Error())
 		}
-		err = cli.WriteEnvFile(*editFileArg, content, *publicKeyDirFlag)
+		err = cli.WriteEnvFile(*editFileArg, editedContent, *publicKeyDirFlag)
 		if err != nil {
 			log.Fatalf("Could not write file: %s.", err.Error())
+		}
+
+	case reEncryptCommand.FullCommand():
+		cli.VerboseMsg("re-encrypt")
+		for _, paramDir := range *paramDirFlag {
+			files, err := ioutil.ReadDir(paramDir)
+			if err != nil {
+				log.Fatal(err)
+			}
+			filePattern := ".*\\.env"
+			for _, file := range files {
+				matched, _ := regexp.MatchString(filePattern, file.Name())
+				if !matched {
+					continue
+				}
+				filename := paramDir + string(os.PathSeparator) + file.Name()
+				readContent, err := cli.ReadEnvFile(filename, *privateKeyFlag)
+				if err != nil {
+					log.Fatalf("Could not read file: %s.", err.Error())
+				}
+				err = cli.WriteEnvFile(filename, readContent, *publicKeyDirFlag)
+				if err != nil {
+					log.Fatalf("Could not write file: %s.", err.Error())
+				}
+			}
 		}
 
 	case statusCommand.FullCommand():
