@@ -474,8 +474,6 @@ func getFilters(kindArg string, selectorFlag string) (map[string]*openshift.Reso
 		filters[kind] = filter
 	}
 
-	//cli.VerboseMsg("Selected kinds:", strings.Join(uniqueSelectedKinds, ","))
-
 	return filters, nil
 }
 
