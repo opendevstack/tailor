@@ -39,7 +39,9 @@ Keeping the Openshift configuration under version control necessitates to store 
 
 When a public key is added or removed, it is required to `secrets re-encrypt` all secrets. This decrypts all `*.env` files and writes them again using the provided public keys.
 
-Finally, the `secrets reveal` command shows the param file after decrypting and decoding the values so that you can see the clear text secrets.
+The `secrets reveal` command shows the param file after decrypting and decoding the values so that you can see the clear text secrets.
+
+Finally, `secrets generate-key john.doe@domain.com` generates a PGP keypair, writing the public key to `john-doe.key` and the private key to `private.key`.
 
 ## Background
 

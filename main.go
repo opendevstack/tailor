@@ -7,6 +7,7 @@ import (
 	"github.com/ghodss/yaml"
 	"github.com/michaelsauter/ocdiff/cli"
 	"github.com/michaelsauter/ocdiff/openshift"
+	"github.com/michaelsauter/ocdiff/utils"
 	"io/ioutil"
 	"log"
 	"os"
@@ -142,10 +143,22 @@ var (
 
 	revealCommand = secretsCommand.Command(
 		"reveal",
-		"Show param file contens with revealed secrets",
+		"Show param file contents with revealed secrets",
 	)
 	revealFileArg = revealCommand.Arg(
 		"file", "File to show",
+	).String()
+
+	generateKeyCommand = secretsCommand.Command(
+		"generate-key",
+		"Generate new keypair",
+	)
+	generateKeyNameFlag = generateKeyCommand.Flag(
+		"name",
+		"Name for keypair",
+	).String()
+	generateKeyEmailArg = generateKeyCommand.Arg(
+		"email", "Emil of keypair",
 	).String()
 
 	kindMapping = map[string]string{
@@ -198,7 +211,6 @@ func main() {
 		fmt.Println("0.1.0")
 
 	case editCommand.FullCommand():
-		cli.VerboseMsg("edit")
 		readParams, err := openshift.NewParamsFromFile(*editFileArg, *privateKeyFlag)
 		if err != nil {
 			log.Fatalf("Could not read file: %s.", err)
@@ -224,7 +236,6 @@ func main() {
 		}
 
 	case reEncryptCommand.FullCommand():
-		cli.VerboseMsg("re-encrypt")
 		for _, paramDir := range *paramDirFlag {
 			files, err := ioutil.ReadDir(paramDir)
 			if err != nil {
@@ -260,7 +271,6 @@ func main() {
 		}
 
 	case revealCommand.FullCommand():
-		cli.VerboseMsg("reveal")
 		readParams, err := openshift.NewParamsFromFile(*revealFileArg, *privateKeyFlag)
 		if err != nil {
 			log.Fatalf("Could not read file: %s.", err)
@@ -271,8 +281,30 @@ func main() {
 		}
 		fmt.Println(readContent)
 
+	case generateKeyCommand.FullCommand():
+		emailParts := strings.Split(*generateKeyEmailArg, "@")
+		name := *generateKeyNameFlag
+		if len(name) == 0 {
+			name = emailParts[0]
+		}
+		entity, err := utils.CreateEntity(name, *generateKeyEmailArg)
+		if err != nil {
+			log.Fatalf("Failed to generate keypair: %s.", err)
+		}
+		publicKeyFilename := strings.Replace(emailParts[0], ".", "-", -1) + ".key"
+		utils.PrintPublicKey(entity, publicKeyFilename)
+		if err != nil {
+			log.Fatalln(err)
+		}
+		fmt.Printf("Public Key written to %s. This file can be committed.\n", publicKeyFilename)
+		privateKeyFilename := *privateKeyFlag
+		utils.PrintPrivateKey(entity, privateKeyFilename)
+		if err != nil {
+			log.Fatalln(err)
+		}
+		fmt.Printf("Private Key written to %s. This file MUST NOT be committed.\n", privateKeyFilename)
+
 	case statusCommand.FullCommand():
-		cli.VerboseMsg("status")
 		checkLoggedIn()
 
 		updateRequired, _, err := calculateChangesets(
@@ -296,7 +328,6 @@ func main() {
 		}
 
 	case exportCommand.FullCommand():
-		cli.VerboseMsg("export")
 		checkLoggedIn()
 
 		filters, err := getFilters(*exportResourceArg, *selectorFlag)
@@ -308,7 +339,6 @@ func main() {
 		}
 
 	case updateCommand.FullCommand():
-		cli.VerboseMsg("update")
 		checkLoggedIn()
 
 		updateRequired, changesets, err := calculateChangesets(

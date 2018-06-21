@@ -2,6 +2,7 @@ package openshift
 
 import (
 	"encoding/base64"
+	"github.com/michaelsauter/ocdiff/cli"
 	"github.com/michaelsauter/ocdiff/utils"
 	"golang.org/x/crypto/openpgp"
 	"io/ioutil"
@@ -37,13 +38,15 @@ func NewParams(content string, privateKey string) (Params, error) {
 		// If the key ends with .STRING, base64 encode the value and then
 		// change the key to end with .ENC to trigger the next step.
 		if strings.HasSuffix(key, ".STRING") {
-			value = base64.StdEncoding.EncodeToString([]byte(value))
 			key = strings.Replace(key, ".STRING", ".ENC", -1)
+			cli.VerboseMsg("Encountered STRING param", key)
+			value = base64.StdEncoding.EncodeToString([]byte(value))
 		}
 
 		if strings.HasSuffix(key, ".ENC") {
 			param.IsSecret = true
 			param.Key = strings.Replace(key, ".ENC", "", -1)
+			cli.VerboseMsg("Encountered ENC param", param.Key)
 			if len(privateKey) > 0 {
 				if len(entityList) == 0 {
 					el, err := utils.GetEntityList([]string{privateKey})
@@ -62,6 +65,7 @@ func NewParams(content string, privateKey string) (Params, error) {
 				param.Decrypted = value
 			}
 		} else {
+			cli.VerboseMsg("Encountered RAW param", key)
 			param.IsSecret = false
 			param.Value = value
 			param.Key = key
@@ -74,10 +78,12 @@ func NewParams(content string, privateKey string) (Params, error) {
 }
 
 func NewParamsFromInput(content string) (Params, error) {
+	cli.VerboseMsg("Reading params from input")
 	return NewParams(content, "")
 }
 
 func NewParamsFromFile(filename string, privateKey string) (Params, error) {
+	cli.VerboseMsg("Reading params from file", filename)
 	content := ""
 	if _, err := os.Stat(filename); err == nil {
 		bytes, err := ioutil.ReadFile(filename)
@@ -112,9 +118,12 @@ func (p Params) Render(publicKeyDir string, previousParams Params) (string, erro
 	if err != nil {
 		return "", err
 	}
-	filePattern := ".*\\.key"
+	filePattern := ".*\\.key$"
 	keyFiles := []string{}
 	for _, file := range files {
+		if file.Name() == "private.key" {
+			continue
+		}
 		matched, _ := regexp.MatchString(filePattern, file.Name())
 		if !matched {
 			continue
@@ -127,7 +136,11 @@ func (p Params) Render(publicKeyDir string, previousParams Params) (string, erro
 	}
 
 	for _, param := range p {
-		out = out + param.Render(entityList, previousParams) + "\n"
+		rendered, err := param.Render(entityList, previousParams)
+		if err != nil {
+			return "", err
+		}
+		out = out + rendered + "\n"
 	}
 	return out, nil
 }
@@ -146,9 +159,10 @@ func (p Params) Process(dropSuffix bool, decode bool) (string, error) {
 
 // Returns a string representation of the param.
 // .ENC params are encrypted.
-func (p *Param) Render(entityList openpgp.EntityList, previousParams Params) string {
+func (p *Param) Render(entityList openpgp.EntityList, previousParams Params) (string, error) {
 	if !p.IsSecret {
-		return p.Key + "=" + p.Value
+		cli.VerboseMsg("Rendering RAW param", p.Key)
+		return p.Key + "=" + p.Value, nil
 	}
 	var previous *Param
 	for _, prev := range previousParams {
@@ -159,11 +173,17 @@ func (p *Param) Render(entityList openpgp.EntityList, previousParams Params) str
 	}
 	var encrypted string
 	if previous != nil && previous.Decrypted == p.Decrypted {
+		cli.VerboseMsg("Rendering unchanged ENC param", p.Key)
 		encrypted = previous.Value
 	} else {
-		encrypted, _ = utils.Encrypt(p.Decrypted, entityList)
+		cli.VerboseMsg("Rendering changed ENC param", p.Key)
+		e, err := utils.Encrypt(p.Decrypted, entityList)
+		if err != nil {
+			return "", err
+		}
+		encrypted = e
 	}
-	return p.Key + ".ENC=" + encrypted
+	return p.Key + ".ENC=" + encrypted, nil
 }
 
 // Returns a string representation in which all .ENC params are decrypted.
