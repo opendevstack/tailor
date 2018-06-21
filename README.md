@@ -31,7 +31,7 @@ All commands depend on a current OC session and accept a `--namespace` (if none 
 
 All options can be inspected with `ocdiff help`.
 
-## Advanced Usage
+## Working with Secrets
 
 Keeping the Openshift configuration under version control necessitates to store secrets. To this end `ocdiff` comes with a `secrets` subcommand that allows to encrypt those secrets. The subcommands offers to `edit`, `re-encrypt` and `reveal` secrets.
 
@@ -41,17 +41,9 @@ When a public key is added or removed, it is required to `secrets re-encrypt` al
 
 The `secrets reveal` command shows the param file after decrypting and decoding the values so that you can see the clear text secrets.
 
-Finally, `secrets generate-key john.doe@domain.com` generates a PGP keypair, writing the public key to `john-doe.key` and the private key to `private.key`.
+Finally, `secrets generate-key john.doe@domain.com` generates a PGP keypair, writing the public key to `john-doe.key` (which should be committed) and the private key to `private.key` (which MUST NOT be committed).
 
 ## Background
-
-### Working with PGP Keys
-
-To generate a new keypair, follow https://help.github.com/articles/generating-a-new-gpg-key/. For now, it is not possible to use a passphrase so leave that empty.
-
-Once you have that, export the public key with `gpg --armor --export john.doe@domain.com >> john-doe.key`. This file should be committed.
-
-Finally, when using `ocdiff edit`, you will need access to your private key, which can be exported with: `gpg --export-secret-key -a "john.doe@domain.com" > private.key`. This file must not be committed.
 
 ### Problem
 
