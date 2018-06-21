@@ -250,7 +250,7 @@ func main() {
 				if err != nil {
 					log.Fatal(err)
 				}
-				filePattern := ".*\\.env"
+				filePattern := ".*\\.env$"
 				for _, file := range files {
 					matched, _ := regexp.MatchString(filePattern, file.Name())
 					if !matched {
@@ -496,7 +496,7 @@ func assembleLocalResourceLists(filters map[string]*openshift.ResourceFilter, te
 		if err != nil {
 			log.Fatal(err)
 		}
-		filePattern := ".*\\.ya?ml"
+		filePattern := ".*\\.ya?ml$"
 		for _, file := range files {
 			matched, _ := regexp.MatchString(filePattern, file.Name())
 			if !matched {
