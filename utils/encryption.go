@@ -26,12 +26,14 @@ func Encrypt(secret string, publicKeyDir string) (string, error) {
 			continue
 		}
 
-		keyringFileBuffer, _ := os.Open(publicKeyDir + string(os.PathSeparator) + file.Name())
+		filename := publicKeyDir + string(os.PathSeparator) + file.Name()
+		keyringFileBuffer, _ := os.Open(filename)
 		defer keyringFileBuffer.Close()
 		l, err := openpgp.ReadArmoredKeyRing(keyringFileBuffer)
 		if err != nil {
-			fmt.Println("Could not read")
-			return "", err
+			return "", errors.New(
+				fmt.Sprintf("Reading public key '%s' failed: %s", filename, err),
+			)
 		}
 		entityList = append(entityList, l[0])
 	}
@@ -40,7 +42,9 @@ func Encrypt(secret string, publicKeyDir string) (string, error) {
 	buf := new(bytes.Buffer)
 	w, err := openpgp.Encrypt(buf, entityList, nil, nil, nil)
 	if err != nil {
-		return "", err
+		return "", errors.New(
+			fmt.Sprintf("Encrypting '%s' failed: %s", secret, err),
+		)
 	}
 	_, err = w.Write([]byte(secret))
 	if err != nil {
@@ -53,6 +57,9 @@ func Encrypt(secret string, publicKeyDir string) (string, error) {
 
 	// Return as base64 encoded string
 	bytes, err := ioutil.ReadAll(buf)
+	if err != nil {
+		return "", err
+	}
 	str := base64.StdEncoding.EncodeToString(bytes)
 	return str, nil
 }
@@ -64,22 +71,27 @@ func Decrypt(encoded string, privateKey string) (string, error) {
 	defer keyringFileBuffer.Close()
 	entityList, err := openpgp.ReadArmoredKeyRing(keyringFileBuffer)
 	if err != nil {
-		fmt.Println("here")
-		return "", err
+		return "", errors.New(
+			fmt.Sprintf("Reading private key '%s' failed: %s", privateKey, err),
+		)
 	}
 
 	// Decode bas64-encoded string
 	encrypted, err := base64.StdEncoding.DecodeString(encoded)
 	if err != nil {
-		return "", errors.New(fmt.Sprintf("Decoding '%s' failed: %s", encoded, err))
+		return "", errors.New(
+			fmt.Sprintf("Decoding '%s' failed: %s", encoded, err),
+		)
 	}
 
 	// Decrypt encrypted message
 	buf := bytes.NewBuffer([]byte(encrypted))
 	md, err := openpgp.ReadMessage(buf, entityList, nil, nil)
 	if err != nil {
-		return "", errors.New(fmt.Sprintf("Decrypting '%s' failed: %s", encrypted, err))
+		return "", errors.New(
+			fmt.Sprintf("Decrypting '%s' failed: %s", encrypted, err),
+		)
 	}
 	bytes, err := ioutil.ReadAll(md.UnverifiedBody)
-	return string(bytes), nil
+	return string(bytes), err
 }
