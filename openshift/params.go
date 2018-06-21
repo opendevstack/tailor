@@ -16,7 +16,7 @@ type Param struct {
 
 type Params []*Param
 
-func NewParamsFromInput(content string) Params {
+func NewParams(content string, privateKey string) (Params, error) {
 	params := []*Param{}
 	text := strings.TrimSuffix(content, "\n")
 	lines := strings.Split(text, "\n")
@@ -36,44 +36,17 @@ func NewParamsFromInput(content string) Params {
 
 		if strings.HasSuffix(key, ".ENC") {
 			param.IsSecret = true
-			param.Decrypted = value
 			param.Key = strings.Replace(key, ".ENC", "", -1)
-		} else {
-			param.IsSecret = false
-			param.Value = value
-			param.Key = key
-		}
-
-		params = append(params, param)
-	}
-
-	return params
-}
-
-func NewParamsFromFile(filename string, privateKey string) (Params, error) {
-	params := []*Param{}
-	content, err := ioutil.ReadFile(filename)
-	if err != nil {
-		return params, err
-	}
-	text := strings.TrimSuffix(string(content), "\n")
-	lines := strings.Split(text, "\n")
-
-	for _, line := range lines {
-		pair := strings.SplitN(line, "=", 2)
-		key := pair[0]
-		value := pair[1]
-		param := &Param{}
-
-		if strings.HasSuffix(key, ".ENC") {
-			param.IsSecret = true
-			param.Value = value
-			decrypted, err := utils.Decrypt(value, privateKey)
-			if err != nil {
-				return params, err
+			if len(privateKey) > 0 {
+				param.Value = value
+				decrypted, err := utils.Decrypt(value, privateKey)
+				if err != nil {
+					return params, err
+				}
+				param.Decrypted = decrypted
+			} else {
+				param.Decrypted = value
 			}
-			param.Decrypted = decrypted
-			param.Key = strings.Replace(key, ".ENC", "", -1)
 		} else {
 			param.IsSecret = false
 			param.Value = value
@@ -84,6 +57,18 @@ func NewParamsFromFile(filename string, privateKey string) (Params, error) {
 	}
 
 	return params, nil
+}
+
+func NewParamsFromInput(content string) (Params, error) {
+	return NewParams(content, "")
+}
+
+func NewParamsFromFile(filename string, privateKey string) (Params, error) {
+	bytes, err := ioutil.ReadFile(filename)
+	if err != nil {
+		return nil, err
+	}
+	return NewParams(string(bytes), privateKey)
 }
 
 func (p Params) String() string {

@@ -96,8 +96,7 @@ func ProcessTemplate(templateDir string, name string, paramDir string, label str
 		paramFileContent := string(b)
 		if strings.Contains(paramFileContent, ".ENC=") {
 			cli.VerboseMsg(actualParamFile, "needs to be decrypted")
-			// TODO: Use already read file contents to avoid reading twice.
-			readParams, err := NewParamsFromFile(actualParamFile, privateKey)
+			readParams, err := NewParams(paramFileContent, privateKey)
 			if err != nil {
 				return []byte{}, err
 			}

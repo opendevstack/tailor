@@ -209,7 +209,10 @@ func main() {
 		if err != nil {
 			log.Fatalf("Could not edit file: %s.", err.Error())
 		}
-		editedParams := openshift.NewParamsFromInput(editedContent)
+		editedParams, err := openshift.NewParamsFromInput(editedContent)
+		if err != nil {
+			log.Fatal(err)
+		}
 
 		renderedContent := editedParams.Render(*publicKeyDirFlag, readParams)
 		err = ioutil.WriteFile(*editFileArg, []byte(renderedContent), 0644)
@@ -237,7 +240,10 @@ func main() {
 				}
 				readContent, _ := readParams.Process(false, false)
 
-				editedParams := openshift.NewParamsFromInput(readContent)
+				editedParams, err := openshift.NewParamsFromInput(readContent)
+				if err != nil {
+					log.Fatal(err)
+				}
 
 				renderedContent := editedParams.Render(*publicKeyDirFlag, []*openshift.Param{})
 				err = ioutil.WriteFile(filename, []byte(renderedContent), 0644)
