@@ -69,7 +69,7 @@ func PrintPrivateKey(entity *openpgp.Entity, filename string) error {
 }
 
 // Assembles entity list from keys in given files
-func GetEntityList(keys []string) (openpgp.EntityList, error) {
+func GetEntityList(keys []string, passphrase string) (openpgp.EntityList, error) {
 	cli.VerboseMsg("Assemble entity list from", strings.Join(keys, ","))
 	entityList := openpgp.EntityList{}
 	for _, filename := range keys {
@@ -81,7 +81,31 @@ func GetEntityList(keys []string) (openpgp.EntityList, error) {
 				fmt.Sprintf("Reading key '%s' failed: %s", filename, err),
 			)
 		}
-		entityList = append(entityList, l[0])
+		entity := l[0]
+
+		// Decrypt private key using passphrase
+		passphraseBytes := []byte(passphrase)
+		if entity.PrivateKey != nil && entity.PrivateKey.Encrypted {
+			cli.VerboseMsg("Decrypting private key using passphrase")
+			err := entity.PrivateKey.Decrypt(passphraseBytes)
+			if err != nil {
+				return entityList, errors.New(
+					fmt.Sprintf("Failed to decrypt key: %s", err),
+				)
+			}
+		}
+		for _, subkey := range entity.Subkeys {
+			if subkey.PrivateKey != nil && subkey.PrivateKey.Encrypted {
+				err := subkey.PrivateKey.Decrypt(passphraseBytes)
+				if err != nil {
+					return entityList, errors.New(
+						fmt.Sprintf("Failed to decrypt subkey: %s", err),
+					)
+				}
+			}
+		}
+
+		entityList = append(entityList, entity)
 	}
 	return entityList, nil
 }

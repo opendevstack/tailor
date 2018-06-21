@@ -50,6 +50,10 @@ var (
 		"private-key",
 		"Path to private key file",
 	).Default("private.key").String()
+	passphraseFlag = app.Flag(
+		"passphrase",
+		"Passphrase to unlock key",
+	).String()
 
 	versionCommand = app.Command(
 		"version",
@@ -214,7 +218,7 @@ func main() {
 		fmt.Println("0.1.0")
 
 	case editCommand.FullCommand():
-		readParams, err := openshift.NewParamsFromFile(*editFileArg, *privateKeyFlag)
+		readParams, err := openshift.NewParamsFromFile(*editFileArg, *privateKeyFlag, *passphraseFlag)
 		if err != nil {
 			log.Fatalf("Could not read file: %s.", err)
 		}
@@ -240,7 +244,7 @@ func main() {
 
 	case reEncryptCommand.FullCommand():
 		if len(*reEncryptFileArg) > 0 {
-			err := reEncrypt(*reEncryptFileArg, *privateKeyFlag, *publicKeyDirFlag)
+			err := reEncrypt(*reEncryptFileArg, *privateKeyFlag, *passphraseFlag, *publicKeyDirFlag)
 			if err != nil {
 				log.Fatal(err)
 			}
@@ -257,7 +261,7 @@ func main() {
 						continue
 					}
 					filename := paramDir + string(os.PathSeparator) + file.Name()
-					err := reEncrypt(filename, *privateKeyFlag, *publicKeyDirFlag)
+					err := reEncrypt(filename, *privateKeyFlag, *passphraseFlag, *publicKeyDirFlag)
 					if err != nil {
 						log.Fatal(err)
 					}
@@ -266,7 +270,7 @@ func main() {
 		}
 
 	case revealCommand.FullCommand():
-		readParams, err := openshift.NewParamsFromFile(*revealFileArg, *privateKeyFlag)
+		readParams, err := openshift.NewParamsFromFile(*revealFileArg, *privateKeyFlag, *passphraseFlag)
 		if err != nil {
 			log.Fatalf("Could not read file: %s.", err)
 		}
@@ -313,6 +317,7 @@ func main() {
 			*statusIgnoreUnknownParametersFlag,
 			*statusUpsertOnlyFlag,
 			*privateKeyFlag,
+			*passphraseFlag,
 		)
 		if err != nil {
 			log.Fatalln(err)
@@ -347,6 +352,7 @@ func main() {
 			*updateIgnoreUnknownParametersFlag,
 			*updateUpsertOnlyFlag,
 			*privateKeyFlag,
+			*passphraseFlag,
 		)
 		if err != nil {
 			log.Fatalln(err)
@@ -365,8 +371,8 @@ func main() {
 	}
 }
 
-func reEncrypt(filename, privateKey, publicKeyDir string) error {
-	readParams, err := openshift.NewParamsFromFile(filename, privateKey)
+func reEncrypt(filename, privateKey, passphrase, publicKeyDir string) error {
+	readParams, err := openshift.NewParamsFromFile(filename, privateKey, passphrase)
 	if err != nil {
 		return errors.New(fmt.Sprintf("Could not read file: %s.", err))
 	}
@@ -388,7 +394,7 @@ func reEncrypt(filename, privateKey, publicKeyDir string) error {
 	return nil
 }
 
-func calculateChangesets(resource string, selectorFlag string, templateDirs []string, paramDirs []string, label string, params []string, paramFile string, ignoreUnknownParameters bool, upsertOnly bool, privateKey string) (bool, map[string]*openshift.Changeset, error) {
+func calculateChangesets(resource string, selectorFlag string, templateDirs []string, paramDirs []string, label string, params []string, paramFile string, ignoreUnknownParameters bool, upsertOnly bool, privateKey string, passphrase string) (bool, map[string]*openshift.Changeset, error) {
 	changesets := make(map[string]*openshift.Changeset)
 	updateRequired := false
 
@@ -406,6 +412,7 @@ func calculateChangesets(resource string, selectorFlag string, templateDirs []st
 		paramFile,
 		ignoreUnknownParameters,
 		privateKey,
+		passphrase,
 	)
 	remoteResourceLists := assembleRemoteResourceLists(filters)
 
@@ -485,7 +492,7 @@ func checkLoggedIn() {
 	}
 }
 
-func assembleLocalResourceLists(filters map[string]*openshift.ResourceFilter, templateDirs []string, paramDirs []string, label string, params []string, paramFile string, ignoreUnknownParameters bool, privateKey string) map[string]*openshift.ResourceList {
+func assembleLocalResourceLists(filters map[string]*openshift.ResourceFilter, templateDirs []string, paramDirs []string, label string, params []string, paramFile string, ignoreUnknownParameters bool, privateKey string, passphrase string) map[string]*openshift.ResourceList {
 	lists := initResourceLists(filters)
 
 	// read files in folders and assemble lists for kinds
@@ -501,7 +508,7 @@ func assembleLocalResourceLists(filters map[string]*openshift.ResourceFilter, te
 				continue
 			}
 			cli.VerboseMsg("Reading", file.Name())
-			processedOut, err := openshift.ProcessTemplate(templateDir, file.Name(), paramDirs[i], label, params, paramFile, ignoreUnknownParameters, privateKey)
+			processedOut, err := openshift.ProcessTemplate(templateDir, file.Name(), paramDirs[i], label, params, paramFile, ignoreUnknownParameters, privateKey, passphrase)
 			if err != nil {
 				log.Fatalln("Could not process", file.Name(), "template:", err)
 			}

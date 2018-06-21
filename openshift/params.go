@@ -20,7 +20,7 @@ type Param struct {
 
 type Params []*Param
 
-func NewParams(content string, privateKey string) (Params, error) {
+func NewParams(content, privateKey, passphrase string) (Params, error) {
 	params := Params{}
 	entityList := openpgp.EntityList{}
 	text := strings.TrimSuffix(content, "\n")
@@ -49,7 +49,7 @@ func NewParams(content string, privateKey string) (Params, error) {
 			cli.VerboseMsg("Encountered ENC param", param.Key)
 			if len(privateKey) > 0 {
 				if len(entityList) == 0 {
-					el, err := utils.GetEntityList([]string{privateKey})
+					el, err := utils.GetEntityList([]string{privateKey}, passphrase)
 					if err != nil {
 						return nil, err
 					}
@@ -79,10 +79,10 @@ func NewParams(content string, privateKey string) (Params, error) {
 
 func NewParamsFromInput(content string) (Params, error) {
 	cli.VerboseMsg("Reading params from input")
-	return NewParams(content, "")
+	return NewParams(content, "", "")
 }
 
-func NewParamsFromFile(filename string, privateKey string) (Params, error) {
+func NewParamsFromFile(filename, privateKey, passphrase string) (Params, error) {
 	cli.VerboseMsg("Reading params from file", filename)
 	content := ""
 	if _, err := os.Stat(filename); err == nil {
@@ -92,7 +92,7 @@ func NewParamsFromFile(filename string, privateKey string) (Params, error) {
 		}
 		content = string(bytes)
 	}
-	return NewParams(content, privateKey)
+	return NewParams(content, privateKey, passphrase)
 }
 
 func (p Params) String() string {
@@ -130,7 +130,7 @@ func (p Params) Render(publicKeyDir string, previousParams Params) (string, erro
 		}
 		keyFiles = append(keyFiles, publicKeyDir+string(os.PathSeparator)+file.Name())
 	}
-	entityList, err := utils.GetEntityList(keyFiles)
+	entityList, err := utils.GetEntityList(keyFiles, "")
 	if err != nil {
 		return "", err
 	}

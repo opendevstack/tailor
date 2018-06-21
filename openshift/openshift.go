@@ -61,7 +61,7 @@ func ExportResource(kind string) ([]byte, error) {
 	return out, err
 }
 
-func ProcessTemplate(templateDir string, name string, paramDir string, label string, params []string, paramFile string, ignoreUnknownParameters bool, privateKey string) ([]byte, error) {
+func ProcessTemplate(templateDir string, name string, paramDir string, label string, params []string, paramFile string, ignoreUnknownParameters bool, privateKey string, passphrase string) ([]byte, error) {
 	filename := templateDir + string(os.PathSeparator) + name
 	if _, err := os.Stat(filename); os.IsNotExist(err) {
 		cli.VerboseMsg("Template '" + filename + "' does not exist.")
@@ -96,7 +96,7 @@ func ProcessTemplate(templateDir string, name string, paramDir string, label str
 		paramFileContent := string(b)
 		if strings.Contains(paramFileContent, ".ENC=") {
 			cli.VerboseMsg(actualParamFile, "needs to be decrypted")
-			readParams, err := NewParams(paramFileContent, privateKey)
+			readParams, err := NewParams(paramFileContent, privateKey, passphrase)
 			if err != nil {
 				return []byte{}, err
 			}
