@@ -140,6 +140,9 @@ var (
 		"re-encrypt",
 		"Re-Encrypt param file(s)",
 	)
+	reEncryptFileArg = reEncryptCommand.Arg(
+		"file", "File to re-encrypt",
+	).String()
 
 	revealCommand = secretsCommand.Command(
 		"reveal",
@@ -236,36 +239,28 @@ func main() {
 		}
 
 	case reEncryptCommand.FullCommand():
-		for _, paramDir := range *paramDirFlag {
-			files, err := ioutil.ReadDir(paramDir)
+		if len(*reEncryptFileArg) > 0 {
+			err := reEncrypt(*reEncryptFileArg, *privateKeyFlag, *publicKeyDirFlag)
 			if err != nil {
 				log.Fatal(err)
 			}
-			filePattern := ".*\\.env"
-			for _, file := range files {
-				matched, _ := regexp.MatchString(filePattern, file.Name())
-				if !matched {
-					continue
-				}
-				filename := paramDir + string(os.PathSeparator) + file.Name()
-				readParams, err := openshift.NewParamsFromFile(filename, *privateKeyFlag)
-				if err != nil {
-					log.Fatalf("Could not read file: %s.", err)
-				}
-				readContent, _ := readParams.Process(false, false)
-
-				editedParams, err := openshift.NewParamsFromInput(readContent)
+		} else {
+			for _, paramDir := range *paramDirFlag {
+				files, err := ioutil.ReadDir(paramDir)
 				if err != nil {
 					log.Fatal(err)
 				}
-
-				renderedContent, err := editedParams.Render(*publicKeyDirFlag, []*openshift.Param{})
-				if err != nil {
-					log.Fatal(err)
-				}
-				err = ioutil.WriteFile(filename, []byte(renderedContent), 0644)
-				if err != nil {
-					log.Fatalf("Could not write file: %s.", err)
+				filePattern := ".*\\.env"
+				for _, file := range files {
+					matched, _ := regexp.MatchString(filePattern, file.Name())
+					if !matched {
+						continue
+					}
+					filename := paramDir + string(os.PathSeparator) + file.Name()
+					err := reEncrypt(filename, *privateKeyFlag, *publicKeyDirFlag)
+					if err != nil {
+						log.Fatal(err)
+					}
 				}
 			}
 		}
@@ -368,6 +363,29 @@ func main() {
 			}
 		}
 	}
+}
+
+func reEncrypt(filename, privateKey, publicKeyDir string) error {
+	readParams, err := openshift.NewParamsFromFile(filename, privateKey)
+	if err != nil {
+		return errors.New(fmt.Sprintf("Could not read file: %s.", err))
+	}
+	readContent, _ := readParams.Process(false, false)
+
+	editedParams, err := openshift.NewParamsFromInput(readContent)
+	if err != nil {
+		return err
+	}
+
+	renderedContent, err := editedParams.Render(publicKeyDir, []*openshift.Param{})
+	if err != nil {
+		return err
+	}
+	err = ioutil.WriteFile(filename, []byte(renderedContent), 0644)
+	if err != nil {
+		return errors.New(fmt.Sprintf("Could not write file: %s.", err))
+	}
+	return nil
 }
 
 func calculateChangesets(resource string, selectorFlag string, templateDirs []string, paramDirs []string, label string, params []string, paramFile string, ignoreUnknownParameters bool, upsertOnly bool, privateKey string) (bool, map[string]*openshift.Changeset, error) {
