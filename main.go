@@ -203,7 +203,7 @@ func main() {
 		if err != nil {
 			log.Fatalf("Could not read file: %s.", err.Error())
 		}
-		readContent := readParams.Process(false, false)
+		readContent, _ := readParams.Process(false, false)
 
 		editedContent, err := cli.EditEnvFile(readContent)
 		if err != nil {
@@ -235,11 +235,11 @@ func main() {
 				if err != nil {
 					log.Fatalf("Could not read file: %s.", err.Error())
 				}
-				readContent := readParams.Process(false, false)
+				readContent, _ := readParams.Process(false, false)
 
 				editedParams := openshift.NewParamsFromInput(readContent)
 
-				renderedContent := editedParams.Render(*publicKeyDirFlag, []*openshift.ParamFromFile{})
+				renderedContent := editedParams.Render(*publicKeyDirFlag, []*openshift.Param{})
 				err = ioutil.WriteFile(filename, []byte(renderedContent), 0644)
 				if err != nil {
 					log.Fatalf("Could not write file: %s.", err.Error())
@@ -253,7 +253,10 @@ func main() {
 		if err != nil {
 			log.Fatalf("Could not read file: %s.", err.Error())
 		}
-		readContent := readParams.Process(false, true)
+		readContent, err := readParams.Process(false, true)
+		if err != nil {
+			log.Fatalf("Failed to process: %s.", err.Error())
+		}
 		fmt.Println(readContent)
 
 	case statusCommand.FullCommand():

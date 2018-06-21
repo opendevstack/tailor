@@ -101,7 +101,7 @@ func ProcessTemplate(templateDir string, name string, paramDir string, label str
 			if err != nil {
 				return []byte{}, err
 			}
-			readContent := readParams.Process(true, false)
+			readContent, _ := readParams.Process(true, false)
 			tempParamFile = actualParamFile + ".dec"
 			defer os.Remove(tempParamFile)
 			ioutil.WriteFile(tempParamFile, []byte(readContent), 0644)

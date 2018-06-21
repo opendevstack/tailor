@@ -7,24 +7,17 @@ import (
 	"strings"
 )
 
-type ParamFromInput struct {
-	Key      string
-	IsSecret bool
-	Value    string
-}
-
-type ParamFromFile struct {
+type Param struct {
 	Key       string
 	Value     string
 	IsSecret  bool
 	Decrypted string
 }
 
-type ParamsFromInput []*ParamFromInput
-type ParamsFromFile []*ParamFromFile
+type Params []*Param
 
-func NewParamsFromInput(content string) ParamsFromInput {
-	params := []*ParamFromInput{}
+func NewParamsFromInput(content string) Params {
+	params := []*Param{}
 	text := strings.TrimSuffix(content, "\n")
 	lines := strings.Split(text, "\n")
 
@@ -32,7 +25,7 @@ func NewParamsFromInput(content string) ParamsFromInput {
 		pair := strings.SplitN(line, "=", 2)
 		key := pair[0]
 		value := pair[1]
-		param := &ParamFromInput{}
+		param := &Param{}
 
 		// If the key ends with .STRING, base64 encode the value and then
 		// change the key to end with .ENC to trigger the next step.
@@ -43,7 +36,7 @@ func NewParamsFromInput(content string) ParamsFromInput {
 
 		if strings.HasSuffix(key, ".ENC") {
 			param.IsSecret = true
-			param.Value = value
+			param.Decrypted = value
 			param.Key = strings.Replace(key, ".ENC", "", -1)
 		} else {
 			param.IsSecret = false
@@ -57,8 +50,8 @@ func NewParamsFromInput(content string) ParamsFromInput {
 	return params
 }
 
-func NewParamsFromFile(filename string, privateKey string) (ParamsFromFile, error) {
-	params := []*ParamFromFile{}
+func NewParamsFromFile(filename string, privateKey string) (Params, error) {
+	params := []*Param{}
 	content, err := ioutil.ReadFile(filename)
 	if err != nil {
 		return params, err
@@ -70,12 +63,15 @@ func NewParamsFromFile(filename string, privateKey string) (ParamsFromFile, erro
 		pair := strings.SplitN(line, "=", 2)
 		key := pair[0]
 		value := pair[1]
-		param := &ParamFromFile{}
+		param := &Param{}
 
 		if strings.HasSuffix(key, ".ENC") {
 			param.IsSecret = true
 			param.Value = value
-			decrypted, _ := utils.Decrypt(value, privateKey)
+			decrypted, err := utils.Decrypt(value, privateKey)
+			if err != nil {
+				return params, err
+			}
 			param.Decrypted = decrypted
 			param.Key = strings.Replace(key, ".ENC", "", -1)
 		} else {
@@ -90,24 +86,22 @@ func NewParamsFromFile(filename string, privateKey string) (ParamsFromFile, erro
 	return params, nil
 }
 
-func (p ParamsFromInput) String() string {
+func (p Params) String() string {
 	out := ""
 	for _, param := range p {
-		out = out + param.Key + "=" + param.Value + "\n"
-	}
-	return out
-}
-
-func (p ParamsFromFile) String() string {
-	out := ""
-	for _, param := range p {
-		out = out + param.Key + "=" + param.Value + "\n"
+		var val string
+		if param.IsSecret {
+			val = param.Decrypted
+		} else {
+			val = param.Value
+		}
+		out = out + param.Key + "=" + val + "\n"
 	}
 	return out
 }
 
 // Encrypt params and create string from them
-func (p ParamsFromInput) Render(publicKeyDir string, previousParams ParamsFromFile) string {
+func (p Params) Render(publicKeyDir string, previousParams Params) string {
 	out := ""
 	for _, param := range p {
 		out = out + param.Render(publicKeyDir, previousParams) + "\n"
@@ -115,21 +109,25 @@ func (p ParamsFromInput) Render(publicKeyDir string, previousParams ParamsFromFi
 	return out
 }
 
-func (p ParamsFromFile) Process(dropSuffix bool, decode bool) string {
+func (p Params) Process(dropSuffix bool, decode bool) (string, error) {
 	out := ""
 	for _, param := range p {
-		out = out + param.Process(dropSuffix, decode) + "\n"
+		processedParam, err := param.Process(dropSuffix, decode)
+		if err != nil {
+			return out, err
+		}
+		out = out + processedParam + "\n"
 	}
-	return out
+	return out, nil
 }
 
 // Returns a string representation of the param.
 // .ENC params are encrypted.
-func (p *ParamFromInput) Render(publicKeyDir string, previousParams ParamsFromFile) string {
+func (p *Param) Render(publicKeyDir string, previousParams Params) string {
 	if !p.IsSecret {
 		return p.Key + "=" + p.Value
 	}
-	var previous *ParamFromFile
+	var previous *Param
 	for _, prev := range previousParams {
 		if prev.IsSecret && prev.Key == p.Key {
 			previous = prev
@@ -137,29 +135,29 @@ func (p *ParamFromInput) Render(publicKeyDir string, previousParams ParamsFromFi
 		}
 	}
 	var encrypted string
-	if previous != nil && previous.Decrypted == p.Value {
+	if previous != nil && previous.Decrypted == p.Decrypted {
 		encrypted = previous.Value
 	} else {
-		encrypted, _ = utils.Encrypt(p.Value, publicKeyDir)
+		encrypted, _ = utils.Encrypt(p.Decrypted, publicKeyDir)
 	}
 	return p.Key + ".ENC=" + encrypted
 }
 
 // Returns a string representation in which all .ENC params are decrypted.
-func (p *ParamFromFile) Process(dropSuffix bool, decode bool) string {
+func (p *Param) Process(dropSuffix bool, decode bool) (string, error) {
 	if !p.IsSecret {
-		return p.Key + "=" + p.Value
+		return p.Key + "=" + p.Value, nil
 	}
 	decrypted := p.Decrypted
 	if decode {
 		sDec, err := base64.StdEncoding.DecodeString(decrypted)
 		if err != nil {
-
+			return "", err
 		}
 		decrypted = string(sDec)
 	}
 	if dropSuffix {
-		return p.Key + "=" + decrypted
+		return p.Key + "=" + decrypted, nil
 	}
-	return p.Key + ".ENC=" + decrypted
+	return p.Key + ".ENC=" + decrypted, nil
 }

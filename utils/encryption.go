@@ -3,6 +3,7 @@ package utils
 import (
 	"bytes"
 	"encoding/base64"
+	"errors"
 	"fmt"
 	"golang.org/x/crypto/openpgp"
 	"io/ioutil"
@@ -63,20 +64,21 @@ func Decrypt(encoded string, privateKey string) (string, error) {
 	defer keyringFileBuffer.Close()
 	entityList, err := openpgp.ReadArmoredKeyRing(keyringFileBuffer)
 	if err != nil {
+		fmt.Println("here")
 		return "", err
 	}
 
 	// Decode bas64-encoded string
 	encrypted, err := base64.StdEncoding.DecodeString(encoded)
 	if err != nil {
-		return "", err
+		return "", errors.New(fmt.Sprintf("Decoding '%s' failed: %s", encoded, err))
 	}
 
 	// Decrypt encrypted message
 	buf := bytes.NewBuffer([]byte(encrypted))
 	md, err := openpgp.ReadMessage(buf, entityList, nil, nil)
 	if err != nil {
-		return "", err
+		return "", errors.New(fmt.Sprintf("Decrypting '%s' failed: %s", encrypted, err))
 	}
 	bytes, err := ioutil.ReadAll(md.UnverifiedBody)
 	return string(bytes), nil

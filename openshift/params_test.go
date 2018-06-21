@@ -16,18 +16,18 @@ BAZ=hello_world
 `)
 
 	actual := NewParamsFromInput(string(input))
-	expected := ParamsFromInput{
-		&ParamFromInput{
-			Key:      "FOO",
-			IsSecret: true,
-			Value:    "c2VjcmV0",
+	expected := Params{
+		&Param{
+			Key:       "FOO",
+			IsSecret:  true,
+			Decrypted: "c2VjcmV0",
 		},
-		&ParamFromInput{
-			Key:      "BAR",
-			IsSecret: true,
-			Value:    "Z2VoZWlt",
+		&Param{
+			Key:       "BAR",
+			IsSecret:  true,
+			Decrypted: "Z2VoZWlt",
 		},
-		&ParamFromInput{
+		&Param{
 			Key:   "BAZ",
 			Value: "hello_world",
 		},
@@ -37,40 +37,6 @@ BAZ=hello_world
 		t.Errorf("Params don't match, got: %v, want: %v.", actual.String(), expected.String())
 	}
 }
-
-// func TestNewParamsFromFile(t *testing.T) {
-
-//   content := []byte(
-//     `FOO.ENC=wcFMA7dOewnVojzNARAAO5F+fyhjOGLB/60JqbqNB/2+WAcB+ikSrNlxVh0VxlLcPOVgJXrfRAMiTCAE13A9xpT0sg/SCZJotmCdwxm87E/vXfukjZIWz6JLX4A8QXqde3rx3qAwOL/9HA4esLsbQb+yHJBWwiNxuPWs1uSiTuMH1M0Ol6ieL+Ui/QEPWoz72r4PrpgbPQdsrGvk30kviC8srGQAfojHYehLIZlcezzb0mE+ssTpraXGg983QS6ByNlOHJXyW+2ipSe22jsYOLjL41WQ+WZTKcIVFvgANfR+X6jZt5G03TQ6wGZNYBgxQB0M/RY7Eu8XxgmiLqTNZWdJyUDu4LWjakc9NEf6RQsnrgDv8ZXVnl83X2w+GNlgFJwydVpV54Irsllw9t5RUhl3E9QX4RXDOClqxgCnLWJBi2y83UApiTZVAjrZaHa6l7AZaFfjlU91MIqjjUkRsAV76yfE53bFzmku5k7xcYzNB87yI4ZH97ImHRU7rzGdG1pKgC46ho/d9qF2IM7X5wK7AjVogFPT4L4zlw96ori/25OQn9qQ7tZd7GL0ymj1C6K/VPCUclk9PXMKHlbta1T6lct8xRXNWyGlVgf3gqmuAYjiP+D+h4aS39IH5pjlPOc57YC1Wex2R2Aq30i3Vb2gwNJf47BvMDcOMcWfYKy8NnnKJqRbHlhIfW6pHZ7S4AHkYcXe+L5kZIpWGOvYWdoHtOGALuBl4AfhvFXgCuLAa4th4OXjfUkHy7+lq8DgVeQFUFQpdCWdotL/njShHT7s4uVq+x/hTH4A
-// BAR.ENC=wcFMA7dOewnVojzNARAAjzKhMvcneu8cMbKDofoP2CEQ5axlmoAwqMndFfnKXU/mMLKbPAcxtvFKm6/pI7nfFGPyftIwkYvda4BT/gR76Gptes5M77e6AodxrATI5ClFKgcMzSp/Mdysf+hlulwAqtAiOdkSYnYOLB2/y1EPs/chWzLwBzwtgiBPJqIrSzCaDY/m2bNjjcePZ/wI/PkoQk+SyrPFmcLOwlvFiHHKdsz0zaIMjW5cgee0fO/Pqr3iQDfzqiWI8QSpXBgdv5Qx4iqLZ7iBClXnqc+DfavnGhV91/rEvUcFSuxmm43VDQy+475xw1Py9fdT4Vs/F8TYxTMPozAOr1vNjuBlMRX0nq1p3leharmmtQkwXmZut53NZMMvhTSqLjKEsM9LHm/OT3nAwsOwE/pah8lOlU2dGg9voIYzhWHyqoEE9yhxmQE3pnLgnN+xTX124QU1Kf72zxoImmAKac78i020tzImGHKCXG1wf5gmajKKE+tHwzRByKqJDUsjbYxvxVBtrWrNAx5ui+gFYrGdFrqP76HdCytHN64tMAiw8fR/R4AiJwg9xHUPYi6dt09vWxajBhWjx0qyI9FbZmFmrCpxW7YnvoBMJV9S9kzpbNicZ2ks2m8yr+HxYTGdSaChSUivorY9R+xz5l7Ei5crZvC6unGCH2ZJpOm5b1tbiX9jcYP0MBrS4AHkw7U6LfYCeUTJEeVxMcUmN+EyA+CI4MjhDDbgcOJUopmF4ATj6RU/sNjk4m3g9uSws9aMoibleLyTpjbBwqln4lg44P3hpc8A
-// BAZ=hello_world
-// `)
-
-//   defer os.Remove("foo.env")
-//   ioutil.WriteFile("foo.env", content, 0644)
-
-//   actual, _ := NewParamsFromFile("foo.env")
-//   expected := ParamsFromFile{
-//     &ParamFromFile{
-//       Key:  "FOO",
-//       IsSecret: true,
-//       Value: "wcFMA7dOewnVojzNARAAO5F+fyhjOGLB/60JqbqNB/2+WAcB+ikSrNlxVh0VxlLcPOVgJXrfRAMiTCAE13A9xpT0sg/SCZJotmCdwxm87E/vXfukjZIWz6JLX4A8QXqde3rx3qAwOL/9HA4esLsbQb+yHJBWwiNxuPWs1uSiTuMH1M0Ol6ieL+Ui/QEPWoz72r4PrpgbPQdsrGvk30kviC8srGQAfojHYehLIZlcezzb0mE+ssTpraXGg983QS6ByNlOHJXyW+2ipSe22jsYOLjL41WQ+WZTKcIVFvgANfR+X6jZt5G03TQ6wGZNYBgxQB0M/RY7Eu8XxgmiLqTNZWdJyUDu4LWjakc9NEf6RQsnrgDv8ZXVnl83X2w+GNlgFJwydVpV54Irsllw9t5RUhl3E9QX4RXDOClqxgCnLWJBi2y83UApiTZVAjrZaHa6l7AZaFfjlU91MIqjjUkRsAV76yfE53bFzmku5k7xcYzNB87yI4ZH97ImHRU7rzGdG1pKgC46ho/d9qF2IM7X5wK7AjVogFPT4L4zlw96ori/25OQn9qQ7tZd7GL0ymj1C6K/VPCUclk9PXMKHlbta1T6lct8xRXNWyGlVgf3gqmuAYjiP+D+h4aS39IH5pjlPOc57YC1Wex2R2Aq30i3Vb2gwNJf47BvMDcOMcWfYKy8NnnKJqRbHlhIfW6pHZ7S4AHkYcXe+L5kZIpWGOvYWdoHtOGALuBl4AfhvFXgCuLAa4th4OXjfUkHy7+lq8DgVeQFUFQpdCWdotL/njShHT7s4uVq+x/hTH4A",
-//     },
-//     &ParamFromFile{
-//       Key:  "BAR",
-//       IsSecret: true,
-//       Value: "wcFMA7dOewnVojzNARAAjzKhMvcneu8cMbKDofoP2CEQ5axlmoAwqMndFfnKXU/mMLKbPAcxtvFKm6/pI7nfFGPyftIwkYvda4BT/gR76Gptes5M77e6AodxrATI5ClFKgcMzSp/Mdysf+hlulwAqtAiOdkSYnYOLB2/y1EPs/chWzLwBzwtgiBPJqIrSzCaDY/m2bNjjcePZ/wI/PkoQk+SyrPFmcLOwlvFiHHKdsz0zaIMjW5cgee0fO/Pqr3iQDfzqiWI8QSpXBgdv5Qx4iqLZ7iBClXnqc+DfavnGhV91/rEvUcFSuxmm43VDQy+475xw1Py9fdT4Vs/F8TYxTMPozAOr1vNjuBlMRX0nq1p3leharmmtQkwXmZut53NZMMvhTSqLjKEsM9LHm/OT3nAwsOwE/pah8lOlU2dGg9voIYzhWHyqoEE9yhxmQE3pnLgnN+xTX124QU1Kf72zxoImmAKac78i020tzImGHKCXG1wf5gmajKKE+tHwzRByKqJDUsjbYxvxVBtrWrNAx5ui+gFYrGdFrqP76HdCytHN64tMAiw8fR/R4AiJwg9xHUPYi6dt09vWxajBhWjx0qyI9FbZmFmrCpxW7YnvoBMJV9S9kzpbNicZ2ks2m8yr+HxYTGdSaChSUivorY9R+xz5l7Ei5crZvC6unGCH2ZJpOm5b1tbiX9jcYP0MBrS4AHkw7U6LfYCeUTJEeVxMcUmN+EyA+CI4MjhDDbgcOJUopmF4ATj6RU/sNjk4m3g9uSws9aMoibleLyTpjbBwqln4lg44P3hpc8A",
-//     },
-//     &ParamFromFile{
-//       Key:  "BAZ",
-//       Value: "hello_world",
-//     },
-//   }
-
-//   if !reflect.DeepEqual(actual, expected) {
-//     t.Errorf("Params don't match, got: %v, want: %v.", actual.String(), expected.String())
-//   }
-// }
 
 func TestProcessParamsFromFile(t *testing.T) {
 
@@ -185,26 +151,26 @@ iyrZ4Mz5iY148fPSBwHVFF2fy17bQsikRjJzCcK0rZw9XfVw0hY74In0i8E=
 	defer os.Remove("private.key")
 	ioutil.WriteFile("private.key", content, 0644)
 
-	params := ParamsFromFile{
-		&ParamFromFile{
+	params := Params{
+		&Param{
 			Key:       "FOO",
 			IsSecret:  true,
 			Value:     "wcFMA7dOewnVojzNARAAO5F+fyhjOGLB/60JqbqNB/2+WAcB+ikSrNlxVh0VxlLcPOVgJXrfRAMiTCAE13A9xpT0sg/SCZJotmCdwxm87E/vXfukjZIWz6JLX4A8QXqde3rx3qAwOL/9HA4esLsbQb+yHJBWwiNxuPWs1uSiTuMH1M0Ol6ieL+Ui/QEPWoz72r4PrpgbPQdsrGvk30kviC8srGQAfojHYehLIZlcezzb0mE+ssTpraXGg983QS6ByNlOHJXyW+2ipSe22jsYOLjL41WQ+WZTKcIVFvgANfR+X6jZt5G03TQ6wGZNYBgxQB0M/RY7Eu8XxgmiLqTNZWdJyUDu4LWjakc9NEf6RQsnrgDv8ZXVnl83X2w+GNlgFJwydVpV54Irsllw9t5RUhl3E9QX4RXDOClqxgCnLWJBi2y83UApiTZVAjrZaHa6l7AZaFfjlU91MIqjjUkRsAV76yfE53bFzmku5k7xcYzNB87yI4ZH97ImHRU7rzGdG1pKgC46ho/d9qF2IM7X5wK7AjVogFPT4L4zlw96ori/25OQn9qQ7tZd7GL0ymj1C6K/VPCUclk9PXMKHlbta1T6lct8xRXNWyGlVgf3gqmuAYjiP+D+h4aS39IH5pjlPOc57YC1Wex2R2Aq30i3Vb2gwNJf47BvMDcOMcWfYKy8NnnKJqRbHlhIfW6pHZ7S4AHkYcXe+L5kZIpWGOvYWdoHtOGALuBl4AfhvFXgCuLAa4th4OXjfUkHy7+lq8DgVeQFUFQpdCWdotL/njShHT7s4uVq+x/hTH4A",
 			Decrypted: "c2VjcmV0",
 		},
-		&ParamFromFile{
+		&Param{
 			Key:       "BAR",
 			IsSecret:  true,
 			Value:     "wcFMA7dOewnVojzNARAAjzKhMvcneu8cMbKDofoP2CEQ5axlmoAwqMndFfnKXU/mMLKbPAcxtvFKm6/pI7nfFGPyftIwkYvda4BT/gR76Gptes5M77e6AodxrATI5ClFKgcMzSp/Mdysf+hlulwAqtAiOdkSYnYOLB2/y1EPs/chWzLwBzwtgiBPJqIrSzCaDY/m2bNjjcePZ/wI/PkoQk+SyrPFmcLOwlvFiHHKdsz0zaIMjW5cgee0fO/Pqr3iQDfzqiWI8QSpXBgdv5Qx4iqLZ7iBClXnqc+DfavnGhV91/rEvUcFSuxmm43VDQy+475xw1Py9fdT4Vs/F8TYxTMPozAOr1vNjuBlMRX0nq1p3leharmmtQkwXmZut53NZMMvhTSqLjKEsM9LHm/OT3nAwsOwE/pah8lOlU2dGg9voIYzhWHyqoEE9yhxmQE3pnLgnN+xTX124QU1Kf72zxoImmAKac78i020tzImGHKCXG1wf5gmajKKE+tHwzRByKqJDUsjbYxvxVBtrWrNAx5ui+gFYrGdFrqP76HdCytHN64tMAiw8fR/R4AiJwg9xHUPYi6dt09vWxajBhWjx0qyI9FbZmFmrCpxW7YnvoBMJV9S9kzpbNicZ2ks2m8yr+HxYTGdSaChSUivorY9R+xz5l7Ei5crZvC6unGCH2ZJpOm5b1tbiX9jcYP0MBrS4AHkw7U6LfYCeUTJEeVxMcUmN+EyA+CI4MjhDDbgcOJUopmF4ATj6RU/sNjk4m3g9uSws9aMoibleLyTpjbBwqln4lg44P3hpc8A",
 			Decrypted: "Z2VoZWlt",
 		},
-		&ParamFromFile{
+		&Param{
 			Key:   "BAZ",
 			Value: "hello_world",
 		},
 	}
 
-	actual := params.Process(true)
+	actual, _ := params.Process(true, false)
 	expected := []byte(
 		`FOO=c2VjcmV0
 BAR=Z2VoZWlt
