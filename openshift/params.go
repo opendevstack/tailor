@@ -4,6 +4,7 @@ import (
 	"encoding/base64"
 	"github.com/michaelsauter/ocdiff/utils"
 	"io/ioutil"
+	"os"
 	"strings"
 )
 
@@ -22,6 +23,9 @@ func NewParams(content string, privateKey string) (Params, error) {
 	lines := strings.Split(text, "\n")
 
 	for _, line := range lines {
+		if len(line) == 0 {
+			continue
+		}
 		pair := strings.SplitN(line, "=", 2)
 		key := pair[0]
 		value := pair[1]
@@ -64,11 +68,15 @@ func NewParamsFromInput(content string) (Params, error) {
 }
 
 func NewParamsFromFile(filename string, privateKey string) (Params, error) {
-	bytes, err := ioutil.ReadFile(filename)
-	if err != nil {
-		return nil, err
+	content := ""
+	if _, err := os.Stat(filename); err == nil {
+		bytes, err := ioutil.ReadFile(filename)
+		if err != nil {
+			return nil, err
+		}
+		content = string(bytes)
 	}
-	return NewParams(string(bytes), privateKey)
+	return NewParams(content, privateKey)
 }
 
 func (p Params) String() string {
