@@ -3,8 +3,10 @@ package openshift
 import (
 	"encoding/base64"
 	"github.com/michaelsauter/ocdiff/utils"
+	"golang.org/x/crypto/openpgp"
 	"io/ioutil"
 	"os"
+	"regexp"
 	"strings"
 )
 
@@ -18,7 +20,8 @@ type Param struct {
 type Params []*Param
 
 func NewParams(content string, privateKey string) (Params, error) {
-	params := []*Param{}
+	params := Params{}
+	entityList := openpgp.EntityList{}
 	text := strings.TrimSuffix(content, "\n")
 	lines := strings.Split(text, "\n")
 
@@ -42,8 +45,15 @@ func NewParams(content string, privateKey string) (Params, error) {
 			param.IsSecret = true
 			param.Key = strings.Replace(key, ".ENC", "", -1)
 			if len(privateKey) > 0 {
+				if len(entityList) == 0 {
+					el, err := utils.GetEntityList([]string{privateKey})
+					if err != nil {
+						return nil, err
+					}
+					entityList = el
+				}
 				param.Value = value
-				decrypted, err := utils.Decrypt(value, privateKey)
+				decrypted, err := utils.Decrypt(value, entityList)
 				if err != nil {
 					return params, err
 				}
@@ -94,12 +104,32 @@ func (p Params) String() string {
 }
 
 // Encrypt params and create string from them
-func (p Params) Render(publicKeyDir string, previousParams Params) string {
+func (p Params) Render(publicKeyDir string, previousParams Params) (string, error) {
 	out := ""
-	for _, param := range p {
-		out = out + param.Render(publicKeyDir, previousParams) + "\n"
+
+	// Read public keys
+	files, err := ioutil.ReadDir(publicKeyDir)
+	if err != nil {
+		return "", err
 	}
-	return out
+	filePattern := ".*\\.key"
+	keyFiles := []string{}
+	for _, file := range files {
+		matched, _ := regexp.MatchString(filePattern, file.Name())
+		if !matched {
+			continue
+		}
+		keyFiles = append(keyFiles, publicKeyDir+string(os.PathSeparator)+file.Name())
+	}
+	entityList, err := utils.GetEntityList(keyFiles)
+	if err != nil {
+		return "", err
+	}
+
+	for _, param := range p {
+		out = out + param.Render(entityList, previousParams) + "\n"
+	}
+	return out, nil
 }
 
 func (p Params) Process(dropSuffix bool, decode bool) (string, error) {
@@ -116,7 +146,7 @@ func (p Params) Process(dropSuffix bool, decode bool) (string, error) {
 
 // Returns a string representation of the param.
 // .ENC params are encrypted.
-func (p *Param) Render(publicKeyDir string, previousParams Params) string {
+func (p *Param) Render(entityList openpgp.EntityList, previousParams Params) string {
 	if !p.IsSecret {
 		return p.Key + "=" + p.Value
 	}
@@ -131,7 +161,7 @@ func (p *Param) Render(publicKeyDir string, previousParams Params) string {
 	if previous != nil && previous.Decrypted == p.Decrypted {
 		encrypted = previous.Value
 	} else {
-		encrypted, _ = utils.Encrypt(p.Decrypted, publicKeyDir)
+		encrypted, _ = utils.Encrypt(p.Decrypted, entityList)
 	}
 	return p.Key + ".ENC=" + encrypted
 }

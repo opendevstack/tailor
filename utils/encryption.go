@@ -8,36 +8,27 @@ import (
 	"golang.org/x/crypto/openpgp"
 	"io/ioutil"
 	"os"
-	"regexp"
 )
 
-// Encrypts secret with all public keys and base64-encodes the result.
-func Encrypt(secret string, publicKeyDir string) (string, error) {
-	// Read public keys
-	entityList := []*openpgp.Entity{}
-	files, err := ioutil.ReadDir(publicKeyDir)
-	if err != nil {
-		return "", err
-	}
-	filePattern := ".*\\.key"
-	for _, file := range files {
-		matched, _ := regexp.MatchString(filePattern, file.Name())
-		if !matched {
-			continue
-		}
-
-		filename := publicKeyDir + string(os.PathSeparator) + file.Name()
+// Assembles entity list from keys in given files
+func GetEntityList(keys []string) (openpgp.EntityList, error) {
+	entityList := openpgp.EntityList{}
+	for _, filename := range keys {
 		keyringFileBuffer, _ := os.Open(filename)
 		defer keyringFileBuffer.Close()
 		l, err := openpgp.ReadArmoredKeyRing(keyringFileBuffer)
 		if err != nil {
-			return "", errors.New(
-				fmt.Sprintf("Reading public key '%s' failed: %s", filename, err),
+			return entityList, errors.New(
+				fmt.Sprintf("Reading key '%s' failed: %s", filename, err),
 			)
 		}
 		entityList = append(entityList, l[0])
 	}
+	return entityList, nil
+}
 
+// Encrypts secret with all public keys and base64-encodes the result.
+func Encrypt(secret string, entityList openpgp.EntityList) (string, error) {
 	// Encrypt message using public keys
 	buf := new(bytes.Buffer)
 	w, err := openpgp.Encrypt(buf, entityList, nil, nil, nil)
@@ -65,17 +56,7 @@ func Encrypt(secret string, publicKeyDir string) (string, error) {
 }
 
 // Decrypts the base64-encoded string end decrypts with the private key.
-func Decrypt(encoded string, privateKey string) (string, error) {
-	// Read private key
-	keyringFileBuffer, _ := os.Open(privateKey)
-	defer keyringFileBuffer.Close()
-	entityList, err := openpgp.ReadArmoredKeyRing(keyringFileBuffer)
-	if err != nil {
-		return "", errors.New(
-			fmt.Sprintf("Reading private key '%s' failed: %s", privateKey, err),
-		)
-	}
-
+func Decrypt(encoded string, entityList openpgp.EntityList) (string, error) {
 	// Decode bas64-encoded string
 	encrypted, err := base64.StdEncoding.DecodeString(encoded)
 	if err != nil {

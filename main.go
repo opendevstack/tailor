@@ -201,23 +201,26 @@ func main() {
 		cli.VerboseMsg("edit")
 		readParams, err := openshift.NewParamsFromFile(*editFileArg, *privateKeyFlag)
 		if err != nil {
-			log.Fatalf("Could not read file: %s.", err.Error())
+			log.Fatalf("Could not read file: %s.", err)
 		}
 		readContent, _ := readParams.Process(false, false)
 
 		editedContent, err := cli.EditEnvFile(readContent)
 		if err != nil {
-			log.Fatalf("Could not edit file: %s.", err.Error())
+			log.Fatalf("Could not edit file: %s.", err)
 		}
 		editedParams, err := openshift.NewParamsFromInput(editedContent)
 		if err != nil {
 			log.Fatal(err)
 		}
 
-		renderedContent := editedParams.Render(*publicKeyDirFlag, readParams)
+		renderedContent, err := editedParams.Render(*publicKeyDirFlag, readParams)
+		if err != nil {
+			log.Fatal(err)
+		}
 		err = ioutil.WriteFile(*editFileArg, []byte(renderedContent), 0644)
 		if err != nil {
-			log.Fatalf("Could not write file: %s.", err.Error())
+			log.Fatalf("Could not write file: %s.", err)
 		}
 
 	case reEncryptCommand.FullCommand():
@@ -236,7 +239,7 @@ func main() {
 				filename := paramDir + string(os.PathSeparator) + file.Name()
 				readParams, err := openshift.NewParamsFromFile(filename, *privateKeyFlag)
 				if err != nil {
-					log.Fatalf("Could not read file: %s.", err.Error())
+					log.Fatalf("Could not read file: %s.", err)
 				}
 				readContent, _ := readParams.Process(false, false)
 
@@ -245,10 +248,13 @@ func main() {
 					log.Fatal(err)
 				}
 
-				renderedContent := editedParams.Render(*publicKeyDirFlag, []*openshift.Param{})
+				renderedContent, err := editedParams.Render(*publicKeyDirFlag, []*openshift.Param{})
+				if err != nil {
+					log.Fatal(err)
+				}
 				err = ioutil.WriteFile(filename, []byte(renderedContent), 0644)
 				if err != nil {
-					log.Fatalf("Could not write file: %s.", err.Error())
+					log.Fatalf("Could not write file: %s.", err)
 				}
 			}
 		}
@@ -257,11 +263,11 @@ func main() {
 		cli.VerboseMsg("reveal")
 		readParams, err := openshift.NewParamsFromFile(*revealFileArg, *privateKeyFlag)
 		if err != nil {
-			log.Fatalf("Could not read file: %s.", err.Error())
+			log.Fatalf("Could not read file: %s.", err)
 		}
 		readContent, err := readParams.Process(false, true)
 		if err != nil {
-			log.Fatalf("Failed to process: %s.", err.Error())
+			log.Fatalf("Failed to process: %s.", err)
 		}
 		fmt.Println(readContent)
 
@@ -282,7 +288,7 @@ func main() {
 			*privateKeyFlag,
 		)
 		if err != nil {
-			log.Fatalln(err.Error())
+			log.Fatalln(err)
 		}
 
 		if updateRequired {
@@ -295,7 +301,7 @@ func main() {
 
 		filters, err := getFilters(*exportResourceArg, *selectorFlag)
 		if err != nil {
-			log.Fatalln(err.Error())
+			log.Fatalln(err)
 		}
 		for _, f := range filters {
 			export(f, *exportWriteFilesByKindFlag)
@@ -318,7 +324,7 @@ func main() {
 			*privateKeyFlag,
 		)
 		if err != nil {
-			log.Fatalln(err.Error())
+			log.Fatalln(err)
 		}
 
 		if updateRequired {
@@ -451,7 +457,7 @@ func assembleLocalResourceLists(filters map[string]*openshift.ResourceFilter, te
 			cli.VerboseMsg("Reading", file.Name())
 			processedOut, err := openshift.ProcessTemplate(templateDir, file.Name(), paramDirs[i], label, params, paramFile, ignoreUnknownParameters, privateKey)
 			if err != nil {
-				log.Fatalln("Could not process", file.Name(), "template:", err.Error())
+				log.Fatalln("Could not process", file.Name(), "template:", err)
 			}
 			processedConfig := openshift.NewConfigFromList(processedOut)
 			for _, l := range lists {

@@ -238,7 +238,7 @@ func teardown(t *testing.T) {
 	os.Chdir(strings.TrimSuffix(dir, "/templates"))
 	err = os.RemoveAll(dir)
 	if err != nil {
-		t.Fatalf("Could not remove templates folder: %s", err.Error())
+		t.Fatalf("Could not remove templates folder: %s", err)
 	}
 	fmt.Println("templates folder removed")
 }
