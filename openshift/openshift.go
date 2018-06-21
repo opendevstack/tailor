@@ -97,14 +97,14 @@ func ProcessTemplate(templateDir string, name string, paramDir string, label str
 		if strings.Contains(paramFileContent, ".ENC=") {
 			cli.VerboseMsg(actualParamFile, "needs to be decrypted")
 			// TODO: Use already read file contents to avoid reading twice.
-			decrypted, err := cli.ReadEnvFile(actualParamFile, privateKey)
+			readParams, err := NewParamsFromFile(actualParamFile, privateKey)
 			if err != nil {
 				return []byte{}, err
 			}
-			decrypted = strings.Replace(decrypted, ".ENC=", "=", -1)
+			readContent := readParams.Process(true, false)
 			tempParamFile = actualParamFile + ".dec"
 			defer os.Remove(tempParamFile)
-			ioutil.WriteFile(tempParamFile, []byte(decrypted), 0644)
+			ioutil.WriteFile(tempParamFile, []byte(readContent), 0644)
 		}
 		args = append(args, "--param-file="+tempParamFile)
 	}

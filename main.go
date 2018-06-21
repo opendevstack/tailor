@@ -55,19 +55,6 @@ var (
 		"Show version",
 	)
 
-	editCommand = app.Command(
-		"edit",
-		"Edit param file",
-	)
-	editFileArg = editCommand.Arg(
-		"file", "File to edit",
-	).String()
-
-	reEncryptCommand = app.Command(
-		"re-encrypt",
-		"Re-Encrypt param files",
-	)
-
 	statusCommand = app.Command(
 		"status",
 		"Show diff between remote and local",
@@ -136,6 +123,31 @@ var (
 		"resource", "Remote resource (defaults to all)",
 	).String()
 
+	secretsCommand = app.Command(
+		"secrets",
+		"Work with secrets",
+	)
+	editCommand = secretsCommand.Command(
+		"edit",
+		"Edit param file",
+	)
+	editFileArg = editCommand.Arg(
+		"file", "File to edit",
+	).String()
+
+	reEncryptCommand = secretsCommand.Command(
+		"re-encrypt",
+		"Re-Encrypt param file(s)",
+	)
+
+	revealCommand = secretsCommand.Command(
+		"reveal",
+		"Show param file contens with revealed secrets",
+	)
+	revealFileArg = revealCommand.Arg(
+		"file", "File to show",
+	).String()
+
 	kindMapping = map[string]string{
 		"svc":              "Service",
 		"service":          "Service",
@@ -187,15 +199,20 @@ func main() {
 
 	case editCommand.FullCommand():
 		cli.VerboseMsg("edit")
-		readContent, err := cli.ReadEnvFile(*editFileArg, *privateKeyFlag)
+		readParams, err := openshift.NewParamsFromFile(*editFileArg, *privateKeyFlag)
 		if err != nil {
 			log.Fatalf("Could not read file: %s.", err.Error())
 		}
+		readContent := readParams.Process(false, false)
+
 		editedContent, err := cli.EditEnvFile(readContent)
 		if err != nil {
 			log.Fatalf("Could not edit file: %s.", err.Error())
 		}
-		err = cli.WriteEnvFile(*editFileArg, editedContent, *publicKeyDirFlag)
+		editedParams := openshift.NewParamsFromInput(editedContent)
+
+		renderedContent := editedParams.Render(*publicKeyDirFlag, readParams)
+		err = ioutil.WriteFile(*editFileArg, []byte(renderedContent), 0644)
 		if err != nil {
 			log.Fatalf("Could not write file: %s.", err.Error())
 		}
@@ -214,16 +231,30 @@ func main() {
 					continue
 				}
 				filename := paramDir + string(os.PathSeparator) + file.Name()
-				readContent, err := cli.ReadEnvFile(filename, *privateKeyFlag)
+				readParams, err := openshift.NewParamsFromFile(filename, *privateKeyFlag)
 				if err != nil {
 					log.Fatalf("Could not read file: %s.", err.Error())
 				}
-				err = cli.WriteEnvFile(filename, readContent, *publicKeyDirFlag)
+				readContent := readParams.Process(false, false)
+
+				editedParams := openshift.NewParamsFromInput(readContent)
+
+				renderedContent := editedParams.Render(*publicKeyDirFlag, []*openshift.ParamFromFile{})
+				err = ioutil.WriteFile(filename, []byte(renderedContent), 0644)
 				if err != nil {
 					log.Fatalf("Could not write file: %s.", err.Error())
 				}
 			}
 		}
+
+	case revealCommand.FullCommand():
+		cli.VerboseMsg("reveal")
+		readParams, err := openshift.NewParamsFromFile(*revealFileArg, *privateKeyFlag)
+		if err != nil {
+			log.Fatalf("Could not read file: %s.", err.Error())
+		}
+		readContent := readParams.Process(false, true)
+		fmt.Println(readContent)
 
 	case statusCommand.FullCommand():
 		cli.VerboseMsg("status")

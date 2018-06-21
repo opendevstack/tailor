@@ -1,4 +1,4 @@
-package cli
+package utils
 
 import (
 	"bytes"
@@ -24,7 +24,6 @@ func Encrypt(secret string, publicKeyDir string) (string, error) {
 		if !matched {
 			continue
 		}
-		VerboseMsg("Reading", file.Name())
 
 		keyringFileBuffer, _ := os.Open(publicKeyDir + string(os.PathSeparator) + file.Name())
 		defer keyringFileBuffer.Close()

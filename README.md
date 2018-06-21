@@ -33,11 +33,13 @@ All options can be inspected with `ocdiff help`.
 
 ## Advanced Usage
 
-As working with `ocdiff` leads to storing the secrets under version control, `ocdiff` allows to work with encrypted secrets, because Openshift does not have a solution for this (the secrets are base64-encoded only). There are two main commands: `edit` and `re-encrypt`.
+Keeping the Openshift configuration under version control necessitates to store secrets. To this end `ocdiff` comes with a `secrets` subcommand that allows to encrypt those secrets. The subcommands offers to `edit`, `re-encrypt` and `reveal` secrets.
 
-`edit foo.env` allows you to encrypt individual parameters with PGP by adding `.ENC` to the param name, e.g. `PASSWORD.ENC=secret`. When saved, the param value will be encrypted for all public keys in `--public-key-dir` (defaulting to the current directory). To read a file with encrypted params, put your private key into `--private-key` (defaulting to `private.key`). Keep in mind that you will need to enter the secrets base64-encoded because that is the format Openshift expects.
+`secrets edit foo.env` allows you to encrypt individual parameters with PGP by adding `.ENC` to the param name, e.g. `PASSWORD.ENC=c2VjcmV0`. Notice the value is base64-encoded as Openshift stores secrets base64-encoded. You can also enter plain text by using `PASSWORD.STRING=secret` which will get transformed to `PASSWORD.ENC=c2VjcmV0` automatically. When saved, the param value will be encrypted for all public keys in `--public-key-dir` (defaulting to the current directory). To read a file with encrypted params (e.g. to edit the secrets or compare the status between config and current state), you need your private key available at `--private-key` (defaulting to `private.key`).
 
-Since parameters are encrypted with PGP, just removing a public key does not remove access to the secrets. To properly cut of access, all params have to be re-encrypted with the new set of public keys. For this purpose `ocdiff` provides the `re-encrypt` command, which decrypts all `*.env` files and writes them again using the provided public keys.
+When a public key is added or removed, it is required to `secrets re-encrypt` all secrets. This decrypts all `*.env` files and writes them again using the provided public keys.
+
+Finally, the `secrets reveal` command shows the param file after decrypting and decoding the values so that you can see the clear text secrets.
 
 ## Background
 
