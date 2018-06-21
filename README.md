@@ -33,7 +33,7 @@ All options can be inspected with `ocdiff help`.
 
 ## Working with Secrets
 
-Keeping the Openshift configuration under version control necessitates to store secrets. To this end `ocdiff` comes with a `secrets` subcommand that allows to encrypt those secrets. The subcommands offers to `edit`, `re-encrypt` and `reveal` secrets.
+Keeping the Openshift configuration under version control necessitates to store secrets. To this end `ocdiff` comes with a `secrets` subcommand that allows to encrypt those secrets. The subcommands offers to `edit`, `re-encrypt` and `reveal` secrets, as well as adding new keys via `generate-key`.
 
 `secrets edit foo.env` allows you to encrypt individual parameters with PGP by adding `.ENC` to the param name, e.g. `PASSWORD.ENC=c2VjcmV0`. Notice the value is base64-encoded as Openshift stores secrets base64-encoded. You can also enter plain text by using `PASSWORD.STRING=secret` which will get transformed to `PASSWORD.ENC=c2VjcmV0` automatically. When saved, the param value will be encrypted for all public keys in `--public-key-dir` (defaulting to the current directory). To read a file with encrypted params (e.g. to edit the secrets or compare the status between config and current state), you need your private key available at `--private-key` (defaulting to `private.key`).
 
@@ -41,7 +41,7 @@ When a public key is added or removed, it is required to `secrets re-encrypt` al
 
 The `secrets reveal` command shows the param file after decrypting and decoding the values so that you can see the clear text secrets.
 
-Finally, `secrets generate-key john.doe@domain.com` generates a PGP keypair, writing the public key to `john-doe.key` (which should be committed) and the private key to `private.key` (which MUST NOT be committed).
+Finally, to ease PGP key management, `secrets generate-key john.doe@domain.com` generates a PGP keypair, writing the public key to `john-doe.key` (which should be committed) and the private key to `private.key` (which MUST NOT be committed).
 
 ## Background
 
