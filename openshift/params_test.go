@@ -15,7 +15,10 @@ BAR.STRING=geheim
 BAZ=hello_world
 `)
 
-	actual := NewParamsFromInput(string(input))
+	actual, err := NewParamsFromInput(string(input))
+	if err != nil {
+		t.Error(err)
+	}
 	expected := Params{
 		&Param{
 			Key:       "FOO",
@@ -170,7 +173,10 @@ iyrZ4Mz5iY148fPSBwHVFF2fy17bQsikRjJzCcK0rZw9XfVw0hY74In0i8E=
 		},
 	}
 
-	actual, _ := params.Process(true, false)
+	actual, err := params.Process(true, false)
+	if err != nil {
+		t.Error(err)
+	}
 	expected := []byte(
 		`FOO=c2VjcmV0
 BAR=Z2VoZWlt
