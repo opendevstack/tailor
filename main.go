@@ -213,7 +213,7 @@ func main() {
 
 	paramDir := *paramDirFlag
 	if (len(paramDir) > 1 || paramDir[0] != ".") && (len(*statusParamFileFlag) > 0 || len(*updateParamFileFlag) > 0) {
-		log.Fatalln("You cannot specify both --param-dir and --param-flag.")
+		log.Fatalln("You cannot specify both --param-dir and --param-file.")
 	}
 
 	switch command {
