@@ -16,7 +16,10 @@ import (
 )
 
 var (
-	app         = kingpin.New("ocdiff", "OC Diff Tool").DefaultEnvars()
+	app = kingpin.New(
+		"ocdiff",
+		"OC Diff Tool",
+	).DefaultEnvars().UsageTemplate(kingpin.LongHelpTemplate)
 	verboseFlag = app.Flag(
 		"verbose",
 		"Enable verbose output.",
