@@ -43,6 +43,15 @@ The `secrets reveal` command shows the param file after decrypting and decoding 
 
 Finally, to ease PGP key management, `secrets generate-key john.doe@domain.com` generates a PGP keypair, writing the public key to `john-doe.key` (which should be committed) and the private key to `private.key` (which MUST NOT be committed).
 
+## Advanced Usage
+
+### Command Completion
+
+BASH/ZSH completion is available. Add this into `.bash_profile` or equivalent:
+```
+eval "$(ocdiff --completion-script-$(echo $SHELL | awk -F/ '{print $NF}'))"
+```
+
 ## Background
 
 ### Problem
