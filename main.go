@@ -138,7 +138,7 @@ var (
 	)
 	editFileArg = editCommand.Arg(
 		"file", "File to edit",
-	).String()
+	).Required().String()
 
 	reEncryptCommand = secretsCommand.Command(
 		"re-encrypt",
@@ -154,7 +154,7 @@ var (
 	)
 	revealFileArg = revealCommand.Arg(
 		"file", "File to show",
-	).String()
+	).Required().String()
 
 	generateKeyCommand = secretsCommand.Command(
 		"generate-key",
@@ -166,7 +166,7 @@ var (
 	).String()
 	generateKeyEmailArg = generateKeyCommand.Arg(
 		"email", "Emil of keypair",
-	).String()
+	).Required().String()
 
 	kindMapping = map[string]string{
 		"svc":              "Service",
