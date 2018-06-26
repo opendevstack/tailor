@@ -1,5 +1,3 @@
-
-
 # OC Diff Tool
 
 ## Goal
@@ -18,7 +16,7 @@ Allow developers to work with version controlled configuration files. All resour
 
 There are three main commands: `export`, `status` and `update`.
 
-`export` allows you to export configuration found in an OC project to YAML templates, which are cleaned up to be used with `ocdiff`. By default, one template is written to STDOUT, but if you pass `--write-files-by-kind` then one YAML file is written per resource type.
+`export` allows you to export configuration found in an OC project to a cleanded YAML template, which is written to STDOUT.
 
 `status` shows you the drift between the current configuration in the OC project and the desired configuration in the YAML templates (which are either in the current directory or in `--template-dir`). There are three main aspects to this:
 1. By default, all resource types are compared, but you can limit to specific ones e.g. with `status pvc,dc`.

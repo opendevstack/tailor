@@ -9,55 +9,51 @@ import (
 	"strings"
 )
 
-func ExportAsTemplate(filter *ResourceFilter) ([]byte, error) {
+func ExportAsTemplate(filter *ResourceFilter, name string) ([]byte, error) {
 	ret := ""
-	args := []string{"export", "--as-template=" + filter.Kind, "--output=yaml"}
+	args := []string{"export", "--as-template=" + name, "--output=yaml"}
 	if len(filter.Label) > 0 {
 		args = append(args, "--selector="+filter.Label)
 	}
-	if len(filter.Names) > 0 {
-		for _, name := range filter.Names {
-			args = append(args, filter.Kind+"/"+name)
-		}
-	} else {
-		args = append(args, filter.Kind)
-	}
+	target := filter.ConvertToTarget()
+	args = append(args, target)
 	cmd := cli.ExecOcCmd(args)
 	out, err := cmd.CombinedOutput()
 
 	if err != nil {
 		ret = string(out)
 		if strings.Contains(ret, "no resources found") {
-			cli.VerboseMsg("No resource '" + filter.Kind + "' found.")
+			cli.VerboseMsg("No resources '" + target + "' found.")
 			return []byte{}, nil
 		}
-		fmt.Printf("Failed to export resource: %s.\n", filter.Kind)
+		fmt.Printf("Failed to export resources: %s.\n", target)
 		fmt.Println(fmt.Sprint(err) + ": " + ret)
 		return nil, err
 	}
 
-	cli.VerboseMsg("Exported", filter.Kind, "resources")
+	cli.VerboseMsg("Exported", target, "resources")
 	return out, err
 }
 
-func ExportResource(kind string) ([]byte, error) {
+func ExportResources(filter *ResourceFilter) ([]byte, error) {
 	ret := ""
-	args := []string{"export", kind, "--output=yaml"}
+	target := filter.ConvertToTarget()
+	args := []string{"export", target, "--output=yaml"}
 	cmd := cli.ExecOcCmd(args)
 	out, err := cmd.CombinedOutput()
 
 	if err != nil {
 		ret = string(out)
 		if strings.Contains(ret, "no resources found") {
-			cli.VerboseMsg("No", kind, "resources found.")
+			cli.VerboseMsg("No", target, "resources found.")
 			return []byte{}, nil
 		}
-		fmt.Printf("Failed to export %s resources.\n", kind)
+		fmt.Printf("Failed to export %s resources.\n", target)
 		fmt.Println(fmt.Sprint(err) + ": " + ret)
 		return nil, err
 	}
 
-	cli.VerboseMsg("Exported", kind, "resources")
+	cli.VerboseMsg("Exported", target, "resources")
 	return out, err
 }
 
@@ -124,28 +120,26 @@ func ProcessTemplate(templateDir string, name string, paramDir string, label str
 	return out, err
 }
 
-func UpdateRemote(changesets map[string]*Changeset) error {
-	for kind, changeset := range changesets {
-		for name, configs := range changeset.Create {
-			fmt.Println("Creating", kind, name)
-			ocApply(kind, name, configs[1])
-		}
+func UpdateRemote(changeset *Changeset) error {
+	for _, change := range changeset.Create {
+		ocApply(change, "Creating")
+	}
 
-		for name, _ := range changeset.Delete {
-			fmt.Println("Deleting", kind, name)
-			ocDelete(kind, name)
-		}
+	for _, change := range changeset.Delete {
+		ocDelete(change)
+	}
 
-		for name, configs := range changeset.Update {
-			fmt.Println("Updating", kind, name)
-			ocApply(kind, name, configs[1])
-		}
+	for _, change := range changeset.Update {
+		ocApply(change, "Updating")
 	}
 
 	return nil
 }
 
-func ocDelete(kind string, name string) error {
+func ocDelete(change *Change) error {
+	kind := change.Kind
+	name := change.Name
+	fmt.Println("Deleting", kind, name)
 	args := []string{"delete", kind, name}
 	cmd := cli.ExecOcCmd(args)
 	out, err := cmd.CombinedOutput()
@@ -159,7 +153,11 @@ func ocDelete(kind string, name string) error {
 	return nil
 }
 
-func ocApply(kind string, name string, config string) error {
+func ocApply(change *Change, action string) error {
+	kind := change.Kind
+	name := change.Name
+	config := change.DesiredState
+	fmt.Println(action, kind, name)
 	b := []byte(config)
 	unescapedRaw := bytes.Replace(b, []byte("%%"), []byte("%"), -1)
 	ioutil.WriteFile(".PROCESSED_TEMPLATE", unescapedRaw, 0644)

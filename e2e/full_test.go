@@ -190,11 +190,12 @@ func statusWithNoExpectedDrift(t *testing.T, ocDiffBinary string) {
 }
 
 func export(t *testing.T, ocDiffBinary string) {
-	cmd := exec.Command(ocDiffBinary, []string{"export", "--write-files-by-kind"}...)
+	cmd := exec.Command(ocDiffBinary, []string{"export"}...)
 	out, err := cmd.CombinedOutput()
 	if err != nil {
 		t.Fatalf("Could not export resources in test project: %s", out)
 	}
+	ioutil.WriteFile("test-template.yml", out, 0644)
 	fmt.Println("Resources in test project exported")
 }
 

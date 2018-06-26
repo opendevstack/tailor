@@ -11,18 +11,15 @@ type ResourceList struct {
 	Items  []*ResourceItem
 }
 
-func NewResourceList(kind string, config *Config) *ResourceList {
-	filter := &ResourceFilter{
-		Kind: kind,
-	}
+func NewResourceList(filter *ResourceFilter, config *Config) *ResourceList {
 	items := config.ExtractResources(filter)
 	l := &ResourceList{Items: items, Filter: filter}
 	return l
 }
 
-func (l *ResourceList) GetItem(name string) (*ResourceItem, error) {
+func (l *ResourceList) GetItem(kind string, name string) (*ResourceItem, error) {
 	for _, item := range l.Items {
-		if item.Name == name {
+		if item.Kind == kind && item.Name == name {
 			return item, nil
 		}
 	}

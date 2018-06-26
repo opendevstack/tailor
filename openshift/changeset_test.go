@@ -59,8 +59,11 @@ metadata: {}
 
 	remoteConfig := NewConfigFromList(remoteExport)
 	localConfig := NewConfigFromList(localProcessedTemplate)
-	remoteResourceList := NewResourceList("PersistentVolumeClaim", remoteConfig)
-	localResourceList := NewResourceList("PersistentVolumeClaim", localConfig)
+	filter := &ResourceFilter{
+		Kinds: []string{"PersistentVolumeClaim"},
+	}
+	remoteResourceList := NewResourceList(filter, remoteConfig)
+	localResourceList := NewResourceList(filter, localConfig)
 	changeset := NewChangeset(remoteResourceList, localResourceList, false)
 
 	if !changeset.Blank() {
@@ -115,8 +118,11 @@ metadata: {}
 
 	remoteConfig := NewConfigFromList(remoteExport)
 	localConfig := NewConfigFromList(localProcessedTemplate)
-	remoteResourceList := NewResourceList("PersistentVolumeClaim", remoteConfig)
-	localResourceList := NewResourceList("PersistentVolumeClaim", localConfig)
+	filter := &ResourceFilter{
+		Kinds: []string{"PersistentVolumeClaim"},
+	}
+	remoteResourceList := NewResourceList(filter, remoteConfig)
+	localResourceList := NewResourceList(filter, localConfig)
 	changeset := NewChangeset(remoteResourceList, localResourceList, false)
 
 	if len(changeset.Update) != 1 {
@@ -168,8 +174,11 @@ metadata: {}
 
 	remoteConfig := NewConfigFromList(remoteExport)
 	localConfig := NewConfigFromList(localProcessedTemplate)
-	remoteResourceList := NewResourceList("PersistentVolumeClaim", remoteConfig)
-	localResourceList := NewResourceList("PersistentVolumeClaim", localConfig)
+	filter := &ResourceFilter{
+		Kinds: []string{"PersistentVolumeClaim"},
+	}
+	remoteResourceList := NewResourceList(filter, remoteConfig)
+	localResourceList := NewResourceList(filter, localConfig)
 	changeset := NewChangeset(remoteResourceList, localResourceList, false)
 
 	if len(changeset.Create) != 1 {
@@ -203,8 +212,11 @@ metadata: {}
 
 	remoteConfig := NewConfigFromList(remoteExport)
 	localConfig := NewConfigFromList(localProcessedTemplate)
-	remoteResourceList := NewResourceList("PersistentVolumeClaim", remoteConfig)
-	localResourceList := NewResourceList("PersistentVolumeClaim", localConfig)
+	filter := &ResourceFilter{
+		Kinds: []string{"PersistentVolumeClaim"},
+	}
+	remoteResourceList := NewResourceList(filter, remoteConfig)
+	localResourceList := NewResourceList(filter, localConfig)
 	changeset := NewChangeset(remoteResourceList, localResourceList, false)
 
 	if len(changeset.Delete) != 1 {

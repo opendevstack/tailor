@@ -12,6 +12,10 @@ type ResourceItem struct {
 	Config  interface{}
 }
 
+func (i *ResourceItem) FullName() string {
+	return i.Kind + "/" + i.Name
+}
+
 func (i *ResourceItem) YamlConfig() string {
 	y, _ := yaml.Marshal(i.Config)
 	return string(y)
