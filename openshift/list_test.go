@@ -35,8 +35,8 @@ metadata: {}
 	config := NewConfigFromList(byteList)
 
 	filter := &ResourceFilter{
-		Kind:  "PersistentVolumeClaim",
-		Names: []string{},
+		Kinds: []string{"PersistentVolumeClaim"},
+		Name:  "",
 		Label: "",
 	}
 
@@ -45,6 +45,7 @@ metadata: {}
 
 	if len(list.Items) != 1 {
 		t.Errorf("One item should have been extracted, got %v items.", len(list.Items))
+		return
 	}
 
 	item := list.Items[0]
@@ -90,8 +91,8 @@ metadata: {}
 	config := NewConfigFromList(byteList)
 
 	filter := &ResourceFilter{
-		Kind:  "PersistentVolumeClaim",
-		Names: []string{"foo"},
+		Kinds: []string{},
+		Name:  "PersistentVolumeClaim/foo",
 		Label: "",
 	}
 
@@ -100,6 +101,7 @@ metadata: {}
 
 	if len(list.Items) != 1 {
 		t.Errorf("One item should have been extracted, got %v items.", len(list.Items))
+		return
 	}
 
 	item := list.Items[0]
@@ -177,18 +179,18 @@ metadata: {}
 	config := NewConfigFromList(byteList)
 
 	pvcFilter := &ResourceFilter{
-		Kind:  "PersistentVolumeClaim",
-		Names: []string{},
+		Kinds: []string{"PersistentVolumeClaim"},
+		Name:  "",
 		Label: "app=foo",
 	}
 	cmFilter := &ResourceFilter{
-		Kind:  "ConfigMap",
-		Names: []string{},
+		Kinds: []string{"ConfigMap"},
+		Name:  "",
 		Label: "app=foo",
 	}
 	secretFilter := &ResourceFilter{
-		Kind:  "Secret",
-		Names: []string{},
+		Kinds: []string{"Secret"},
+		Name:  "",
 		Label: "app=foo",
 	}
 
@@ -199,7 +201,7 @@ metadata: {}
 		t.Errorf("One item should have been extracted, got %v items.", len(pvcList.Items))
 	}
 
-	_, err := pvcList.GetItem("foo")
+	_, err := pvcList.GetItem("PersistentVolumeClaim", "foo")
 	if err != nil {
 		t.Errorf("Item foo should have been present.")
 	}
@@ -211,7 +213,7 @@ metadata: {}
 		t.Errorf("One item should have been extracted, got %v items.", len(cmList.Items))
 	}
 
-	_, err = cmList.GetItem("foo")
+	_, err = cmList.GetItem("ConfigMap", "foo")
 	if err != nil {
 		t.Errorf("Item should have been present.")
 	}

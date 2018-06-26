@@ -6,23 +6,39 @@ import (
 	"strings"
 )
 
+var availableKinds = []string{
+	"svc",
+	"route",
+	"dc",
+	"bc",
+	"is",
+	"pvc",
+	"template",
+	"cm",
+	"secret",
+	"rolebinding",
+	"serviceaccount",
+}
+
 type ResourceFilter struct {
-	Kind  string
-	Names []string
+	Kinds []string
+	Name  string
 	Label string
 }
 
 func (f *ResourceFilter) String() string {
-	return fmt.Sprintf("Kind: %s, Names: %s, Label: %s", f.Kind, f.Names, f.Label)
+	return fmt.Sprintf("Kind: %s, Name: %s, Label: %s", f.Kinds, f.Name, f.Label)
 }
 
 func (f *ResourceFilter) SatisfiedBy(item *ResourceItem) bool {
-	if len(f.Kind) > 0 && f.Kind != item.Kind {
+	if len(f.Name) > 0 && f.Name != item.FullName() {
 		return false
 	}
-	if (len(f.Names) > 0) && !utils.Includes(f.Names, item.Name) {
+
+	if len(f.Kinds) > 0 && !utils.Includes(f.Kinds, item.Kind) {
 		return false
 	}
+
 	if len(f.Label) > 0 {
 		labelParts := strings.Split(f.Label, "=")
 		if _, ok := item.Labels[labelParts[0]]; !ok {
@@ -31,5 +47,17 @@ func (f *ResourceFilter) SatisfiedBy(item *ResourceItem) bool {
 			return false
 		}
 	}
+
 	return true
+}
+
+func (f *ResourceFilter) ConvertToTarget() string {
+	if len(f.Name) > 0 {
+		return f.Name
+	}
+	kinds := f.Kinds
+	if len(kinds) == 0 {
+		kinds = availableKinds
+	}
+	return strings.Join(kinds, ",")
 }

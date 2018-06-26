@@ -71,10 +71,10 @@ func execCmd(executable string, args []string) *exec.Cmd {
 	return exec.Command(executable, args...)
 }
 
-func ShowDiff(versions []string) {
+func ShowDiff(a string, b string) {
 	diff := difflib.UnifiedDiff{
-		A:        difflib.SplitLines(versions[0]),
-		B:        difflib.SplitLines(versions[1]),
+		A:        difflib.SplitLines(a),
+		B:        difflib.SplitLines(b),
 		FromFile: "Remote State",
 		ToFile:   "Local Config",
 		Context:  3,

@@ -12,6 +12,7 @@ import (
 	"log"
 	"os"
 	"regexp"
+	"sort"
 	"strings"
 )
 
@@ -123,10 +124,6 @@ var (
 		"export",
 		"Export remote state as template",
 	)
-	exportWriteFilesByKindFlag = exportCommand.Flag(
-		"write-files-by-kind",
-		"Write export into one template file per kind.",
-	).Short('w').Bool()
 	exportResourceArg = exportCommand.Arg(
 		"resource", "Remote resource (defaults to all)",
 	).String()
@@ -189,20 +186,6 @@ var (
 		"secret":                "Secret",
 		"rolebinding":           "RoleBinding",
 		"serviceaccount":        "ServiceAccount",
-	}
-
-	kindToShortMapping = map[string]string{
-		"Service":               "svc",
-		"Route":                 "route",
-		"DeploymentConfig":      "dc",
-		"BuildConfig":           "bc",
-		"ImageStream":           "is",
-		"PersistentVolumeClaim": "pvc",
-		"Template":              "template",
-		"ConfigMap":             "cm",
-		"Secret":                "secret",
-		"RoleBinding":           "rolebinding",
-		"ServiceAccount":        "serviceaccount",
 	}
 )
 
@@ -309,7 +292,7 @@ func main() {
 	case statusCommand.FullCommand():
 		checkLoggedIn()
 
-		updateRequired, _, err := calculateChangesets(
+		updateRequired, _, err := calculateChangeset(
 			*statusResourceArg,
 			*selectorFlag,
 			*templateDirFlag,
@@ -333,18 +316,16 @@ func main() {
 	case exportCommand.FullCommand():
 		checkLoggedIn()
 
-		filters, err := getFilters(*exportResourceArg, *selectorFlag)
+		filter, err := getFilter(*exportResourceArg, *selectorFlag)
 		if err != nil {
 			log.Fatalln(err)
 		}
-		for _, f := range filters {
-			export(f, *exportWriteFilesByKindFlag)
-		}
+		export(filter)
 
 	case updateCommand.FullCommand():
 		checkLoggedIn()
 
-		updateRequired, changesets, err := calculateChangesets(
+		updateRequired, changeset, err := calculateChangeset(
 			*updateResourceArg,
 			*selectorFlag,
 			*templateDirFlag,
@@ -363,11 +344,11 @@ func main() {
 
 		if updateRequired {
 			if *nonInteractiveFlag {
-				openshift.UpdateRemote(changesets)
+				openshift.UpdateRemote(changeset)
 			} else {
 				c := cli.AskForConfirmation("Apply changes?")
 				if c {
-					openshift.UpdateRemote(changesets)
+					openshift.UpdateRemote(changeset)
 				}
 			}
 		}
@@ -397,17 +378,15 @@ func reEncrypt(filename, privateKey, passphrase, publicKeyDir string) error {
 	return nil
 }
 
-func calculateChangesets(resource string, selectorFlag string, templateDirs []string, paramDirs []string, label string, params []string, paramFile string, ignoreUnknownParameters bool, upsertOnly bool, privateKey string, passphrase string) (bool, map[string]*openshift.Changeset, error) {
-	changesets := make(map[string]*openshift.Changeset)
+func calculateChangeset(resource string, selectorFlag string, templateDirs []string, paramDirs []string, label string, params []string, paramFile string, ignoreUnknownParameters bool, upsertOnly bool, privateKey string, passphrase string) (bool, *openshift.Changeset, error) {
 	updateRequired := false
-
-	filters, err := getFilters(resource, selectorFlag)
+	filter, err := getFilter(resource, selectorFlag)
 	if err != nil {
-		return updateRequired, changesets, err
+		return updateRequired, &openshift.Changeset{}, err
 	}
 
-	localResourceLists := assembleLocalResourceLists(
-		filters,
+	localResourceList := assembleLocalResourceList(
+		filter,
 		templateDirs,
 		paramDirs,
 		label,
@@ -417,74 +396,65 @@ func calculateChangesets(resource string, selectorFlag string, templateDirs []st
 		privateKey,
 		passphrase,
 	)
-	remoteResourceLists := assembleRemoteResourceLists(filters)
+	remoteResourceList := assembleRemoteResourceList(filter)
 
-	for k, _ := range filters {
-		changesets[k] = compare(k, remoteResourceLists[k], localResourceLists[k], upsertOnly)
-		if !changesets[k].Blank() {
-			updateRequired = true
-		}
-	}
-	return updateRequired, changesets, nil
+	changeset := compare(remoteResourceList, localResourceList, upsertOnly)
+	updateRequired = !changeset.Blank()
+	return updateRequired, changeset, nil
 }
 
 // kindArgs might be blank, or a list of kinds (e.g. 'pvc,dc') or
 // a kind/name combination (e.g. 'dc/foo').
 // selectorFlag might be blank or a key and a label, e.g. 'name=foo'.
-func getFilters(kindArg string, selectorFlag string) (map[string]*openshift.ResourceFilter, error) {
-	filters := map[string]*openshift.ResourceFilter{}
+func getFilter(kindArg string, selectorFlag string) (*openshift.ResourceFilter, error) {
+	filter := &openshift.ResourceFilter{
+		Kinds: []string{},
+		Name:  "",
+		Label: selectorFlag,
+	}
+
+	if len(kindArg) == 0 {
+		return filter, nil
+	}
+
+	kindArg = strings.ToLower(kindArg)
+
+	if strings.Contains(kindArg, "/") {
+		if strings.Contains(kindArg, ",") {
+			return nil, errors.New(
+				"You cannot target more than one resource name",
+			)
+		}
+		nameParts := strings.Split(kindArg, "/")
+		filter.Name = kindMapping[nameParts[0]] + "/" + nameParts[1]
+		return filter, nil
+	}
+
+	targetedKinds := make(map[string]bool)
 	unknownKinds := []string{}
-	targeted := make(map[string][]string)
-	if len(kindArg) > 0 {
-		kindArg = strings.ToLower(kindArg)
-		kinds := strings.Split(kindArg, ",")
-		for _, k := range kinds {
-			kindParts := strings.Split(k, "/")
-
-			// The first part is the kind, and potentially there is a
-			// second part which is the name of one resource. It's okay if there
-			// are duplicates in there as we use it only in an inclusion check
-			// later on when we apply the filter.
-			kind := kindParts[0]
-			if _, ok := kindMapping[kind]; !ok {
-				unknownKinds = append(unknownKinds, kind)
-			} else {
-				if len(kindParts) > 1 {
-					if _, ok := targeted[kindMapping[kind]]; !ok {
-						targeted[kindMapping[kind]] = []string{kindParts[1]}
-					} else {
-						targeted[kindMapping[kind]] = append(targeted[kindMapping[kind]], kindParts[1])
-					}
-				} else {
-					if _, ok := targeted[kindMapping[kind]]; !ok {
-						targeted[kindMapping[kind]] = []string{}
-					}
-				}
-
-			}
-		}
-	} else {
-		for _, v := range kindMapping {
-			targeted[v] = []string{}
+	kinds := strings.Split(kindArg, ",")
+	for _, kind := range kinds {
+		if _, ok := kindMapping[kind]; !ok {
+			unknownKinds = append(unknownKinds, kind)
+		} else {
+			targetedKinds[kindMapping[kind]] = true
 		}
 	}
 
-	// Abort if anything could not be read properly.
 	if len(unknownKinds) > 0 {
-		err := errors.New(fmt.Sprintf("Unknown resource kinds: %s", strings.Join(unknownKinds, ",")))
-		return filters, err
+		return nil, errors.New(fmt.Sprintf(
+			"Unknown resource kinds: %s",
+			strings.Join(unknownKinds, ","),
+		))
 	}
 
-	for kind, names := range targeted {
-		filter := &openshift.ResourceFilter{
-			Kind:  kind,
-			Names: names,
-			Label: selectorFlag,
-		}
-		filters[kind] = filter
+	for kind, _ := range targetedKinds {
+		filter.Kinds = append(filter.Kinds, kind)
 	}
 
-	return filters, nil
+	sort.Strings(filter.Kinds)
+
+	return filter, nil
 }
 
 func checkLoggedIn() {
@@ -495,8 +465,8 @@ func checkLoggedIn() {
 	}
 }
 
-func assembleLocalResourceLists(filters map[string]*openshift.ResourceFilter, templateDirs []string, paramDirs []string, label string, params []string, paramFile string, ignoreUnknownParameters bool, privateKey string, passphrase string) map[string]*openshift.ResourceList {
-	lists := initResourceLists(filters)
+func assembleLocalResourceList(filter *openshift.ResourceFilter, templateDirs []string, paramDirs []string, label string, params []string, paramFile string, ignoreUnknownParameters bool, privateKey string, passphrase string) *openshift.ResourceList {
+	list := &openshift.ResourceList{Filter: filter}
 
 	// read files in folders and assemble lists for kinds
 	for i, templateDir := range templateDirs {
@@ -516,35 +486,42 @@ func assembleLocalResourceLists(filters map[string]*openshift.ResourceFilter, te
 				log.Fatalln("Could not process", file.Name(), "template:", err)
 			}
 			processedConfig := openshift.NewConfigFromList(processedOut)
-			for _, l := range lists {
-				l.AppendItems(processedConfig)
-			}
+			list.AppendItems(processedConfig)
 		}
 	}
 
-	return lists
+	return list
 }
 
-func assembleRemoteResourceLists(filters map[string]*openshift.ResourceFilter) map[string]*openshift.ResourceList {
-	lists := initResourceLists(filters)
+func assembleRemoteResourceList(filter *openshift.ResourceFilter) *openshift.ResourceList {
+	list := &openshift.ResourceList{Filter: filter}
 
-	// get kinds from remote and assemble lists
-	for k, l := range lists {
-		exportedOut, err := openshift.ExportResource(k)
-		if err != nil {
-			log.Fatalln("Could not export", k, " resources.")
-		}
-		exportedConfig := openshift.NewConfigFromList(exportedOut)
-		l.AppendItems(exportedConfig)
-	}
-
-	return lists
-}
-
-func export(filter *openshift.ResourceFilter, writeFilesByKind bool) {
-	out, err := openshift.ExportAsTemplate(filter)
+	exportedOut, err := openshift.ExportResources(filter)
 	if err != nil {
-		log.Fatalln("Could not export", filter.Kind, "resources as template.")
+		log.Fatalln("Could not export", filter.String(), " resources.")
+	}
+	exportedConfig := openshift.NewConfigFromList(exportedOut)
+	list.AppendItems(exportedConfig)
+
+	return list
+}
+
+func export(filter *openshift.ResourceFilter) {
+	var templateName string
+	if len(filter.Name) > 0 {
+		templateName = strings.Replace(filter.Name, "/", "-", -1)
+	} else if len(filter.Label) > 0 {
+		labelParts := strings.Split(filter.Label, "=")
+		templateName = labelParts[1]
+	} else if len(filter.Kinds) > 0 {
+		templateName = strings.ToLower(strings.Join(filter.Kinds, "-"))
+	} else {
+		templateName = "all"
+	}
+
+	out, err := openshift.ExportAsTemplate(filter, templateName)
+	if err != nil {
+		log.Fatalln("Could not export", filter.String(), "resources as template.")
 	}
 	if len(out) == 0 {
 		return
@@ -553,45 +530,29 @@ func export(filter *openshift.ResourceFilter, writeFilesByKind bool) {
 	config := openshift.NewConfigFromTemplate(out)
 
 	b, _ := yaml.Marshal(config.Processed)
-	if writeFilesByKind {
-		filename := kindToShortMapping[filter.Kind] + "-template.yml"
-		ioutil.WriteFile(filename, b, 0644)
-		fmt.Println("Exported", filter.Kind, "resources to", filename)
-	} else {
-		fmt.Println(string(b))
-	}
+	fmt.Println(string(b))
 }
 
-func initResourceLists(filters map[string]*openshift.ResourceFilter) map[string]*openshift.ResourceList {
-	lists := make(map[string]*openshift.ResourceList)
-	for kind, filter := range filters {
-		lists[kind] = &openshift.ResourceList{Filter: filter}
-	}
-	return lists
-}
-
-func compare(kind string, remoteResourceList *openshift.ResourceList, localResourceList *openshift.ResourceList, upsertOnly bool) *openshift.Changeset {
-	fmt.Println("\n==========", kind, "resources", "==========")
-
+func compare(remoteResourceList *openshift.ResourceList, localResourceList *openshift.ResourceList, upsertOnly bool) *openshift.Changeset {
 	changeset := openshift.NewChangeset(remoteResourceList, localResourceList, upsertOnly)
 
-	for itemName, _ := range changeset.Noop {
-		fmt.Printf("* %s is in sync\n", itemName)
+	for _, change := range changeset.Noop {
+		fmt.Printf("* %s is in sync\n", change.ItemName())
 	}
 
-	for itemName, itemConfigs := range changeset.Delete {
-		cli.PrintRedf("- %s to be deleted\n", itemName)
-		cli.ShowDiff(itemConfigs)
+	for _, change := range changeset.Delete {
+		cli.PrintRedf("- %s to be deleted\n", change.ItemName())
+		cli.ShowDiff(change.CurrentState, change.DesiredState)
 	}
 
-	for itemName, itemConfigs := range changeset.Create {
-		cli.PrintGreenf("+ %s to be created\n", itemName)
-		cli.ShowDiff(itemConfigs)
+	for _, change := range changeset.Create {
+		cli.PrintGreenf("+ %s to be created\n", change.ItemName())
+		cli.ShowDiff(change.CurrentState, change.DesiredState)
 	}
 
-	for itemName, itemConfigs := range changeset.Update {
-		cli.PrintYellowf("~ %s to be updated\n", itemName)
-		cli.ShowDiff(itemConfigs)
+	for _, change := range changeset.Update {
+		cli.PrintYellowf("~ %s to be updated\n", change.ItemName())
+		cli.ShowDiff(change.CurrentState, change.DesiredState)
 	}
 
 	return changeset
