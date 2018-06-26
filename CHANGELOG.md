@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 0.3.0
 
 * Compile and compare single list instead of multiple lists. This reduces the number of API calls required and allows to export properly.
 
