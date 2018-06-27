@@ -2,6 +2,7 @@ package cli
 
 import (
 	"bufio"
+	"errors"
 	"fmt"
 	"github.com/fatih/color"
 	"github.com/pmezard/go-difflib/difflib"
@@ -114,10 +115,18 @@ func EditEnvFile(content string) (string, error) {
 	if len(editor) == 0 {
 		editor = "vim"
 	}
+
+	_, err := exec.LookPath(editor)
+	if err != nil {
+		return "", errors.New(
+			fmt.Sprintf("Please install '%s' or set/change $EDITOR", editor),
+		)
+	}
+
 	cmd := exec.Command(editor, ".ENV.DEC")
 	cmd.Stdin = os.Stdin
 	cmd.Stdout = os.Stdout
-	err := cmd.Run()
+	err = cmd.Run()
 	if err != nil {
 		return "", err
 	}
