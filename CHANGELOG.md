@@ -1,5 +1,10 @@
 # Changelog
 
+## Unreleased
+
+* Prevent rendering when no public key files are found
+* Check if file exists at beginning of reveal command
+
 ## 0.3.0
 
 * Compile and compare single list instead of multiple lists. This reduces the number of API calls required and allows to export properly.
