@@ -256,6 +256,9 @@ func main() {
 		}
 
 	case revealCommand.FullCommand():
+		if _, err := os.Stat(*revealFileArg); os.IsNotExist(err) {
+			log.Fatalf("'%s' does not exist.", *revealFileArg)
+		}
 		readParams, err := openshift.NewParamsFromFile(*revealFileArg, *privateKeyFlag, *passphraseFlag)
 		if err != nil {
 			log.Fatalf("Could not read file: %s.", err)
