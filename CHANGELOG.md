@@ -7,6 +7,7 @@
 * Proper error message if editor is not found in PATH.
 * Fix wrong export when a single resource was targeted
 * Prefer folder "public-keys" over working dir if present
+* Increase specifity of blacklisted key regexes
 
 ## 0.3.0
 
