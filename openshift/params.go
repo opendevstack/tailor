@@ -123,7 +123,7 @@ func (p Params) Render(publicKeyDir string, previousParams Params) (string, erro
 	}
 
 	// Read public keys
-	cli.VerboseMsg(fmt.Sprintf("Reading public keys from '%s'", publicKeyDir))
+	cli.VerboseMsg(fmt.Sprintf("Looking for public keys in '%s'", publicKeyDir))
 	files, err := ioutil.ReadDir(publicKeyDir)
 	if err != nil {
 		return "", err

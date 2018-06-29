@@ -76,6 +76,17 @@ func ProcessTemplate(templateDir string, name string, paramDir string, label str
 
 	actualParamFile := paramFile
 	if len(actualParamFile) == 0 {
+		// Prefer <namespace> folder over current directory
+		if paramDir == "." {
+			if namespaceDir, err := cli.GetOcNamespace(); err == nil {
+				if _, err := os.Stat(namespaceDir); err == nil {
+					paramDir = namespaceDir
+				}
+			}
+		}
+
+		cli.VerboseMsg(fmt.Sprintf("Looking for param files in '%s'", paramDir))
+
 		fileParts := strings.Split(name, ".")
 		fileParts[len(fileParts)-1] = "env"
 		f := paramDir + string(os.PathSeparator) + strings.Join(fileParts, ".")

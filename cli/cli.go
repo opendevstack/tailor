@@ -47,6 +47,15 @@ func SetOptions(verbose bool, namespace string, selector string) {
 	}
 }
 
+func GetOcNamespace() (string, error) {
+	if len(options.Namespace) > 0 {
+		return options.Namespace, nil
+	}
+	cmd := ExecPlainOcCmd([]string{"project", "--short"})
+	n, err := cmd.CombinedOutput()
+	return strings.TrimSpace(string(n)), err
+}
+
 func VerboseMsg(messages ...string) {
 	if options.Verbose {
 		PrintBluef("--> %s\n", strings.Join(messages, " "))
