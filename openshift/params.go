@@ -115,7 +115,15 @@ func (p Params) String() string {
 func (p Params) Render(publicKeyDir string, previousParams Params) (string, error) {
 	out := ""
 
+	// Prefer "public-keys" folder over current directory
+	if publicKeyDir == "." {
+		if _, err := os.Stat("public-keys"); err == nil {
+			publicKeyDir = "public-keys"
+		}
+	}
+
 	// Read public keys
+	cli.VerboseMsg(fmt.Sprintf("Reading public keys from '%s'", publicKeyDir))
 	files, err := ioutil.ReadDir(publicKeyDir)
 	if err != nil {
 		return "", err

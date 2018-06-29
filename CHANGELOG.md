@@ -5,6 +5,8 @@
 * Prevent rendering when no public key files are found.
 * Check if file exists at beginning of reveal command.
 * Proper error message if editor is not found in PATH.
+* Fix wrong export when a single resource was targeted
+* Prefer folder "public-keys" over working dir if present
 
 ## 0.3.0
 
