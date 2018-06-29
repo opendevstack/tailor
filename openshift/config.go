@@ -22,6 +22,9 @@ var (
 	emptyMapKeys = map[string]string{
 		"metadata$": "annotations",
 	}
+	modifiedKeys = []string{
+		"spec/template/spec/containers/[0-9]+/image$",
+	}
 )
 
 type Config struct {
@@ -30,18 +33,27 @@ type Config struct {
 	NameRegex        string
 	PointersToInit   []string
 	PointersToDelete []string
+	PointersToReset  map[string]string
 	ItemPointers     []string
 	Items            []*ResourceItem
 }
 
 func NewConfigFromTemplate(input []byte) *Config {
-	c := &Config{Raw: input, NameRegex: "/objects/[0-9]+/metadata/name"}
+	c := &Config{
+		Raw:             input,
+		NameRegex:       "/objects/[0-9]+/metadata/name",
+		PointersToReset: make(map[string]string),
+	}
 	c.Process()
 	return c
 }
 
 func NewConfigFromList(input []byte) *Config {
-	c := &Config{Raw: input, NameRegex: "/items/[0-9]+/metadata/name"}
+	c := &Config{
+		Raw:             input,
+		NameRegex:       "/items/[0-9]+/metadata/name",
+		PointersToReset: make(map[string]string),
+	}
 	c.Process()
 	return c
 }
@@ -73,6 +85,23 @@ func (c *Config) Process() {
 		_, _, err := initPointer.Get(m)
 		if err != nil {
 			initPointer.Set(m, make(map[string]interface{}))
+		}
+	}
+
+	// If there is an annotation, copy its value into the config, otherwise
+	// copy the config value into the annotation.
+	for configPath, annotationPath := range c.PointersToReset {
+		cli.VerboseMsg("dealing with", configPath, "and", annotationPath)
+		annotationPointer, _ := gojsonpointer.NewJsonPointer(annotationPath)
+		configPointer, _ := gojsonpointer.NewJsonPointer(configPath)
+		annotationValue, _, err := annotationPointer.Get(m)
+		if err == nil {
+			cli.VerboseMsg("annotation exists - updating", configPath, "with", annotationValue.(string))
+			configPointer.Set(m, annotationValue)
+		} else {
+			configValue, _, _ := configPointer.Get(m)
+			cli.VerboseMsg("annotation missing - updating", annotationPath, "with", configValue.(string))
+			annotationPointer.Set(m, configValue)
 		}
 	}
 
@@ -183,6 +212,18 @@ func (c *Config) handleKeyValue(k interface{}, v interface{}, pointer string) {
 			itemPointer := strings.Join(parts[0:3], "/")
 			cli.VerboseMsg(fmt.Sprintf("Detected item %s:%s", absolutePointer, v.(string)))
 			c.ItemPointers = append(c.ItemPointers, itemPointer)
+		}
+
+		for _, modifiedKey := range modifiedKeys {
+			matched, _ := regexp.MatchString(modifiedKey, absolutePointer)
+			if matched {
+				parts := strings.Split(absolutePointer, "/")
+				itemPointer := strings.Join(parts[0:3], "/")
+				annotationKey := strings.Replace(absolutePointer, itemPointer+"/", "", -1)
+				annotationKey = strings.Replace(annotationKey, "/", ".", -1)
+				c.PointersToReset[absolutePointer] = itemPointer + "/metadata/annotations/original-values.ocdiff.io~1" + annotationKey
+				break
+			}
 		}
 	}
 
