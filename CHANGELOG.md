@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 0.4.0
 
 * Prevent rendering when no public key files are found.
 * Check if file exists at beginning of reveal command.
