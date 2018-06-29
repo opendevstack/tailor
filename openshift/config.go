@@ -91,16 +91,13 @@ func (c *Config) Process() {
 	// If there is an annotation, copy its value into the config, otherwise
 	// copy the config value into the annotation.
 	for configPath, annotationPath := range c.PointersToReset {
-		cli.VerboseMsg("dealing with", configPath, "and", annotationPath)
 		annotationPointer, _ := gojsonpointer.NewJsonPointer(annotationPath)
 		configPointer, _ := gojsonpointer.NewJsonPointer(configPath)
 		annotationValue, _, err := annotationPointer.Get(m)
 		if err == nil {
-			cli.VerboseMsg("annotation exists - updating", configPath, "with", annotationValue.(string))
 			configPointer.Set(m, annotationValue)
 		} else {
 			configValue, _, _ := configPointer.Get(m)
-			cli.VerboseMsg("annotation missing - updating", annotationPath, "with", configValue.(string))
 			annotationPointer.Set(m, configValue)
 		}
 	}
