@@ -5,10 +5,11 @@
 * Prevent rendering when no public key files are found.
 * Check if file exists at beginning of reveal command.
 * Proper error message if editor is not found in PATH.
-* Fix wrong export when a single resource was targeted
-* Prefer folder "public-keys" over working dir if present when looking for public keys
-* Increase specifity of blacklisted key regexes
-* Prefer folder <namespace> over working dir if present when looking for param files
+* Fix wrong export when a single resource was targeted.
+* Prefer folder "public-keys" over working dir if present when looking for public keys.
+* Increase specifity of blacklisted key regexes.
+* Prefer folder <namespace> over working dir if present when looking for param files.
+* Deal with modified values by saving the original value in an annotation and resetting the key to that value before comparing.
 
 ## 0.3.0
 
