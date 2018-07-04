@@ -1,47 +1,56 @@
-# OC Diff Tool
+# OC Diff
 
-## Goal
-
-Allow developers to work with version controlled configuration files. All resources in Openshift should be created and modified based on these configuration files.
+This tool allows you to work with version controlled OpenShift configuration. Any drift between your desired state (the YAML config) and the current state (existing resources in the cluster) can be detected, reviewed and reconciled.
 
 ## Benefits
 
-* New projects etc. can be created based on configuration.
-* If resources vanish in OC, they can be recreated from config.
-* Solutions / patterns can be easily copied between projects.
-* Rollback is easy.
-* Cloning becomes unecessary.
+* Applications consisting of multiple resources or even whole namespaces can be created / cloned in one go based on configuration.
+* If resources are (accidentally) removed from the OpenShift cluster, they can be recreated from config.
+* Rollback of changes in the cluster is easy as configuration is under version control.
+* Visibility of what changes were made and by whom.
+* Problems that arise from the fact that OpenShift combines configuration and state into one object (even in the export) are addressed by `ocdiff`. E.g. annotation injected into resources or modification of image references etc. are dealt with.
+* Support for encrypted secrets to avoid storing credentials in clear text in your repository.
 
 ## Usage
 
 There are three main commands: `export`, `status` and `update`.
 
-`export` allows you to export configuration found in an OC project to a cleanded YAML template, which is written to STDOUT.
+`export` allows you to export configuration found in an OpenShift namespace to a cleaned YAML template, which is written to STDOUT.
 
-`status` shows you the drift between the current configuration in the OC project and the desired configuration in the YAML templates (which are either in the current directory or in `--template-dir`). There are three main aspects to this:
-1. By default, all resource types are compared, but you can limit to specific ones e.g. with `status pvc,dc`.
-2. The desired configuration is computed by processing the local YAML templates. It is possible to pass `--labels`, `--param` and `--param-file` to the `status` command to influence the generated config. Those 3 flags are passed as-is to the underlying `oc process` command. As `ocdiff` allows you to work with multiple templates, there is an additional `--param-dir` flag, which you can use to point to a folder containing param files for each template (they are connected by naming convention, so for template `foo.yml` the corresponding param file would be `foo.env`). When passing `--param` or `--param-file`, you might encounter that not all of your templates declare the same parameters, which leads to Openshift aborting the operation. Use `--ignore-unknown-parameters` to prevent this.
-3. In order to calculate drift correctly, the whole OC project is compared against your configuration. If you want to compare a subset only (e.g. all resources related to one microservice), it is possible to narrow the scope by passing `--selector`. Further, you can specify individual resources, e.g. `dc/foo,bc/bar`. If for some reason you do not have all resources described in your local configuration, but want to prevent deletion of resources in Openshift, use `--upsert-only`.
+`status` shows you the drift between the current state in the OpenShift namespace and the desired state in the YAML templates (located in `--template-dir="."`). There are three main aspects to this:
+1. By default, all resource types are compared, but you can limit to specific ones, e.g. `status pvc,dc`.
+2. The desired state is computed by processing the local YAML templates. It is possible to pass `--labels`, `--param` and `--param-file` to the `status` command to influence the generated config. Those 3 flags are passed as-is to the underlying `oc process` command. As `ocdiff` allows you to work with multiple templates, there is an additional `--param-dir` flag, which you can use to point to a folder containing param files corresponding to each template (e.g. `foo.env` for template `foo.yml`).
+3. In order to calculate drift correctly, the whole OpenShift namespace is compared against your configuration. If you want to compare a subset only (e.g. all resources related to one microservice), it is possible to narrow the scope by passing `--selector/-l`, e.g. `-l app=foo`. Further, you can specify anindividual resource, e.g. `dc/foo`.
 
-Finally, `update` will compare current vs. desired configuration exactly like `status` does, but if any drift is detected, it asks to update the OC project with your desired state. A subsequent run of either `status` or `update` should show no drift. To help usage inside of scripts, the confirmation can be disabled with `--non-interactive`.
+Finally, `update` will compare current vs. desired state exactly like `status` does, but if any drift is detected, it asks to update the OpenShift namespace with your desired state. A subsequent run of either `status` or `update` should show no drift.
 
-All commands depend on a current OC session and accept a `--namespace` (if none is given, the current one is used). To help with debugging (e.g. to see the commands which are executed in the background), use `--verbose`.
+All commands depend on a current OpenShift session and accept a `--namespace` flag (if none is given, the current one is used). To help with debugging (e.g. to see the commands which are executed in the background), use `--verbose`. More options can be displayed with `ocdiff help`.
 
-All options can be inspected with `ocdiff help`.
+## How-To
 
-## Working with Secrets
+### Working with Secrets
 
-Keeping the Openshift configuration under version control necessitates to store secrets. To this end `ocdiff` comes with a `secrets` subcommand that allows to encrypt those secrets. The subcommands offers to `edit`, `re-encrypt` and `reveal` secrets, as well as adding new keys via `generate-key`.
+Keeping the OpenShift configuration under version control necessitates to store secrets. To this end `ocdiff` comes with a `secrets` subcommand that allows to encrypt those secrets using PGP. The subcommands offers to `edit`, `re-encrypt` and `reveal` secrets, as well as adding new keypairs via `generate-key`.
 
-`secrets edit foo.env` allows you to encrypt individual parameters with PGP by adding `.ENC` to the param name, e.g. `PASSWORD.ENC=c2VjcmV0`. Notice the value is base64-encoded as Openshift stores secrets base64-encoded. You can also enter plain text by using `PASSWORD.STRING=secret` which will get transformed to `PASSWORD.ENC=c2VjcmV0` automatically. When saved, the param value will be encrypted for all public keys in `--public-key-dir` (defaulting to the current directory). To read a file with encrypted params (e.g. to edit the secrets or compare the status between config and current state), you need your private key available at `--private-key` (defaulting to `private.key`).
+`secrets edit foo.env` opens a terminal editor, allowing you to encrypt individual parameters by adding `.ENC` to the param name, e.g. `PASSWORD.ENC=c2VjcmV0`. Notice that the value is base64-encoded as OpenShift stores secrets base64-encoded. You can also enter plain text by using `PASSWORD.STRING=secret` which will get transformed to `PASSWORD.ENC=c2VjcmV0` automatically. When saved, every `.ENC` param value will be encrypted for all public keys in `--public-key-dir="."`. To read a file with encrypted params (e.g. to edit the secrets or compare the status between desired and current state), you need your private key available at `--private-key="private.key"`.
 
-When a public key is added or removed, it is required to `secrets re-encrypt` all secrets. This decrypts all `*.env` files and writes them again using the provided public keys.
+When a public key is added or removed, it is required to run `secrets re-encrypt`. This decrypts all params in `*.env` files and writes them again using the provided public keys.
 
-The `secrets reveal` command shows the param file after decrypting and decoding the values so that you can see the clear text secrets.
+The `secrets reveal` command shows the param file after decrypting and decoding the param values so that you can see the clear text secrets.
 
-Finally, to ease PGP key management, `secrets generate-key john.doe@domain.com` generates a PGP keypair, writing the public key to `john-doe.key` (which should be committed) and the private key to `private.key` (which MUST NOT be committed).
+Finally, to ease PGP management, `secrets generate-key john.doe@domain.com` generates a PGP keypair, writing the public key to `john-doe.key` (which should be committed) and the private key to `private.key` (which MUST NOT be committed).
 
-## Advanced Usage
+### Working with Images
+
+When templates reference images (e.g. in a DeploymentConfig) it can be tricky to keep them in sync with OpenShift, as OpenShift resolves the image reference (e.g. `foo:latest`) to a specific version (e.g. `foo@sha256:a1b2c3`). Consequently, the current and desired state are out of sync. A similar problem is that new builds will produce images in the image stream unknown at the time when the local template is authored.
+
+To prevent `ocdiff` from constantly reporting drift and "resetting" the current state to the local template, `ocdiff` stores the original value from the template within OpenShift (in an annotation) so that the current and desired state can be compared properly. Keep in mind that you should specify an image tag in the template, e.g. `registry.domain.com/foo/bar:latest`. One (minor) downside of the `ocdiff` approach is that if an image reference is updated in the OpenShift UI while the annotation inserted by `ocdiff` is not, `ocdiff` will not detect this change properly. Therefore, always treat the local configuration as the single source of truth.
+
+Another complication arises when provisioning a DeploymentConfig referencing a non-existant image stream. This can happen e.g. if you "clone" a set of resources into a different OpenShift namespace. The DeploymentConfig will not deploy since it cannot find the image, and you need to manually trigger a build. Currently `ocdiff` does not offer a solution for this as it is not clear (yet) what the right way to "solve" this is.
+
+### Permissions
+
+`ocdiff` needs access to a resource in order to be able to compare it. This means that to properly compare all resources, the user of the OpenShift session that `ocdiff` makes use of needs to be admin. If you are not admin, `ocdiff` will fail as it cannot compare some resources. To prevent this from happening, exclude the resource types (e.g. `rolebinding` and `serviceaccount`) that you do not have access to.
 
 ### Command Completion
 
@@ -49,18 +58,6 @@ BASH/ZSH completion is available. Add this into `.bash_profile` or equivalent:
 ```
 eval "$(ocdiff --completion-script-$(echo $SHELL | awk -F/ '{print $NF}'))"
 ```
-
-## Background
-
-### Problem
-
-Kubernetes and Openshift insert additional properties and modify existing ones automatically. Configuration files under version control cannot simply replace the "live" ones, but need to be merge in. However, the `export` command OC already strips the config from most unwanted things.
-
-### Context / Alternatives
-
-* kubediff - for kubernetes, written in python
-* `oc apply` - it seems to be able to do the update, but there is no diffing and no deletion
-* Stiching together a couple of commands (export, template processing, etc.) is cumbersome
 
 
 
