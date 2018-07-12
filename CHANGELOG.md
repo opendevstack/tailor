@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.5.1
+
+* Fix exiting with 1 and error statement all the time even though everything went fine.
+
 ## 0.5.0
 
 * Rename `ocdiff` to `tailor` and release on GitHub.
