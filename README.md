@@ -1,6 +1,6 @@
-# OC Diff
+# Tailor
 
-This tool allows you to work with version controlled OpenShift configuration. Any drift between your desired state (the YAML config) and the current state (existing resources in the cluster) can be detected, reviewed and reconciled.
+Tailor is a layer on top of the `oc` CLI command that allows you to keep your OpenShift templates under version control and keep the cluster in sync with them. Any drift between your desired state (YAML templates) and the current state (resources in the cluster) can be detected, reviewed and reconciled with Tailor.
 
 ## Benefits
 

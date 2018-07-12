@@ -20,7 +20,7 @@ import (
 var (
 	app = kingpin.New(
 		"tailor",
-		"OC Diff Tool",
+		"Tailor - Infrastructure as Code for OpenShift",
 	).DefaultEnvars().UsageTemplate(kingpin.LongHelpTemplate)
 	verboseFlag = app.Flag(
 		"verbose",
