@@ -193,7 +193,9 @@ var (
 func main() {
 	defer func() {
 		err := recover()
-		log.Fatalf("Fatal error: %s - %s.", err, debug.Stack())
+		if err != nil {
+			log.Fatalf("Fatal error: %s - %s.", err, debug.Stack())
+		}
 	}()
 
 	command := kingpin.MustParse(app.Parse(os.Args[1:]))
