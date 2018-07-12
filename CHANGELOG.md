@@ -1,10 +1,12 @@
 # Changelog
 
-## 0.5.1
+## Unreleased
+
+## 0.5.1 (2018-07-12)
 
 * Fix exiting with 1 and error statement all the time even though everything went fine.
 
-## 0.5.0
+## 0.5.0 (2018-07-12)
 
 * Rename `ocdiff` to `tailor` and release on GitHub.
 
