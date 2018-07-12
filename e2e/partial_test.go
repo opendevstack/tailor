@@ -13,11 +13,11 @@ func TestPartialScope(t *testing.T) {
 	defer teardown(t)
 	setup(t)
 
-	ocDiffBinary := getOcDiffBinary()
+	tailorBinary := getTailorBinary()
 
-	export(t, ocDiffBinary)
+	export(t, tailorBinary)
 
-	statusWithNoExpectedDrift(t, ocDiffBinary)
+	statusWithNoExpectedDrift(t, tailorBinary)
 
 	fmt.Println("Create new template with label app=foo")
 	fooBytes := []byte(
@@ -93,11 +93,11 @@ objects:
 `)
 	ioutil.WriteFile("bar-template.yml", barBytes, 0644)
 
-	update(t, ocDiffBinary)
-	statusWithNoExpectedDrift(t, ocDiffBinary)
+	update(t, tailorBinary)
+	statusWithNoExpectedDrift(t, tailorBinary)
 
-	partialStatusWithNoExpectedDrift(t, ocDiffBinary, "app=foo")
-	partialStatusWithNoExpectedDrift(t, ocDiffBinary, "app=bar")
+	partialStatusWithNoExpectedDrift(t, tailorBinary, "app=foo")
+	partialStatusWithNoExpectedDrift(t, tailorBinary, "app=bar")
 
 	// Change content of local template
 	fmt.Println("Change content of ConfigMap template")
@@ -105,7 +105,7 @@ objects:
 	ioutil.WriteFile("foo-template.yml", changedFooBytes, 0644)
 
 	// Status for app=foo -> expected to have drift (updated resource)
-	cmd := exec.Command(ocDiffBinary, []string{"status", "-l", "app=foo"}...)
+	cmd := exec.Command(tailorBinary, []string{"status", "-l", "app=foo"}...)
 	out, err := cmd.CombinedOutput()
 	if err == nil {
 		t.Fatalf("Status command should have exited with 3")
@@ -124,11 +124,11 @@ objects:
 		t.Fatalf("Some resources should be listed")
 	}
 
-	partialStatusWithNoExpectedDrift(t, ocDiffBinary, "app=bar")
+	partialStatusWithNoExpectedDrift(t, tailorBinary, "app=bar")
 }
 
-func partialStatusWithNoExpectedDrift(t *testing.T, ocDiffBinary string, label string) {
-	cmd := exec.Command(ocDiffBinary, []string{"status", "-l", label}...)
+func partialStatusWithNoExpectedDrift(t *testing.T, tailorBinary string, label string) {
+	cmd := exec.Command(tailorBinary, []string{"status", "-l", label}...)
 	out, err := cmd.CombinedOutput()
 	if err != nil {
 		t.Fatalf("Could not get status for %s in test project", label)

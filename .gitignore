@@ -1,8 +1,8 @@
 e2e/templates
-e2e/ocdiff-test
+e2e/tailor-test
 templates-*
 params-*
 TODO.md
-ocdiff_linux_amd64
-ocdiff_darwin_amd64
-ocdiff_windows_amd64.exe
+tailor_linux_amd64
+tailor_darwin_amd64
+tailor_windows_amd64.exe

@@ -14,11 +14,11 @@ func TestFullScope(t *testing.T) {
 	defer teardown(t)
 	setup(t)
 
-	ocDiffBinary := getOcDiffBinary()
+	tailorBinary := getTailorBinary()
 
-	export(t, ocDiffBinary)
+	export(t, tailorBinary)
 
-	statusWithNoExpectedDrift(t, ocDiffBinary)
+	statusWithNoExpectedDrift(t, tailorBinary)
 
 	// Create new resource
 	fmt.Println("Create new template with one resource")
@@ -40,7 +40,7 @@ objects:
 	ioutil.WriteFile("cm-template.yml", cmBytes, 0644)
 
 	// Status -> expected to have one created resource
-	cmd := exec.Command(ocDiffBinary, []string{"status"}...)
+	cmd := exec.Command(tailorBinary, []string{"status"}...)
 	out, err := cmd.CombinedOutput()
 	if err == nil {
 		t.Fatalf("Status command should have exited with 3")
@@ -59,8 +59,8 @@ objects:
 		t.Fatalf("Some resources should be listed")
 	}
 
-	update(t, ocDiffBinary)
-	statusWithNoExpectedDrift(t, ocDiffBinary)
+	update(t, tailorBinary)
+	statusWithNoExpectedDrift(t, tailorBinary)
 
 	// Check content of config map
 	cmd = exec.Command("oc", []string{"get", "cm/foo", "-oyaml"}...)
@@ -79,7 +79,7 @@ objects:
 	ioutil.WriteFile("cm-template.yml", changedCmBytes, 0644)
 
 	// Status -> expected to have drift (updated resource)
-	cmd = exec.Command(ocDiffBinary, []string{"status"}...)
+	cmd = exec.Command(tailorBinary, []string{"status"}...)
 	out, err = cmd.CombinedOutput()
 	if err == nil {
 		t.Fatalf("Status command should have exited with 3")
@@ -98,8 +98,8 @@ objects:
 		t.Fatalf("Some resources should be listed")
 	}
 
-	update(t, ocDiffBinary)
-	statusWithNoExpectedDrift(t, ocDiffBinary)
+	update(t, tailorBinary)
+	statusWithNoExpectedDrift(t, tailorBinary)
 
 	// Simulate manual change in cluster
 	cmd = exec.Command("oc", []string{"patch", "cm/foo", "-p", "{\"data\": {\"bar\": \"baz\"}}"}...)
@@ -110,7 +110,7 @@ objects:
 	fmt.Println("Patched content of ConfigMap")
 
 	// Status -> expected to have drift (updated resource)
-	cmd = exec.Command(ocDiffBinary, []string{"status"}...)
+	cmd = exec.Command(tailorBinary, []string{"status"}...)
 	out, err = cmd.CombinedOutput()
 	if err == nil {
 		t.Fatalf("Status command should have exited with 3")
@@ -129,14 +129,14 @@ objects:
 		t.Fatalf("Some resources should be listed")
 	}
 
-	update(t, ocDiffBinary)
-	statusWithNoExpectedDrift(t, ocDiffBinary)
+	update(t, tailorBinary)
+	statusWithNoExpectedDrift(t, tailorBinary)
 
 	fmt.Println("Remove ConfigMap template")
 	os.Remove("cm-template.yml")
 
 	// Status -> expected to have drift (deleted resource)
-	cmd = exec.Command(ocDiffBinary, []string{"status"}...)
+	cmd = exec.Command(tailorBinary, []string{"status"}...)
 	out, err = cmd.CombinedOutput()
 	if err == nil {
 		t.Fatalf("Status command should have exited with 3")
@@ -155,12 +155,12 @@ objects:
 		t.Fatalf("Some resources should be listed")
 	}
 
-	update(t, ocDiffBinary)
-	statusWithNoExpectedDrift(t, ocDiffBinary)
+	update(t, tailorBinary)
+	statusWithNoExpectedDrift(t, tailorBinary)
 }
 
-func update(t *testing.T, ocDiffBinary string) {
-	cmd := exec.Command(ocDiffBinary, []string{"update", "--non-interactive"}...)
+func update(t *testing.T, tailorBinary string) {
+	cmd := exec.Command(tailorBinary, []string{"update", "--non-interactive"}...)
 	_, err := cmd.CombinedOutput()
 	if err != nil {
 		t.Fatalf("Could not update test project")
@@ -168,8 +168,8 @@ func update(t *testing.T, ocDiffBinary string) {
 	fmt.Println("Updated test project")
 }
 
-func statusWithNoExpectedDrift(t *testing.T, ocDiffBinary string) {
-	cmd := exec.Command(ocDiffBinary, []string{"status"}...)
+func statusWithNoExpectedDrift(t *testing.T, tailorBinary string) {
+	cmd := exec.Command(tailorBinary, []string{"status"}...)
 	out, err := cmd.CombinedOutput()
 	if err != nil {
 		t.Fatalf("Could not get status in test project: %s", out)
@@ -189,8 +189,8 @@ func statusWithNoExpectedDrift(t *testing.T, ocDiffBinary string) {
 	}
 }
 
-func export(t *testing.T, ocDiffBinary string) {
-	cmd := exec.Command(ocDiffBinary, []string{"export"}...)
+func export(t *testing.T, tailorBinary string) {
+	cmd := exec.Command(tailorBinary, []string{"export"}...)
 	out, err := cmd.CombinedOutput()
 	if err != nil {
 		t.Fatalf("Could not export resources in test project: %s", out)
@@ -244,7 +244,7 @@ func teardown(t *testing.T) {
 	fmt.Println("templates folder removed")
 }
 
-func getOcDiffBinary() string {
+func getTailorBinary() string {
 	dir, _ := os.Getwd()
-	return dir + "/../ocdiff-test"
+	return dir + "/../tailor-test"
 }

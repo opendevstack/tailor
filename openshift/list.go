@@ -2,7 +2,7 @@ package openshift
 
 import (
 	"errors"
-	"github.com/michaelsauter/ocdiff/cli"
+	"github.com/opendevstack/tailor/cli"
 	"strconv"
 )
 

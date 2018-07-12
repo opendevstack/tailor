@@ -3,7 +3,7 @@ package openshift
 import (
 	"bytes"
 	"fmt"
-	"github.com/michaelsauter/ocdiff/cli"
+	"github.com/opendevstack/tailor/cli"
 	"io/ioutil"
 	"os"
 	"strings"

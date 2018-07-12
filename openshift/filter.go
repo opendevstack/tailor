@@ -2,7 +2,7 @@ package openshift
 
 import (
 	"fmt"
-	"github.com/michaelsauter/ocdiff/utils"
+	"github.com/opendevstack/tailor/utils"
 	"strings"
 )
 

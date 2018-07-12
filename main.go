@@ -5,9 +5,9 @@ import (
 	"fmt"
 	"github.com/alecthomas/kingpin"
 	"github.com/ghodss/yaml"
-	"github.com/michaelsauter/ocdiff/cli"
-	"github.com/michaelsauter/ocdiff/openshift"
-	"github.com/michaelsauter/ocdiff/utils"
+	"github.com/opendevstack/tailor/cli"
+	"github.com/opendevstack/tailor/openshift"
+	"github.com/opendevstack/tailor/utils"
 	"io/ioutil"
 	"log"
 	"os"
@@ -19,7 +19,7 @@ import (
 
 var (
 	app = kingpin.New(
-		"ocdiff",
+		"tailor",
 		"OC Diff Tool",
 	).DefaultEnvars().UsageTemplate(kingpin.LongHelpTemplate)
 	verboseFlag = app.Flag(

@@ -4,7 +4,7 @@ import (
 	"bytes"
 	"fmt"
 	"github.com/ghodss/yaml"
-	"github.com/michaelsauter/ocdiff/cli"
+	"github.com/opendevstack/tailor/cli"
 	"github.com/xeipuuv/gojsonpointer"
 	"regexp"
 	"strconv"
@@ -218,7 +218,7 @@ func (c *Config) handleKeyValue(k interface{}, v interface{}, pointer string) {
 				itemPointer := strings.Join(parts[0:3], "/")
 				annotationKey := strings.Replace(absolutePointer, itemPointer+"/", "", -1)
 				annotationKey = strings.Replace(annotationKey, "/", ".", -1)
-				c.PointersToReset[absolutePointer] = itemPointer + "/metadata/annotations/original-values.ocdiff.io~1" + annotationKey
+				c.PointersToReset[absolutePointer] = itemPointer + "/metadata/annotations/original-values.tailor.io~1" + annotationKey
 				break
 			}
 		}

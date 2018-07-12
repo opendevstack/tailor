@@ -1,7 +1,7 @@
 package main
 
 import (
-	"github.com/michaelsauter/ocdiff/openshift"
+	"github.com/opendevstack/tailor/openshift"
 	"reflect"
 	"testing"
 )
