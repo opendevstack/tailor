@@ -53,6 +53,17 @@ func (f *ResourceFilter) SatisfiedBy(item *ResourceItem) bool {
 
 func (f *ResourceFilter) ConvertToTarget() string {
 	if len(f.Name) > 0 {
+		return f.Name
+	}
+	kinds := f.Kinds
+	if len(kinds) == 0 {
+		kinds = availableKinds
+	}
+	return strings.Join(kinds, ",")
+}
+
+func (f *ResourceFilter) ConvertToKinds() string {
+	if len(f.Name) > 0 {
 		nameParts := strings.Split(f.Name, "/")
 		return nameParts[0]
 	}

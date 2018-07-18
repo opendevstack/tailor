@@ -37,7 +37,7 @@ func ExportAsTemplate(filter *ResourceFilter, name string) ([]byte, error) {
 
 func ExportResources(filter *ResourceFilter) ([]byte, error) {
 	ret := ""
-	target := filter.ConvertToTarget()
+	target := filter.ConvertToKinds()
 	args := []string{"export", target, "--output=yaml"}
 	cmd := cli.ExecOcCmd(args)
 	out, err := cmd.CombinedOutput()
