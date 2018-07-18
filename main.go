@@ -21,7 +21,7 @@ var (
 	app = kingpin.New(
 		"tailor",
 		"Tailor - Infrastructure as Code for OpenShift",
-	).DefaultEnvars().UsageTemplate(kingpin.LongHelpTemplate)
+	).DefaultEnvars()
 	verboseFlag = app.Flag(
 		"verbose",
 		"Enable verbose output.",

@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+* Use compact help template (which allows to show help for just one command).
+
 ## 0.5.1 (2018-07-12)
 
 * Fix exiting with 1 and error statement all the time even though everything went fine.
