@@ -4,6 +4,7 @@
 
 * Use compact help template (which allows to show help for just one command).
 * Fix wrong export target when just one resource is specified (#11).
+* Percent signs (%) are not automatically encoded (duplicated) to prevent issues (#4).
 
 ## 0.5.1 (2018-07-12)
 
