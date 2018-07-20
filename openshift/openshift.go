@@ -1,7 +1,6 @@
 package openshift
 
 import (
-	"bytes"
 	"fmt"
 	"github.com/opendevstack/tailor/cli"
 	"io/ioutil"
@@ -169,9 +168,7 @@ func ocApply(change *Change, action string) error {
 	name := change.Name
 	config := change.DesiredState
 	fmt.Println(action, kind, name)
-	b := []byte(config)
-	unescapedRaw := bytes.Replace(b, []byte("%%"), []byte("%"), -1)
-	ioutil.WriteFile(".PROCESSED_TEMPLATE", unescapedRaw, 0644)
+	ioutil.WriteFile(".PROCESSED_TEMPLATE", []byte(config), 0644)
 
 	args := []string{"apply", "--filename=" + ".PROCESSED_TEMPLATE"}
 	cmd := cli.ExecOcCmd(args)

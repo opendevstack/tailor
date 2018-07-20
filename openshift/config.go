@@ -1,7 +1,6 @@
 package openshift
 
 import (
-	"bytes"
 	"fmt"
 	"github.com/ghodss/yaml"
 	"github.com/opendevstack/tailor/cli"
@@ -63,11 +62,8 @@ func (c *Config) Process() {
 		return
 	}
 
-	// The % symbol has a special meaning in YAML, it needs to be doubled.
-	escapedRaw := bytes.Replace(c.Raw, []byte("%"), []byte("%%"), -1)
-
 	var f interface{}
-	yaml.Unmarshal(escapedRaw, &f)
+	yaml.Unmarshal(c.Raw, &f)
 
 	m := f.(map[string]interface{})
 
