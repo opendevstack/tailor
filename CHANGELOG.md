@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## 0.6.0 (2018-07-25)
+
 * [Feature] `Tailorfile` support.
 * [Task] Use compact help template (which allows to show help for just one command).
 * [Fix] Fix wrong export target when just one resource is specified (#11).
