@@ -11,6 +11,18 @@ Tailor is a layer on top of the `oc` CLI command that allows you to keep your Op
 * Problems that arise from the fact that OpenShift combines configuration and state into one object (even in the export) are addressed by `tailor`. E.g. annotation injected into resources or modification of image references etc. are dealt with.
 * Support for encrypted secrets to avoid storing credentials in clear text in your repository.
 
+## Installation
+
+The latest release is 0.6.0 and requires oc >= v3.9.0.
+Please have a look at the [changelog](https://github.com/opendevstack/tailor/blob/master/CHANGELOG.md) when upgrading.
+
+The free version can be installed via:
+
+```
+bash -c "`curl -sL https://raw.githubusercontent.com/opendevstack/tailor/v0.6.0/download.sh`" && \
+mv tailor /usr/local/bin/tailor
+```
+
 ## Usage
 
 There are three main commands: `export`, `status` and `update`.
