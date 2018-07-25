@@ -30,6 +30,10 @@ var (
 		"non-interactive",
 		"Disable interactive mode.",
 	).Bool()
+	fileFlag = app.Flag(
+		"file",
+		"Tailorfile with flags.",
+	).Short('f').Default("Tailorfile").String()
 
 	namespaceFlag = app.Flag(
 		"namespace",
@@ -200,11 +204,26 @@ func main() {
 
 	command := kingpin.MustParse(app.Parse(os.Args[1:]))
 
-	cli.SetOptions(*verboseFlag, *namespaceFlag, *selectorFlag)
-
-	paramDir := *paramDirFlag
-	if (len(paramDir) > 1 || paramDir[0] != ".") && (len(*statusParamFileFlag) > 0 || len(*updateParamFileFlag) > 0) {
-		log.Fatalln("You cannot specify both --param-dir and --param-file.")
+	fileFlags, err := cli.GetFileFlags(*fileFlag)
+	if err != nil {
+		log.Fatalln("Could not read Tailorfile:", err)
+	}
+	globalOptions := &cli.GlobalOptions{}
+	globalOptions.UpdateWithFile(fileFlags)
+	globalOptions.UpdateWithFlags(
+		*verboseFlag,
+		*nonInteractiveFlag,
+		*namespaceFlag,
+		*selectorFlag,
+		*templateDirFlag,
+		*paramDirFlag,
+		*publicKeyDirFlag,
+		*privateKeyFlag,
+		*passphraseFlag,
+	)
+	err = globalOptions.Process()
+	if err != nil {
+		log.Fatalln("Options could not be processed:", err)
 	}
 
 	switch command {
@@ -212,7 +231,7 @@ func main() {
 		fmt.Println("0.5.1")
 
 	case editCommand.FullCommand():
-		readParams, err := openshift.NewParamsFromFile(*editFileArg, *privateKeyFlag, *passphraseFlag)
+		readParams, err := openshift.NewParamsFromFile(*editFileArg, globalOptions.PrivateKey, globalOptions.Passphrase)
 		if err != nil {
 			log.Fatalf("Could not read file: %s.", err)
 		}
@@ -227,7 +246,7 @@ func main() {
 			log.Fatal(err)
 		}
 
-		renderedContent, err := editedParams.Render(*publicKeyDirFlag, readParams)
+		renderedContent, err := editedParams.Render(globalOptions.PublicKeyDir, readParams)
 		if err != nil {
 			log.Fatal(err)
 		}
@@ -238,12 +257,12 @@ func main() {
 
 	case reEncryptCommand.FullCommand():
 		if len(*reEncryptFileArg) > 0 {
-			err := reEncrypt(*reEncryptFileArg, *privateKeyFlag, *passphraseFlag, *publicKeyDirFlag)
+			err := reEncrypt(*reEncryptFileArg, globalOptions.PrivateKey, globalOptions.Passphrase, globalOptions.PublicKeyDir)
 			if err != nil {
 				log.Fatal(err)
 			}
 		} else {
-			for _, paramDir := range *paramDirFlag {
+			for _, paramDir := range globalOptions.ParamDirs {
 				files, err := ioutil.ReadDir(paramDir)
 				if err != nil {
 					log.Fatal(err)
@@ -255,7 +274,7 @@ func main() {
 						continue
 					}
 					filename := paramDir + string(os.PathSeparator) + file.Name()
-					err := reEncrypt(filename, *privateKeyFlag, *passphraseFlag, *publicKeyDirFlag)
+					err := reEncrypt(filename, globalOptions.PrivateKey, globalOptions.Passphrase, globalOptions.PublicKeyDir)
 					if err != nil {
 						log.Fatal(err)
 					}
@@ -267,7 +286,7 @@ func main() {
 		if _, err := os.Stat(*revealFileArg); os.IsNotExist(err) {
 			log.Fatalf("'%s' does not exist.", *revealFileArg)
 		}
-		readParams, err := openshift.NewParamsFromFile(*revealFileArg, *privateKeyFlag, *passphraseFlag)
+		readParams, err := openshift.NewParamsFromFile(*revealFileArg, globalOptions.PrivateKey, globalOptions.Passphrase)
 		if err != nil {
 			log.Fatalf("Could not read file: %s.", err)
 		}
@@ -293,7 +312,7 @@ func main() {
 			log.Fatalln(err)
 		}
 		fmt.Printf("Public Key written to %s. This file can be committed.\n", publicKeyFilename)
-		privateKeyFilename := *privateKeyFlag
+		privateKeyFilename := globalOptions.PrivateKey
 		utils.PrintPrivateKey(entity, privateKeyFilename)
 		if err != nil {
 			log.Fatalln(err)
@@ -303,19 +322,24 @@ func main() {
 	case statusCommand.FullCommand():
 		checkLoggedIn()
 
-		updateRequired, _, err := calculateChangeset(
-			*statusResourceArg,
-			*selectorFlag,
-			*templateDirFlag,
-			*paramDirFlag,
+		compareOptions := &cli.CompareOptions{
+			GlobalOptions: globalOptions,
+		}
+		compareOptions.UpdateWithFile(fileFlags)
+		compareOptions.UpdateWithFlags(
 			*statusLabelsFlag,
 			*statusParamFlag,
 			*statusParamFileFlag,
 			*statusIgnoreUnknownParametersFlag,
 			*statusUpsertOnlyFlag,
-			*privateKeyFlag,
-			*passphraseFlag,
+			*statusResourceArg,
 		)
+		err := compareOptions.Process()
+		if err != nil {
+			log.Fatalln("Options could not be processed:", err)
+		}
+
+		updateRequired, _, err := calculateChangeset(compareOptions)
 		if err != nil {
 			log.Fatalln(err)
 		}
@@ -324,45 +348,58 @@ func main() {
 			os.Exit(3)
 		}
 
-	case exportCommand.FullCommand():
-		checkLoggedIn()
-
-		filter, err := getFilter(*exportResourceArg, *selectorFlag)
-		if err != nil {
-			log.Fatalln(err)
-		}
-		export(filter)
-
 	case updateCommand.FullCommand():
 		checkLoggedIn()
 
-		updateRequired, changeset, err := calculateChangeset(
-			*updateResourceArg,
-			*selectorFlag,
-			*templateDirFlag,
-			*paramDirFlag,
+		compareOptions := &cli.CompareOptions{
+			GlobalOptions: globalOptions,
+		}
+		compareOptions.UpdateWithFile(fileFlags)
+		compareOptions.UpdateWithFlags(
 			*updateLabelsFlag,
 			*updateParamFlag,
 			*updateParamFileFlag,
 			*updateIgnoreUnknownParametersFlag,
 			*updateUpsertOnlyFlag,
-			*privateKeyFlag,
-			*passphraseFlag,
+			*updateResourceArg,
 		)
+		err := compareOptions.Process()
+		if err != nil {
+			log.Fatalln("Options could not be processed:", err)
+		}
+
+		updateRequired, changeset, err := calculateChangeset(compareOptions)
 		if err != nil {
 			log.Fatalln(err)
 		}
 
 		if updateRequired {
-			if *nonInteractiveFlag {
-				openshift.UpdateRemote(changeset)
+			if globalOptions.NonInteractive {
+				openshift.UpdateRemote(changeset, compareOptions)
 			} else {
 				c := cli.AskForConfirmation("Apply changes?")
 				if c {
-					openshift.UpdateRemote(changeset)
+					openshift.UpdateRemote(changeset, compareOptions)
 				}
 			}
 		}
+
+	case exportCommand.FullCommand():
+		checkLoggedIn()
+
+		exportOptions := &cli.ExportOptions{
+			GlobalOptions: globalOptions,
+		}
+		exportOptions.UpdateWithFile(fileFlags)
+		exportOptions.UpdateWithFlags(
+			*exportResourceArg,
+		)
+
+		filter, err := getFilter(exportOptions.Resource, exportOptions.Selector)
+		if err != nil {
+			log.Fatalln(err)
+		}
+		export(filter, exportOptions)
 	}
 }
 
@@ -389,8 +426,29 @@ func reEncrypt(filename, privateKey, passphrase, publicKeyDir string) error {
 	return nil
 }
 
-func calculateChangeset(resource string, selectorFlag string, templateDirs []string, paramDirs []string, label string, params []string, paramFile string, ignoreUnknownParameters bool, upsertOnly bool, privateKey string, passphrase string) (bool, *openshift.Changeset, error) {
+func calculateChangeset(compareOptions *cli.CompareOptions) (bool, *openshift.Changeset, error) {
 	updateRequired := false
+
+	where := strings.Join(compareOptions.TemplateDirs, ", ")
+	if len(compareOptions.TemplateDirs) == 1 && compareOptions.TemplateDirs[0] == "." {
+		where, _ = os.Getwd()
+	}
+
+	fmt.Printf(
+		"Comparing templates in '%s' with OCP namespace '%s'\n",
+		where,
+		compareOptions.Namespace,
+	)
+	fmt.Printf(
+		"Limiting resources to '%s' with selector '%s'\n\n",
+		compareOptions.Resource,
+		compareOptions.Selector,
+	)
+
+	resource := compareOptions.Resource
+	selectorFlag := compareOptions.Selector
+	upsertOnly := compareOptions.UpsertOnly
+
 	filter, err := getFilter(resource, selectorFlag)
 	if err != nil {
 		return updateRequired, &openshift.Changeset{}, err
@@ -398,16 +456,9 @@ func calculateChangeset(resource string, selectorFlag string, templateDirs []str
 
 	localResourceList := assembleLocalResourceList(
 		filter,
-		templateDirs,
-		paramDirs,
-		label,
-		params,
-		paramFile,
-		ignoreUnknownParameters,
-		privateKey,
-		passphrase,
+		compareOptions,
 	)
-	remoteResourceList := assembleRemoteResourceList(filter)
+	remoteResourceList := assembleRemoteResourceList(filter, compareOptions)
 
 	changeset := compare(remoteResourceList, localResourceList, upsertOnly)
 	updateRequired = !changeset.Blank()
@@ -476,11 +527,11 @@ func checkLoggedIn() {
 	}
 }
 
-func assembleLocalResourceList(filter *openshift.ResourceFilter, templateDirs []string, paramDirs []string, label string, params []string, paramFile string, ignoreUnknownParameters bool, privateKey string, passphrase string) *openshift.ResourceList {
+func assembleLocalResourceList(filter *openshift.ResourceFilter, compareOptions *cli.CompareOptions) *openshift.ResourceList {
 	list := &openshift.ResourceList{Filter: filter}
 
 	// read files in folders and assemble lists for kinds
-	for i, templateDir := range templateDirs {
+	for i, templateDir := range compareOptions.TemplateDirs {
 		files, err := ioutil.ReadDir(templateDir)
 		if err != nil {
 			log.Fatal(err)
@@ -492,7 +543,7 @@ func assembleLocalResourceList(filter *openshift.ResourceFilter, templateDirs []
 				continue
 			}
 			cli.VerboseMsg("Reading", file.Name())
-			processedOut, err := openshift.ProcessTemplate(templateDir, file.Name(), paramDirs[i], label, params, paramFile, ignoreUnknownParameters, privateKey, passphrase)
+			processedOut, err := openshift.ProcessTemplate(templateDir, file.Name(), compareOptions.ParamDirs[i], compareOptions)
 			if err != nil {
 				log.Fatalln("Could not process", file.Name(), "template:", err)
 			}
@@ -504,10 +555,10 @@ func assembleLocalResourceList(filter *openshift.ResourceFilter, templateDirs []
 	return list
 }
 
-func assembleRemoteResourceList(filter *openshift.ResourceFilter) *openshift.ResourceList {
+func assembleRemoteResourceList(filter *openshift.ResourceFilter, compareOptions *cli.CompareOptions) *openshift.ResourceList {
 	list := &openshift.ResourceList{Filter: filter}
 
-	exportedOut, err := openshift.ExportResources(filter)
+	exportedOut, err := openshift.ExportResources(filter, compareOptions)
 	if err != nil {
 		log.Fatalln("Could not export", filter.String(), " resources.")
 	}
@@ -517,7 +568,7 @@ func assembleRemoteResourceList(filter *openshift.ResourceFilter) *openshift.Res
 	return list
 }
 
-func export(filter *openshift.ResourceFilter) {
+func export(filter *openshift.ResourceFilter, exportOptions *cli.ExportOptions) {
 	var templateName string
 	if len(filter.Name) > 0 {
 		templateName = strings.Replace(filter.Name, "/", "-", -1)
@@ -530,7 +581,7 @@ func export(filter *openshift.ResourceFilter) {
 		templateName = "all"
 	}
 
-	out, err := openshift.ExportAsTemplate(filter, templateName)
+	out, err := openshift.ExportAsTemplate(filter, templateName, exportOptions)
 	if err != nil {
 		log.Fatalln("Could not export", filter.String(), "resources as template.")
 	}

@@ -19,7 +19,7 @@ type Options struct {
 	Selector  string
 }
 
-var options *Options
+var verbose bool
 
 var PrintGreenf func(format string, a ...interface{})
 var PrintBluef func(format string, a ...interface{})
@@ -32,42 +32,27 @@ func init() {
 	PrintBluef = color.New(color.FgBlue).PrintfFunc()
 	PrintYellowf = color.New(color.FgYellow).PrintfFunc()
 	PrintRedf = color.New(color.FgRed).PrintfFunc()
-	options = &Options{
-		Verbose:   false,
-		Namespace: "",
-		Selector:  "",
-	}
-}
-
-func SetOptions(verbose bool, namespace string, selector string) {
-	options = &Options{
-		Verbose:   verbose,
-		Namespace: namespace,
-		Selector:  selector,
-	}
+	verbose = false
 }
 
 func GetOcNamespace() (string, error) {
-	if len(options.Namespace) > 0 {
-		return options.Namespace, nil
-	}
 	cmd := ExecPlainOcCmd([]string{"project", "--short"})
 	n, err := cmd.CombinedOutput()
 	return strings.TrimSpace(string(n)), err
 }
 
 func VerboseMsg(messages ...string) {
-	if options.Verbose {
+	if verbose {
 		PrintBluef("--> %s\n", strings.Join(messages, " "))
 	}
 }
 
-func ExecOcCmd(args []string) *exec.Cmd {
-	if len(options.Namespace) > 0 {
-		args = append(args, "--namespace="+options.Namespace)
+func ExecOcCmd(args []string, namespace string, selector string) *exec.Cmd {
+	if len(namespace) > 0 {
+		args = append(args, "--namespace="+namespace)
 	}
-	if len(options.Selector) > 0 {
-		args = append(args, "--selector="+options.Selector)
+	if len(selector) > 0 {
+		args = append(args, "--selector="+selector)
 	}
 	return ExecPlainOcCmd(args)
 }

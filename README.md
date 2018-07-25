@@ -52,6 +52,18 @@ Another complication arises when provisioning a DeploymentConfig referencing a n
 
 `tailor` needs access to a resource in order to be able to compare it. This means that to properly compare all resources, the user of the OpenShift session that `tailor` makes use of needs to be admin. If you are not admin, `tailor` will fail as it cannot compare some resources. To prevent this from happening, exclude the resource types (e.g. `rolebinding` and `serviceaccount`) that you do not have access to.
 
+### Tailorfile
+
+Since specifying all params correctly can be daunting, and it isn't easy to share how `tailor` should be invoked, `tailor` supports setting params via a `Tailorfile`. This is simply a line-delimited file with flags, e.g.:
+```
+template-dir foo
+param-dir bar
+param OC=cd
+param BAZ=QUX
+
+bc,is,dc,svc
+```
+
 ### Command Completion
 
 BASH/ZSH completion is available. Add this into `.bash_profile` or equivalent:
