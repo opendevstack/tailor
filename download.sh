@@ -29,8 +29,8 @@ else
 fi
 
 # Download binary
-echo "Downloading https://github.com/michaelsauter/tailor/releases/download/v${VERSION}/tailor_${PLATFORM}_${ARCH}${EXT}"
-curl -L -o tailor${EXT} "https://github.com/michaelsauter/tailor/releases/download/v${VERSION}/tailor_${PLATFORM}_${ARCH}${EXT}"
+echo "Downloading https://github.com/opendevstack/tailor/releases/download/v${VERSION}/tailor_${PLATFORM}_${ARCH}${EXT}"
+curl -L -o tailor${EXT} "https://github.com/opendevstack/tailor/releases/download/v${VERSION}/tailor_${PLATFORM}_${ARCH}${EXT}"
 
 # Make binary executable
 chmod +x tailor${EXT}
