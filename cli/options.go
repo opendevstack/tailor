@@ -106,27 +106,39 @@ func (o *GlobalOptions) UpdateWithFlags(verboseFlag bool, nonInteractiveFlag boo
 	if verboseFlag {
 		o.Verbose = true
 	}
+
 	if nonInteractiveFlag {
 		o.NonInteractive = true
 	}
+
 	if len(namespaceFlag) > 0 {
 		o.Namespace = namespaceFlag
 	}
+
 	if len(selectorFlag) > 0 {
 		o.Selector = selectorFlag
 	}
-	if len(templateDirFlag) > 0 {
+
+	if len(o.TemplateDirs) == 0 {
+		o.TemplateDirs = templateDirFlag
+	} else if len(templateDirFlag) > 1 || templateDirFlag[0] != "." {
 		o.TemplateDirs = templateDirFlag
 	}
-	if len(paramDirFlag) > 0 {
+
+	if len(o.ParamDirs) == 0 {
+		o.ParamDirs = paramDirFlag
+	} else if len(paramDirFlag) > 1 || paramDirFlag[0] != "." {
 		o.ParamDirs = paramDirFlag
 	}
-	if len(publicKeyDirFlag) > 0 {
+
+	if len(o.PublicKeyDir) == 0 || publicKeyDirFlag != "." {
 		o.PublicKeyDir = publicKeyDirFlag
 	}
-	if len(privateKeyFlag) > 0 {
+
+	if len(o.PrivateKey) == 0 || privateKeyFlag != "private.key" {
 		o.PrivateKey = privateKeyFlag
 	}
+
 	if len(passphraseFlag) > 0 {
 		o.Passphrase = passphraseFlag
 	}
