@@ -61,7 +61,7 @@ func GetFileFlags(filename string) (map[string]string, error) {
 		pair := strings.SplitN(line, " ", 2)
 		if len(pair) == 2 {
 			key := pair[0]
-			value := pair[1]
+			value := strings.TrimSpace(pair[1])
 			if val, ok := fileFlags[key]; ok {
 				value = val + "," + value
 			}
