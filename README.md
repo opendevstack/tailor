@@ -84,8 +84,9 @@ Since specifying all params correctly can be daunting, and it isn't easy to shar
 ```
 template-dir foo
 param-dir bar
-param OC=cd
-param BAZ=QUX
+
+param FOO=bar
+param BAZ=qux
 
 bc,is,dc,svc
 ```
