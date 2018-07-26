@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+* [Fix] Respect flags defined in Tailorfile that have default values (#22).
+
 ## 0.6.0 (2018-07-25)
 
 * [Feature] `Tailorfile` support.
