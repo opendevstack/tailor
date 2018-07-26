@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+* [Fix] Allow whitespace around flags and their arguments in `Tailorfile`.
+
 ## 0.6.1 (2018-07-26)
 
 * [Fix] Respect flags defined in Tailorfile that have default values (#22).
