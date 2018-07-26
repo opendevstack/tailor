@@ -53,7 +53,8 @@ func GetFileFlags(filename string) (map[string]string, error) {
 	text := strings.TrimSuffix(content, "\n")
 	lines := strings.Split(text, "\n")
 
-	for _, line := range lines {
+	for _, untrimmedLine := range lines {
+		line := strings.TrimSpace(untrimmedLine)
 		if len(line) == 0 {
 			continue
 		}
