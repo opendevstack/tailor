@@ -13,11 +13,11 @@ Tailor is a layer on top of the `oc` CLI command that allows you to keep your Op
 
 ## Installation
 
-The latest release is 0.6.0 and requires oc >= v3.9.0.
+The latest release is 0.6.1 and requires oc >= v3.9.0.
 Please have a look at the [changelog](https://github.com/opendevstack/tailor/blob/master/CHANGELOG.md) when upgrading.
 
 ```
-bash -c "`curl -sL https://raw.githubusercontent.com/opendevstack/tailor/v0.6.0/download.sh`" && \
+bash -c "`curl -sL https://raw.githubusercontent.com/opendevstack/tailor/v0.6.1/download.sh`" && \
 mv tailor /usr/local/bin/tailor
 ```
 
