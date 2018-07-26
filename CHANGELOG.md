@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+* [Feature] Allow comments in `Tailorfile` (either `#` or `//`).
 * [Fix] Allow whitespace around flags and their arguments in `Tailorfile`.
 
 ## 0.6.1 (2018-07-26)

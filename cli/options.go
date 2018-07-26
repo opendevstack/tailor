@@ -55,7 +55,7 @@ func GetFileFlags(filename string) (map[string]string, error) {
 
 	for _, untrimmedLine := range lines {
 		line := strings.TrimSpace(untrimmedLine)
-		if len(line) == 0 {
+		if len(line) == 0 || strings.HasPrefix(line, "#") || strings.HasPrefix(line, "//") {
 			continue
 		}
 		pair := strings.SplitN(line, " ", 2)
