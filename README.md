@@ -80,7 +80,7 @@ Another complication arises when provisioning a DeploymentConfig referencing a n
 
 ### Tailorfile
 
-Since specifying all params correctly can be daunting, and it isn't easy to share how `tailor` should be invoked, `tailor` supports setting params via a `Tailorfile`. This is simply a line-delimited file with flags, e.g.:
+Since specifying all params correctly can be daunting, and it isn't easy to share how `tailor` should be invoked, `tailor` supports setting flags via a `Tailorfile`. This is simply a line-delimited file, e.g.:
 ```
 template-dir foo
 param-dir bar
