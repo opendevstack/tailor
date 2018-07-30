@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## 0.7.0 (2018-07-30)
+
 * [Feature] Support multiple labels (#7).
 * [Feature] Allow comments in `Tailorfile` (either `#` or `//`).
 * [Fix] Allow whitespace around flags and their arguments in `Tailorfile`.
