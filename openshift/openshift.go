@@ -1,6 +1,7 @@
 package openshift
 
 import (
+	"bytes"
 	"fmt"
 	"github.com/opendevstack/tailor/cli"
 	"io/ioutil"
@@ -120,16 +121,25 @@ func ProcessTemplate(templateDir string, name string, paramDir string, compareOp
 		args = append(args, "--ignore-unknown-parameters=true")
 	}
 	cmd := cli.ExecPlainOcCmd(args)
-	out, err := cmd.CombinedOutput()
+	var stdout, stderr bytes.Buffer
+	cmd.Stdout = &stdout
+	cmd.Stderr = &stderr
+	err := cmd.Run()
+	outBytes := stdout.Bytes()
 
 	if err != nil {
 		fmt.Printf("Failed to process template: %s.\n", filename)
-		fmt.Println(fmt.Sprint(err) + ": " + string(out))
+		fmt.Println(fmt.Sprint(err) + ": " + string(outBytes))
 		return []byte{}, err
 	}
 
+	errBytes := stderr.Bytes()
+	if len(errBytes) > 0 {
+		fmt.Println(string(errBytes))
+	}
+
 	cli.VerboseMsg("Processed template:", filename)
-	return out, err
+	return outBytes, err
 }
 
 func UpdateRemote(changeset *Changeset, compareOptions *cli.CompareOptions) error {
