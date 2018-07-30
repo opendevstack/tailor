@@ -23,11 +23,12 @@ sed -i.bak 's/Unreleased/Unreleased\
 \
 ## '$version' ('$today')/' CHANGELOG.md
 
+rm *.bak
+
 echo "Build binaries..."
 make build
 
 echo "Update repository..."
-rm *.bak
 git add main.go README.md CHANGELOG.md
 git commit -m "Bump version to ${version}"
 git tag --message="v$version" --force "v$version"
