@@ -1,4 +1,11 @@
 language: go
 go:
   - "1.10"
+before_install:
+  - go get github.com/alecthomas/kingpin
+  - go get github.com/fatih/color
+  - go get github.com/ghodss/yaml
+  - go get github.com/pmezard/go-difflib/difflib
+  - go get github.com/xeipuuv/gojsonpointer
+  - go get golang.org/x/crypto/openpgp
 script: make test-unit
