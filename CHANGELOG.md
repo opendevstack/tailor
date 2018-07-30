@@ -5,8 +5,10 @@
 * [Feature] Allow comments in `Tailorfile` (either `#` or `//`).
 * [Fix] Allow whitespace around flags and their arguments in `Tailorfile`.
 * [Fix] Check param dir existance if explicitly given (#24).
+* [Fix] Don't panic when params are duplicated (#12).
 * [Task] Improve text about resource limiting (#25).
 * [Task] Improve diff description (#6).
+* [Task] Show found resources (#14).
 
 ## 0.6.1 (2018-07-26)
 
