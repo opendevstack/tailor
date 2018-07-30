@@ -66,10 +66,6 @@ func ExportResources(filter *ResourceFilter, compareOptions *cli.CompareOptions)
 
 func ProcessTemplate(templateDir string, name string, paramDir string, compareOptions *cli.CompareOptions) ([]byte, error) {
 	filename := templateDir + string(os.PathSeparator) + name
-	if _, err := os.Stat(filename); os.IsNotExist(err) {
-		cli.VerboseMsg("Template '" + filename + "' does not exist.")
-		return []byte{}, nil
-	}
 
 	args := []string{"process", "--filename=" + filename, "--output=yaml"}
 
