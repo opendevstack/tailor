@@ -6,6 +6,7 @@
 * [Fix] Allow whitespace around flags and their arguments in `Tailorfile`.
 * [Fix] Check param dir existance if explicitly given (#24).
 * [Fix] Don't panic when params are duplicated (#12).
+* [Fix] Prevent original values annotation in exports (#3 and #5).
 * [Task] Improve text about resource limiting (#25).
 * [Task] Improve diff description (#6).
 * [Task] Show found resources (#14).
