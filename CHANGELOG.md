@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+* [Feature] Support multiple labels (#7).
 * [Feature] Allow comments in `Tailorfile` (either `#` or `//`).
 * [Fix] Allow whitespace around flags and their arguments in `Tailorfile`.
 * [Fix] Check param dir existance if explicitly given (#24).

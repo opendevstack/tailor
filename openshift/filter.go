@@ -40,11 +40,14 @@ func (f *ResourceFilter) SatisfiedBy(item *ResourceItem) bool {
 	}
 
 	if len(f.Label) > 0 {
-		labelParts := strings.Split(f.Label, "=")
-		if _, ok := item.Labels[labelParts[0]]; !ok {
-			return false
-		} else if item.Labels[labelParts[0]].(string) != labelParts[1] {
-			return false
+		labels := strings.Split(f.Label, ",")
+		for _, label := range labels {
+			labelParts := strings.Split(label, "=")
+			if _, ok := item.Labels[labelParts[0]]; !ok {
+				return false
+			} else if item.Labels[labelParts[0]].(string) != labelParts[1] {
+				return false
+			}
 		}
 	}
 
