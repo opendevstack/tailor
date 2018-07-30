@@ -435,15 +435,28 @@ func calculateChangeset(compareOptions *cli.CompareOptions) (bool, *openshift.Ch
 	}
 
 	fmt.Printf(
-		"Comparing templates in '%s' with OCP namespace '%s'\n",
+		"Comparing templates in %s with OCP namespace %s\n",
 		where,
 		compareOptions.Namespace,
 	)
-	fmt.Printf(
-		"Limiting resources to '%s' with selector '%s'\n\n",
-		compareOptions.Resource,
-		compareOptions.Selector,
-	)
+
+	if len(compareOptions.Resource) > 0 && len(compareOptions.Selector) > 0 {
+		fmt.Printf(
+			"Limiting resources to %s with selector %s\n\n",
+			compareOptions.Resource,
+			compareOptions.Selector,
+		)
+	} else if len(compareOptions.Selector) > 0 {
+		fmt.Printf(
+			"Limiting to resources with selector %s\n\n",
+			compareOptions.Selector,
+		)
+	} else if len(compareOptions.Resource) > 0 {
+		fmt.Printf(
+			"Limiting resources to %s\n\n",
+			compareOptions.Resource,
+		)
+	}
 
 	resource := compareOptions.Resource
 	selectorFlag := compareOptions.Selector
