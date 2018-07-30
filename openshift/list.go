@@ -17,6 +17,10 @@ func NewResourceList(filter *ResourceFilter, config *Config) *ResourceList {
 	return l
 }
 
+func (l *ResourceList) Length() int {
+	return len(l.Items)
+}
+
 func (l *ResourceList) GetItem(kind string, name string) (*ResourceItem, error) {
 	for _, item := range l.Items {
 		if item.Kind == kind && item.Name == name {
