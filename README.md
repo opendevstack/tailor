@@ -98,7 +98,9 @@ BASH/ZSH completion is available. Add this into `.bash_profile` or equivalent:
 eval "$(tailor --completion-script-$(echo $SHELL | awk -F/ '{print $NF}'))"
 ```
 
+---
 
+[![Build Status](https://travis-ci.com/opendevstack/tailor.svg?branch=master)](https://travis-ci.com/opendevstack/tailor)
 
 
 
