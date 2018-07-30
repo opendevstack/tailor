@@ -2,6 +2,7 @@ package cli
 
 import (
 	"errors"
+	"fmt"
 	"io/ioutil"
 	"os"
 	"strings"
@@ -225,6 +226,15 @@ func (o *CompareOptions) UpdateWithFlags(labelsFlag string, paramFlag []string, 
 func (o *CompareOptions) Process() error {
 	if (len(o.ParamDirs) > 1 || o.ParamDirs[0] != ".") && len(o.ParamFile) > 0 {
 		return errors.New("You cannot specify both --param-dir and --param-file.")
+	}
+	for _, p := range o.ParamDirs {
+		if p != "." {
+			if _, err := os.Stat(p); os.IsNotExist(err) {
+				return errors.New(
+					fmt.Sprintf("Param directory %s does not exist.", p),
+				)
+			}
+		}
 	}
 	return nil
 }
