@@ -435,25 +435,25 @@ func calculateChangeset(compareOptions *cli.CompareOptions) (bool, *openshift.Ch
 	}
 
 	fmt.Printf(
-		"Comparing templates in %s with OCP namespace %s\n",
+		"Comparing templates in %s with OCP namespace %s.\n",
 		where,
 		compareOptions.Namespace,
 	)
 
 	if len(compareOptions.Resource) > 0 && len(compareOptions.Selector) > 0 {
 		fmt.Printf(
-			"Limiting resources to %s with selector %s\n\n",
+			"Limiting resources to %s with selector %s.\n",
 			compareOptions.Resource,
 			compareOptions.Selector,
 		)
 	} else if len(compareOptions.Selector) > 0 {
 		fmt.Printf(
-			"Limiting to resources with selector %s\n\n",
+			"Limiting to resources with selector %s.\n",
 			compareOptions.Selector,
 		)
 	} else if len(compareOptions.Resource) > 0 {
 		fmt.Printf(
-			"Limiting resources to %s\n\n",
+			"Limiting resources to %s.\n",
 			compareOptions.Resource,
 		)
 	}
@@ -472,6 +472,21 @@ func calculateChangeset(compareOptions *cli.CompareOptions) (bool, *openshift.Ch
 		compareOptions,
 	)
 	remoteResourceList := assembleRemoteResourceList(filter, compareOptions)
+	remoteResourcesWord := "resources"
+	if remoteResourceList.Length() == 1 {
+		remoteResourcesWord = "resource"
+	}
+	localResourcesWord := "resources"
+	if localResourceList.Length() == 1 {
+		localResourcesWord = "resource"
+	}
+	fmt.Printf(
+		"Found %d %s in OCP cluster (current state) and %d %s in processed templates (desired state).\n\n",
+		remoteResourceList.Length(),
+		remoteResourcesWord,
+		localResourceList.Length(),
+		localResourcesWord,
+	)
 
 	changeset := compare(remoteResourceList, localResourceList, upsertOnly)
 	updateRequired = !changeset.Blank()
