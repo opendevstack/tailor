@@ -43,7 +43,7 @@ func NewConfigFromTemplate(input []byte) *Config {
 		NameRegex:       "/objects/[0-9]+/metadata/name",
 		PointersToReset: make(map[string]string),
 	}
-	c.Process()
+	c.Process(false)
 	return c
 }
 
@@ -53,11 +53,11 @@ func NewConfigFromList(input []byte) *Config {
 		NameRegex:       "/items/[0-9]+/metadata/name",
 		PointersToReset: make(map[string]string),
 	}
-	c.Process()
+	c.Process(true)
 	return c
 }
 
-func (c *Config) Process() {
+func (c *Config) Process(setOriginalValues bool) {
 	if len(c.Raw) == 0 {
 		return
 	}
@@ -92,7 +92,10 @@ func (c *Config) Process() {
 		annotationValue, _, err := annotationPointer.Get(m)
 		if err == nil {
 			configPointer.Set(m, annotationValue)
-		} else {
+			if !setOriginalValues {
+				annotationPointer.Delete(m)
+			}
+		} else if setOriginalValues {
 			configValue, _, _ := configPointer.Get(m)
 			annotationPointer.Set(m, configValue)
 		}
