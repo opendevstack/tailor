@@ -70,8 +70,8 @@ func ShowDiff(a string, b string) {
 	diff := difflib.UnifiedDiff{
 		A:        difflib.SplitLines(a),
 		B:        difflib.SplitLines(b),
-		FromFile: "Remote State",
-		ToFile:   "Local Config",
+		FromFile: "Current State (OpenShift cluster)",
+		ToFile:   "Desired State (Processed template)",
 		Context:  3,
 	}
 	text, _ := difflib.GetUnifiedDiffString(diff)
