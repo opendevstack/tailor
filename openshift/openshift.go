@@ -126,16 +126,13 @@ func ProcessTemplate(templateDir string, name string, paramDir string, compareOp
 	cmd.Stderr = &stderr
 	err := cmd.Run()
 	outBytes := stdout.Bytes()
-
-	if err != nil {
-		fmt.Printf("Failed to process template: %s.\n", filename)
-		fmt.Println(fmt.Sprint(err) + ": " + string(outBytes))
-		return []byte{}, err
-	}
-
 	errBytes := stderr.Bytes()
+
 	if len(errBytes) > 0 {
 		fmt.Println(string(errBytes))
+	}
+	if err != nil {
+		return []byte{}, err
 	}
 
 	cli.VerboseMsg("Processed template:", filename)
