@@ -24,10 +24,11 @@ type Changeset struct {
 }
 
 type Change struct {
-	Kind         string
-	Name         string
-	CurrentState string
-	DesiredState string
+	Kind          string
+	Name          string
+	CurrentState  string
+	DesiredState  string
+	DesiredConfig string
 }
 
 func NewChangeset(remoteResourceList, localResourceList *ResourceList, upsertOnly bool) *Changeset {
@@ -72,29 +73,39 @@ func NewChangeset(remoteResourceList, localResourceList *ResourceList, upsertOnl
 		if err == nil {
 			currentItemConfig := rItem.YamlConfig()
 			desiredItemConfig := lItem.YamlConfig()
-			change := &Change{
-				Kind:         lItem.Kind,
-				Name:         lItem.Name,
-				CurrentState: currentItemConfig,
-				DesiredState: desiredItemConfig,
-			}
 			if currentItemConfig == desiredItemConfig {
+				change := &Change{
+					Kind:          lItem.Kind,
+					Name:          lItem.Name,
+					CurrentState:  "",
+					DesiredState:  "",
+					DesiredConfig: "",
+				}
 				changeset.Noop = append(changeset.Noop, change)
 			} else if lItem.ImmutableFieldsEqual(rItem) {
+				change := &Change{
+					Kind:          lItem.Kind,
+					Name:          lItem.Name,
+					CurrentState:  currentItemConfig,
+					DesiredState:  desiredItemConfig,
+					DesiredConfig: lItem.DesiredConfig(rItem),
+				}
 				changeset.Update = append(changeset.Update, change)
 			} else {
 				deleteChange := &Change{
-					Kind:         lItem.Kind,
-					Name:         lItem.Name,
-					CurrentState: currentItemConfig,
-					DesiredState: "",
+					Kind:          lItem.Kind,
+					Name:          lItem.Name,
+					CurrentState:  currentItemConfig,
+					DesiredState:  "",
+					DesiredConfig: "",
 				}
 				changeset.Delete = append(changeset.Delete, deleteChange)
 				createChange := &Change{
-					Kind:         lItem.Kind,
-					Name:         lItem.Name,
-					CurrentState: "",
-					DesiredState: desiredItemConfig,
+					Kind:          lItem.Kind,
+					Name:          lItem.Name,
+					CurrentState:  "",
+					DesiredState:  desiredItemConfig,
+					DesiredConfig: desiredItemConfig,
 				}
 				changeset.Create = append(changeset.Create, createChange)
 			}

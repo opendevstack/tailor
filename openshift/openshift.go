@@ -179,7 +179,7 @@ func ocDelete(change *Change, compareOptions *cli.CompareOptions) error {
 func ocApply(change *Change, action string, compareOptions *cli.CompareOptions) error {
 	kind := change.Kind
 	name := change.Name
-	config := change.DesiredState
+	config := change.DesiredConfig
 	fmt.Println(action, kind, name)
 	ioutil.WriteFile(".PROCESSED_TEMPLATE", []byte(config), 0644)
 
