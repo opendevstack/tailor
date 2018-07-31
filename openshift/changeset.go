@@ -80,8 +80,23 @@ func NewChangeset(remoteResourceList, localResourceList *ResourceList, upsertOnl
 			}
 			if currentItemConfig == desiredItemConfig {
 				changeset.Noop = append(changeset.Noop, change)
-			} else {
+			} else if lItem.ImmutableFieldsEqual(rItem) {
 				changeset.Update = append(changeset.Update, change)
+			} else {
+				deleteChange := &Change{
+					Kind:         lItem.Kind,
+					Name:         lItem.Name,
+					CurrentState: currentItemConfig,
+					DesiredState: "",
+				}
+				changeset.Delete = append(changeset.Delete, deleteChange)
+				createChange := &Change{
+					Kind:         lItem.Kind,
+					Name:         lItem.Name,
+					CurrentState: "",
+					DesiredState: desiredItemConfig,
+				}
+				changeset.Create = append(changeset.Create, createChange)
 			}
 		}
 	}
