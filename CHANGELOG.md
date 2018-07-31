@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+* [Feature] `--debug` flag, which contains debug information, reducing the amount of printed information when `--verbose` is given.
+
 ## 0.7.0 (2018-07-30)
 
 * [Feature] Support multiple labels (#7).

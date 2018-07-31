@@ -206,7 +206,7 @@ func (c *Config) handleKeyValue(k interface{}, v interface{}, pointer string) {
 		if nameRegexMatched {
 			parts := strings.Split(absolutePointer, "/")
 			itemPointer := strings.Join(parts[0:3], "/")
-			cli.VerboseMsg(fmt.Sprintf("Detected item %s:%s", absolutePointer, v.(string)))
+			cli.DebugMsg(fmt.Sprintf("Detected item %s:%s", absolutePointer, v.(string)))
 			c.ItemPointers = append(c.ItemPointers, itemPointer)
 		}
 

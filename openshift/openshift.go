@@ -27,7 +27,7 @@ func ExportAsTemplate(filter *ResourceFilter, name string, exportOptions *cli.Ex
 	if err != nil {
 		ret = string(out)
 		if strings.Contains(ret, "no resources found") {
-			cli.VerboseMsg("No resources '" + target + "' found.")
+			cli.DebugMsg("No resources '" + target + "' found.")
 			return []byte{}, nil
 		}
 		fmt.Printf("Failed to export resources: %s.\n", target)
@@ -35,7 +35,7 @@ func ExportAsTemplate(filter *ResourceFilter, name string, exportOptions *cli.Ex
 		return nil, err
 	}
 
-	cli.VerboseMsg("Exported", target, "resources")
+	cli.DebugMsg("Exported", target, "resources")
 	return out, err
 }
 
@@ -53,7 +53,7 @@ func ExportResources(filter *ResourceFilter, compareOptions *cli.CompareOptions)
 	if err != nil {
 		ret = string(out)
 		if strings.Contains(ret, "no resources found") {
-			cli.VerboseMsg("No", target, "resources found.")
+			cli.DebugMsg("No", target, "resources found.")
 			return []byte{}, nil
 		}
 		fmt.Printf("Failed to export %s resources.\n", target)
@@ -61,7 +61,7 @@ func ExportResources(filter *ResourceFilter, compareOptions *cli.CompareOptions)
 		return nil, err
 	}
 
-	cli.VerboseMsg("Exported", target, "resources")
+	cli.DebugMsg("Exported", target, "resources")
 	return out, err
 }
 
@@ -87,7 +87,7 @@ func ProcessTemplate(templateDir string, name string, paramDir string, compareOp
 			}
 		}
 
-		cli.VerboseMsg(fmt.Sprintf("Looking for param files in '%s'", paramDir))
+		cli.DebugMsg(fmt.Sprintf("Looking for param files in '%s'", paramDir))
 
 		fileParts := strings.Split(name, ".")
 		fileParts[len(fileParts)-1] = "env"
@@ -104,7 +104,7 @@ func ProcessTemplate(templateDir string, name string, paramDir string, compareOp
 		}
 		paramFileContent := string(b)
 		if strings.Contains(paramFileContent, ".ENC=") {
-			cli.VerboseMsg(actualParamFile, "needs to be decrypted")
+			cli.DebugMsg(actualParamFile, "needs to be decrypted")
 			readParams, err := NewParams(paramFileContent, compareOptions.PrivateKey, compareOptions.Passphrase)
 			if err != nil {
 				return []byte{}, err
@@ -135,7 +135,7 @@ func ProcessTemplate(templateDir string, name string, paramDir string, compareOp
 		return []byte{}, err
 	}
 
-	cli.VerboseMsg("Processed template:", filename)
+	cli.DebugMsg("Processed template:", filename)
 	return outBytes, err
 }
 

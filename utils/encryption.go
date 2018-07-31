@@ -70,7 +70,7 @@ func PrintPrivateKey(entity *openpgp.Entity, filename string) error {
 
 // Assembles entity list from keys in given files
 func GetEntityList(keys []string, passphrase string) (openpgp.EntityList, error) {
-	cli.VerboseMsg("Assemble entity list from", strings.Join(keys, ","))
+	cli.DebugMsg("Assemble entity list from", strings.Join(keys, ","))
 	entityList := openpgp.EntityList{}
 	for _, filename := range keys {
 		keyringFileBuffer, _ := os.Open(filename)
@@ -86,7 +86,7 @@ func GetEntityList(keys []string, passphrase string) (openpgp.EntityList, error)
 		// Decrypt private key using passphrase
 		passphraseBytes := []byte(passphrase)
 		if entity.PrivateKey != nil && entity.PrivateKey.Encrypted {
-			cli.VerboseMsg("Decrypting private key using passphrase")
+			cli.DebugMsg("Decrypting private key using passphrase")
 			err := entity.PrivateKey.Decrypt(passphraseBytes)
 			if err != nil {
 				return entityList, errors.New(
