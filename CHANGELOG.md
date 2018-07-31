@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+* [Feature] Implement general handling of immutable fields. Previously Tailor tried to modify the resource which resulted in an error, now it tries to recreate the resource. See #33.
 * [Feature] `--debug` flag, which contains debug information, reducing the amount of printed information when `--verbose` is given.
 
 ## 0.7.0 (2018-07-30)
