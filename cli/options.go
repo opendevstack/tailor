@@ -10,6 +10,7 @@ import (
 
 type GlobalOptions struct {
 	Verbose        bool
+	Debug          bool
 	NonInteractive bool
 	File           string
 	Namespace      string
@@ -40,7 +41,7 @@ func GetFileFlags(filename string) (map[string]string, error) {
 	fileFlags := make(map[string]string)
 	if _, err := os.Stat(filename); os.IsNotExist(err) {
 		if filename == "Tailorfile" {
-			VerboseMsg("No file '" + filename + "' found.")
+			PrintBluef("--> No file '%s' found.\n", filename)
 			return fileFlags, nil
 		}
 		return fileFlags, err
@@ -78,6 +79,9 @@ func (o *GlobalOptions) UpdateWithFile(fileFlags map[string]string) {
 	if fileFlags["verbose"] == "true" {
 		o.Verbose = true
 	}
+	if fileFlags["debug"] == "true" {
+		o.Debug = true
+	}
 	if fileFlags["non-interactive"] == "true" {
 		o.NonInteractive = true
 	}
@@ -104,9 +108,13 @@ func (o *GlobalOptions) UpdateWithFile(fileFlags map[string]string) {
 	}
 }
 
-func (o *GlobalOptions) UpdateWithFlags(verboseFlag bool, nonInteractiveFlag bool, namespaceFlag string, selectorFlag string, templateDirFlag []string, paramDirFlag []string, publicKeyDirFlag string, privateKeyFlag string, passphraseFlag string) {
+func (o *GlobalOptions) UpdateWithFlags(verboseFlag bool, debugFlag bool, nonInteractiveFlag bool, namespaceFlag string, selectorFlag string, templateDirFlag []string, paramDirFlag []string, publicKeyDirFlag string, privateKeyFlag string, passphraseFlag string) {
 	if verboseFlag {
 		o.Verbose = true
+	}
+
+	if debugFlag {
+		o.Debug = true
 	}
 
 	if nonInteractiveFlag {
@@ -147,7 +155,8 @@ func (o *GlobalOptions) UpdateWithFlags(verboseFlag bool, nonInteractiveFlag boo
 }
 
 func (o *GlobalOptions) Process() error {
-	verbose = o.Verbose
+	verbose = o.Verbose || o.Debug
+	debug = o.Debug
 	if len(o.Namespace) == 0 {
 		n, err := GetOcNamespace()
 		if err != nil {

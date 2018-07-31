@@ -32,6 +32,6 @@ func (l *ResourceList) GetItem(kind string, name string) (*ResourceItem, error) 
 
 func (l *ResourceList) AppendItems(config *Config) {
 	items := config.ExtractResources(l.Filter)
-	cli.VerboseMsg("Extracted", strconv.Itoa(len(items)), "resources from config")
+	cli.DebugMsg("Extracted", strconv.Itoa(len(items)), "resources from config")
 	l.Items = append(l.Items, items...)
 }

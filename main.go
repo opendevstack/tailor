@@ -11,6 +11,7 @@ import (
 	"io/ioutil"
 	"log"
 	"os"
+	"os/exec"
 	"regexp"
 	"runtime/debug"
 	"sort"
@@ -26,6 +27,10 @@ var (
 		"verbose",
 		"Enable verbose output.",
 	).Short('v').Bool()
+	debugFlag = app.Flag(
+		"debug",
+		"Enable debug output (implies verbose).",
+	).Short('d').Bool()
 	nonInteractiveFlag = app.Flag(
 		"non-interactive",
 		"Disable interactive mode.",
@@ -212,6 +217,7 @@ func main() {
 	globalOptions.UpdateWithFile(fileFlags)
 	globalOptions.UpdateWithFlags(
 		*verboseFlag,
+		*debugFlag,
 		*nonInteractiveFlag,
 		*namespaceFlag,
 		*selectorFlag,
@@ -548,7 +554,7 @@ func getFilter(kindArg string, selectorFlag string) (*openshift.ResourceFilter, 
 }
 
 func checkLoggedIn() {
-	cmd := cli.ExecPlainOcCmd([]string{"whoami"})
+	cmd := exec.Command("oc", "whoami")
 	_, err := cmd.CombinedOutput()
 	if err != nil {
 		log.Fatalln("You need to login with 'oc login' first.")
@@ -570,7 +576,7 @@ func assembleLocalResourceList(filter *openshift.ResourceFilter, compareOptions 
 			if !matched {
 				continue
 			}
-			cli.VerboseMsg("Reading", file.Name())
+			cli.DebugMsg("Reading", file.Name())
 			processedOut, err := openshift.ProcessTemplate(templateDir, file.Name(), compareOptions.ParamDirs[i], compareOptions)
 			if err != nil {
 				log.Fatalln("Could not process", file.Name(), "template:", err)

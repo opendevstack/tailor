@@ -20,6 +20,7 @@ type Options struct {
 }
 
 var verbose bool
+var debug bool
 
 var PrintGreenf func(format string, a ...interface{})
 var PrintBluef func(format string, a ...interface{})
@@ -43,6 +44,12 @@ func GetOcNamespace() (string, error) {
 
 func VerboseMsg(messages ...string) {
 	if verbose {
+		PrintBluef("--> %s\n", strings.Join(messages, " "))
+	}
+}
+
+func DebugMsg(messages ...string) {
+	if debug {
 		PrintBluef("--> %s\n", strings.Join(messages, " "))
 	}
 }
