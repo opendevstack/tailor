@@ -1,6 +1,6 @@
 # Tailor
 
-Tailor is a layer on top of the `oc` CLI command that allows you to keep your OpenShift templates under version control and keep the cluster in sync with them. Any drift between your desired state (YAML templates) and the current state (resources in the cluster) can be detected, reviewed and reconciled with Tailor.
+Tailor is a layer on top of the `oc` CLI command that allows you to keep your OpenShift templates under version control and keep the cluster in sync with them. Any drift between your desired state (YAML templates) and the current state (resources in the cluster) can be detected, reviewed and reconciled with Tailor. The tool is required by other OpenDevStack repositories, but is fully standalone and may be used in completely different contexts.
 
 ## Benefits
 
@@ -70,7 +70,7 @@ Finally, to ease PGP management, `secrets generate-key john.doe@domain.com` gene
 
 When templates reference images (e.g. in a DeploymentConfig) it can be tricky to keep them in sync with OpenShift, as OpenShift resolves the image reference (e.g. `foo:latest`) to a specific version (e.g. `foo@sha256:a1b2c3`). Consequently, the current and desired state are out of sync. A similar problem is that new builds will produce images in the image stream unknown at the time when the local template is authored.
 
-To prevent `tailor` from constantly reporting drift and "resetting" the current state to the local template, `tailor` stores the original value from the template within OpenShift (in an annotation) so that the current and desired state can be compared properly. Keep in mind that you should specify an image tag in the template, e.g. `registry.domain.com/foo/bar:latest`. One (minor) downside of the `tailor` approach is that if an image reference is updated in the OpenShift UI while the annotation inserted by `tailor` is not, `tailor` will not detect this change properly. Therefore, always treat the local configuration as the single source of truth.
+To prevent `tailor` from constantly reporting drift and "resetting" the current state to the local template, `tailor` stores the original value from the template within OpenShift (in an annotation) so that the current and desired state can be compared properly. Keep in mind that you should specify an image tag in the template, e.g. `registry.domain.com/foo/bar:latest`. Images located in the OCP registry can be referenced with `foo/bar:latest`. One (minor) downside of the `tailor` approach is that if an image reference is updated in the OpenShift UI while the annotation inserted by `tailor` is not, `tailor` will not detect this change properly. Therefore, always treat the local configuration as the single source of truth.
 
 Another complication arises when provisioning a DeploymentConfig referencing a non-existant image stream. This can happen e.g. if you "clone" a set of resources into a different OpenShift namespace. The DeploymentConfig will not deploy since it cannot find the image, and you need to manually trigger a build. Currently `tailor` does not offer a solution for this as it is not clear (yet) what the right way to "solve" this is.
 
