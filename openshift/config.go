@@ -27,21 +27,23 @@ var (
 )
 
 type Config struct {
-	Raw              []byte
-	Processed        map[string]interface{}
-	NameRegex        string
-	PointersToInit   []string
-	PointersToDelete []string
-	PointersToReset  map[string]string
-	ItemPointers     []string
-	Items            []*ResourceItem
+	Raw                  []byte
+	Processed            map[string]interface{}
+	NameRegex            string
+	PointersToInit       []string
+	PointersToDelete     []string
+	PointersToReset      map[string]string
+	ItemPointers         []string
+	Items                []*ResourceItem
+	OriginalConfigValues map[string]interface{}
 }
 
 func NewConfigFromTemplate(input []byte) *Config {
 	c := &Config{
-		Raw:             input,
-		NameRegex:       "/objects/[0-9]+/metadata/name",
-		PointersToReset: make(map[string]string),
+		Raw:                  input,
+		NameRegex:            "/objects/[0-9]+/metadata/name",
+		PointersToReset:      make(map[string]string),
+		OriginalConfigValues: make(map[string]interface{}),
 	}
 	c.Process(false)
 	return c
@@ -49,9 +51,10 @@ func NewConfigFromTemplate(input []byte) *Config {
 
 func NewConfigFromList(input []byte) *Config {
 	c := &Config{
-		Raw:             input,
-		NameRegex:       "/items/[0-9]+/metadata/name",
-		PointersToReset: make(map[string]string),
+		Raw:                  input,
+		NameRegex:            "/items/[0-9]+/metadata/name",
+		PointersToReset:      make(map[string]string),
+		OriginalConfigValues: make(map[string]interface{}),
 	}
 	c.Process(true)
 	return c
@@ -89,14 +92,15 @@ func (c *Config) Process(setOriginalValues bool) {
 	for configPath, annotationPath := range c.PointersToReset {
 		annotationPointer, _ := gojsonpointer.NewJsonPointer(annotationPath)
 		configPointer, _ := gojsonpointer.NewJsonPointer(configPath)
+		configValue, _, _ := configPointer.Get(m)
 		annotationValue, _, err := annotationPointer.Get(m)
 		if err == nil {
+			c.OriginalConfigValues[configPath] = configValue
 			configPointer.Set(m, annotationValue)
 			if !setOriginalValues {
 				annotationPointer.Delete(m)
 			}
 		} else if setOriginalValues {
-			configValue, _, _ := configPointer.Get(m)
 			annotationPointer.Set(m, configValue)
 		}
 	}
@@ -123,12 +127,20 @@ func (c *Config) collectItems() []*ResourceItem {
 		if err != nil {
 			labels = make(map[string]interface{})
 		}
+		originalValues := make(map[string]interface{})
+		for k, v := range c.OriginalConfigValues {
+			if strings.HasPrefix(k, itemPointer) {
+				originalValues[strings.TrimPrefix(k, itemPointer)] = v
+			}
+		}
+
 		item := &ResourceItem{
-			Name:    name.(string),
-			Kind:    kind.(string),
-			Labels:  labels.(map[string]interface{}),
-			Pointer: itemPointer,
-			Config:  config,
+			Name:           name.(string),
+			Kind:           kind.(string),
+			Labels:         labels.(map[string]interface{}),
+			Pointer:        itemPointer,
+			Config:         config,
+			OriginalValues: originalValues,
 		}
 		items = append(items, item)
 	}
