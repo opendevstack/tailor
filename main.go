@@ -209,7 +209,7 @@ func main() {
 
 	command := kingpin.MustParse(app.Parse(os.Args[1:]))
 
-	fileFlags, err := cli.GetFileFlags(*fileFlag)
+	fileFlags, err := cli.GetFileFlags(*fileFlag, (*verboseFlag || *debugFlag))
 	if err != nil {
 		log.Fatalln("Could not read Tailorfile:", err)
 	}

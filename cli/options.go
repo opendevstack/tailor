@@ -37,11 +37,13 @@ type ExportOptions struct {
 	Resource string
 }
 
-func GetFileFlags(filename string) (map[string]string, error) {
+func GetFileFlags(filename string, verboseOrDebug bool) (map[string]string, error) {
 	fileFlags := make(map[string]string)
 	if _, err := os.Stat(filename); os.IsNotExist(err) {
 		if filename == "Tailorfile" {
-			PrintBluef("--> No file '%s' found.\n", filename)
+			if verboseOrDebug {
+				PrintBluef("--> No file '%s' found.\n", filename)
+			}
 			return fileFlags, nil
 		}
 		return fileFlags, err
