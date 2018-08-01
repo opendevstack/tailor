@@ -44,10 +44,11 @@ func NewChangeset(remoteResourceList, localResourceList *ResourceList, upsertOnl
 		for _, item := range remoteResourceList.Items {
 			if _, err := localResourceList.GetItem(item.Kind, item.Name); err != nil {
 				change := &Change{
-					Kind:         item.Kind,
-					Name:         item.Name,
-					CurrentState: item.YamlConfig(),
-					DesiredState: "",
+					Kind:          item.Kind,
+					Name:          item.Name,
+					CurrentState:  item.YamlConfig(),
+					DesiredState:  "",
+					DesiredConfig: "",
 				}
 				changeset.Delete = append(changeset.Delete, change)
 			}
@@ -58,10 +59,11 @@ func NewChangeset(remoteResourceList, localResourceList *ResourceList, upsertOnl
 	for _, item := range localResourceList.Items {
 		if _, err := remoteResourceList.GetItem(item.Kind, item.Name); err != nil {
 			change := &Change{
-				Kind:         item.Kind,
-				Name:         item.Name,
-				CurrentState: "",
-				DesiredState: item.YamlConfig(),
+				Kind:          item.Kind,
+				Name:          item.Name,
+				CurrentState:  "",
+				DesiredState:  item.YamlConfig(),
+				DesiredConfig: item.DesiredConfig(nil),
 			}
 			changeset.Create = append(changeset.Create, change)
 		}
@@ -105,7 +107,7 @@ func NewChangeset(remoteResourceList, localResourceList *ResourceList, upsertOnl
 					Name:          lItem.Name,
 					CurrentState:  "",
 					DesiredState:  desiredItemConfig,
-					DesiredConfig: desiredItemConfig,
+					DesiredConfig: lItem.DesiredConfig(nil),
 				}
 				changeset.Create = append(changeset.Create, createChange)
 			}

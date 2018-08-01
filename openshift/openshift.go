@@ -2,6 +2,7 @@ package openshift
 
 import (
 	"bytes"
+	"errors"
 	"fmt"
 	"github.com/opendevstack/tailor/cli"
 	"io/ioutil"
@@ -141,15 +142,24 @@ func ProcessTemplate(templateDir string, name string, paramDir string, compareOp
 
 func UpdateRemote(changeset *Changeset, compareOptions *cli.CompareOptions) error {
 	for _, change := range changeset.Create {
-		ocApply(change, "Creating", compareOptions)
+		err := ocApply(change, "Creating", compareOptions)
+		if err != nil {
+			return err
+		}
 	}
 
 	for _, change := range changeset.Delete {
-		ocDelete(change, compareOptions)
+		err := ocDelete(change, compareOptions)
+		if err != nil {
+			return err
+		}
 	}
 
 	for _, change := range changeset.Update {
-		ocApply(change, "Updating", compareOptions)
+		err := ocApply(change, "Updating", compareOptions)
+		if err != nil {
+			return err
+		}
 	}
 
 	return nil
@@ -167,11 +177,13 @@ func ocDelete(change *Change, compareOptions *cli.CompareOptions) error {
 	)
 	out, err := cmd.CombinedOutput()
 	if err == nil {
-		fmt.Printf("Removed '%s/%s'.\n", kind, name)
+		fmt.Printf("Removed %s/%s.\n", kind, name)
 	} else {
-		fmt.Printf("Failed to remove '%s/%s' - aborting.\n", kind, name)
-		fmt.Println(fmt.Sprint(err) + ": " + string(out))
-		return err
+		return errors.New(fmt.Sprintf(
+			"Failed to remove %s/%s - aborting.\n"+
+				"%s\n",
+			kind, name, string(out),
+		))
 	}
 	return nil
 }
@@ -191,13 +203,15 @@ func ocApply(change *Change, action string, compareOptions *cli.CompareOptions) 
 	)
 	out, err := cmd.CombinedOutput()
 	if err == nil {
-		fmt.Printf("Applied processed '%s' template.\n", kind)
+		fmt.Printf("Applied processed %s template.\n", kind)
 		os.Remove(".PROCESSED_TEMPLATE")
 	} else {
-		fmt.Printf("Failed to apply processed '%s' template - aborting.\n", kind)
-		fmt.Println("It is left for inspection at .PROCESSED_TEMPLATE.")
-		fmt.Println(fmt.Sprint(err) + ": " + string(out))
-		return err
+		return errors.New(fmt.Sprintf(
+			"Failed to apply processed %s/%s template - aborting.\n"+
+				"It is left for inspection at .PROCESSED_TEMPLATE.\n"+
+				"%s\n",
+			kind, name, string(out),
+		))
 	}
 	return nil
 }

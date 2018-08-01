@@ -39,12 +39,14 @@ func (i *ResourceItem) YamlConfig() string {
 
 func (i *ResourceItem) DesiredConfig(currentItem *ResourceItem) string {
 	c := i.Config
-	for k, v := range currentItem.OriginalValues {
-		pointer, _ := gojsonpointer.NewJsonPointer(k)
-		desiredVal, _, _ := pointer.Get(c)
-		currentVal, _, _ := pointer.Get(currentItem.Config)
-		if desiredVal == currentVal {
-			pointer.Set(c, v)
+	if currentItem != nil {
+		for k, v := range currentItem.OriginalValues {
+			pointer, _ := gojsonpointer.NewJsonPointer(k)
+			desiredVal, _, _ := pointer.Get(c)
+			currentVal, _, _ := pointer.Get(currentItem.Config)
+			if desiredVal == currentVal {
+				pointer.Set(c, v)
+			}
 		}
 	}
 	y, _ := yaml.Marshal(c)

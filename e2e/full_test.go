@@ -160,15 +160,17 @@ objects:
 }
 
 func update(t *testing.T, tailorBinary string) {
+	fmt.Println("Updating test project")
 	cmd := exec.Command(tailorBinary, []string{"update", "--non-interactive"}...)
-	_, err := cmd.CombinedOutput()
+	out, err := cmd.CombinedOutput()
 	if err != nil {
-		t.Fatalf("Could not update test project")
+		t.Fatalf("Could not update test project: %s", out)
 	}
 	fmt.Println("Updated test project")
 }
 
 func statusWithNoExpectedDrift(t *testing.T, tailorBinary string) {
+	fmt.Println("Getting status with no expected drift")
 	cmd := exec.Command(tailorBinary, []string{"status"}...)
 	out, err := cmd.CombinedOutput()
 	if err != nil {

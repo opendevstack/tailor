@@ -381,11 +381,17 @@ func main() {
 
 		if updateRequired {
 			if globalOptions.NonInteractive {
-				openshift.UpdateRemote(changeset, compareOptions)
+				err = openshift.UpdateRemote(changeset, compareOptions)
+				if err != nil {
+					log.Fatalln(err)
+				}
 			} else {
 				c := cli.AskForConfirmation("Apply changes?")
 				if c {
-					openshift.UpdateRemote(changeset, compareOptions)
+					err = openshift.UpdateRemote(changeset, compareOptions)
+					if err != nil {
+						log.Fatalln(err)
+					}
 				}
 			}
 		}
