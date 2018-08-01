@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## 0.8.0 (2018-08-01)
+
 * [Feature] Implement general handling of immutable fields. Previously Tailor tried to modify the resource which resulted in an error, now it recreates the resource (#33).
 * [Feature] Add `--debug` flag, which contains debug information, reducing the amount of printed information when `--verbose` is given. `--debug` implies `--verbose`.
 * [Fix] Image reference changed accidentally when other parts of the DeploymentConfig changed (#38).

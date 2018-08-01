@@ -13,27 +13,27 @@ Tailor is a layer on top of the `oc` CLI command that allows you to keep your Op
 
 ## Installation
 
-The latest release is 0.7.0 and requires oc >= v3.9.0.
+The latest release is 0.8.0 and requires oc >= v3.9.0.
 Please have a look at the [changelog](https://github.com/opendevstack/tailor/blob/master/CHANGELOG.md) when upgrading.
 
 MacOS:
 
 ```
-curl -LO "https://github.com/opendevstack/tailor/releases/download/v0.7.0/tailor_darwin_amd64" && \
+curl -LO "https://github.com/opendevstack/tailor/releases/download/v0.8.0/tailor_darwin_amd64" && \
 mv tailor_darwin_amd64 /usr/local/bin/tailor
 ```
 
 Linux:
 
 ```
-curl -LO "https://github.com/opendevstack/tailor/releases/download/v0.7.0/tailor_linux_amd64" && \
+curl -LO "https://github.com/opendevstack/tailor/releases/download/v0.8.0/tailor_linux_amd64" && \
 mv tailor_linux_amd64 /usr/local/bin/tailor
 ```
 
 Windows (using Git Bash):
 
 ```
-curl -LO "https://github.com/opendevstack/tailor/releases/download/v0.7.0/tailor_windows_amd64.exe" && \
+curl -LO "https://github.com/opendevstack/tailor/releases/download/v0.8.0/tailor_windows_amd64.exe" && \
 mv tailor_windows_amd64.exe /mingw64/bin/tailor.exe
 ```
 
