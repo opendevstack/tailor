@@ -109,7 +109,7 @@ items:
     - ReadWriteOnce
     resources:
       requests:
-        storage: 1Gi
+        storage: 5Gi
     storageClassName: gp2
   status: {}
 kind: List
