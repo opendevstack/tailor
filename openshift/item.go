@@ -3,12 +3,18 @@ package openshift
 import (
 	"github.com/ghodss/yaml"
 	"github.com/xeipuuv/gojsonpointer"
+	"reflect"
 )
 
 var (
 	immuntableFields = map[string][]string{
 		"Route": []string{
 			"/spec/host",
+		},
+		"PersistentVolumeClaim": []string{
+			"/spec/accessModes",
+			"/spec/storageClassName",
+			"/spec/resources/requests/storage",
 		},
 	}
 )
@@ -45,18 +51,13 @@ func (i *ResourceItem) DesiredConfig(currentItem *ResourceItem) string {
 	return string(y)
 }
 
-func (i *ResourceItem) GetField(pointer string) (string, error) {
-	p, _ := gojsonpointer.NewJsonPointer(pointer)
-	val, _, err := p.Get(i.Config)
-	return val.(string), err
-}
-
 func (i *ResourceItem) ImmutableFieldsEqual(other *ResourceItem) bool {
 	if val, ok := immuntableFields[i.Kind]; ok {
 		for _, f := range val {
-			itemVal, itemErr := i.GetField(f)
-			otherVal, otherErr := other.GetField(f)
-			if (itemErr == nil && otherErr != nil) || (itemErr != nil && otherErr == nil) || itemVal != otherVal {
+			pointer, _ := gojsonpointer.NewJsonPointer(f)
+			itemVal, _, _ := pointer.Get(i.Config)
+			otherVal, _, _ := pointer.Get(other.Config)
+			if !reflect.DeepEqual(itemVal, otherVal) {
 				return false
 			}
 		}
