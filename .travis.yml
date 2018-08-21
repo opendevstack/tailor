@@ -8,4 +8,5 @@ before_install:
   - go get github.com/pmezard/go-difflib/difflib
   - go get github.com/xeipuuv/gojsonpointer
   - go get golang.org/x/crypto/openpgp
+  - go get golang.org/x/tools/cmd/goimports
 script: make test-unit

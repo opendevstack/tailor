@@ -27,6 +27,7 @@ type CompareOptions struct {
 	Labels                  string
 	Params                  []string
 	ParamFile               string
+	Diff                    string
 	IgnoreUnknownParameters bool
 	UpsertOnly              bool
 	Resource                string
@@ -179,6 +180,9 @@ func (o *CompareOptions) UpdateWithFile(fileFlags map[string]string) {
 	if val, ok := fileFlags["param-file"]; ok {
 		o.ParamFile = val
 	}
+	if val, ok := fileFlags["diff"]; ok {
+		o.Diff = val
+	}
 	if fileFlags["ignore-unknown-parameters"] == "true" {
 		o.IgnoreUnknownParameters = true
 	}
@@ -190,7 +194,7 @@ func (o *CompareOptions) UpdateWithFile(fileFlags map[string]string) {
 	}
 }
 
-func (o *CompareOptions) UpdateWithFlags(labelsFlag string, paramFlag []string, paramFileFlag string, ignoreUnknownParametersFlag bool, upsertOnlyFlag bool, resourceArg string) {
+func (o *CompareOptions) UpdateWithFlags(labelsFlag string, paramFlag []string, paramFileFlag string, diffFlag string, ignoreUnknownParametersFlag bool, upsertOnlyFlag bool, resourceArg string) {
 	if len(labelsFlag) > 0 {
 		o.Labels = labelsFlag
 	}
@@ -223,6 +227,9 @@ func (o *CompareOptions) UpdateWithFlags(labelsFlag string, paramFlag []string, 
 	if len(paramFileFlag) > 0 {
 		o.ParamFile = paramFileFlag
 	}
+	if len(diffFlag) > 0 {
+		o.Diff = diffFlag
+	}
 	if ignoreUnknownParametersFlag {
 		o.IgnoreUnknownParameters = true
 	}
@@ -246,6 +253,9 @@ func (o *CompareOptions) Process() error {
 				)
 			}
 		}
+	}
+	if o.Diff != "text" && o.Diff != "json" {
+		return errors.New("--diff must be either text or json.")
 	}
 	return nil
 }

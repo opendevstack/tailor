@@ -2,19 +2,14 @@ package openshift
 
 import (
 	"errors"
-	"github.com/opendevstack/tailor/cli"
-	"strconv"
+
+	"github.com/ghodss/yaml"
+	"github.com/xeipuuv/gojsonpointer"
 )
 
 type ResourceList struct {
 	Filter *ResourceFilter
 	Items  []*ResourceItem
-}
-
-func NewResourceList(filter *ResourceFilter, config *Config) *ResourceList {
-	items := config.ExtractResources(filter)
-	l := &ResourceList{Items: items, Filter: filter}
-	return l
 }
 
 func (l *ResourceList) Length() int {
@@ -30,8 +25,37 @@ func (l *ResourceList) GetItem(kind string, name string) (*ResourceItem, error) 
 	return nil, errors.New("No such item")
 }
 
-func (l *ResourceList) AppendItems(config *Config) {
-	items := config.ExtractResources(l.Filter)
-	cli.DebugMsg("Extracted", strconv.Itoa(len(items)), "resources from config")
-	l.Items = append(l.Items, items...)
+func (l *ResourceList) CollectItemsFromTemplateList(input []byte) error {
+	return l.appendItemsFromConfig(input, "template")
+}
+
+func (l *ResourceList) CollectItemsFromPlatformList(input []byte) error {
+	return l.appendItemsFromConfig(input, "platform")
+}
+
+func (l *ResourceList) appendItemsFromConfig(input []byte, source string) error {
+	if len(input) == 0 {
+		return errors.New("Input config empty")
+	}
+
+	var f interface{}
+	yaml.Unmarshal(input, &f)
+	m := f.(map[string]interface{})
+
+	p, _ := gojsonpointer.NewJsonPointer("/items")
+	items, _, err := p.Get(m)
+	if err != nil {
+		return err
+	}
+	for _, v := range items.([]interface{}) {
+		item, err := NewResourceItem(v.(map[string]interface{}), source)
+		if err != nil {
+			return err
+		}
+		if l.Filter.SatisfiedBy(item) {
+			l.Items = append(l.Items, item)
+		}
+	}
+
+	return nil
 }

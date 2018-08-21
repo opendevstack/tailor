@@ -4,20 +4,14 @@ import (
 	"bufio"
 	"errors"
 	"fmt"
-	"github.com/fatih/color"
-	"github.com/pmezard/go-difflib/difflib"
 	"io/ioutil"
 	"log"
 	"os"
 	"os/exec"
 	"strings"
-)
 
-type Options struct {
-	Verbose   bool
-	Namespace string
-	Selector  string
-}
+	"github.com/fatih/color"
+)
 
 var verbose bool
 var debug bool
@@ -71,18 +65,6 @@ func ExecPlainOcCmd(args []string) *exec.Cmd {
 func execCmd(executable string, args []string) *exec.Cmd {
 	VerboseMsg(executable + " " + strings.Join(args, " "))
 	return exec.Command(executable, args...)
-}
-
-func ShowDiff(a string, b string) {
-	diff := difflib.UnifiedDiff{
-		A:        difflib.SplitLines(a),
-		B:        difflib.SplitLines(b),
-		FromFile: "Current State (OpenShift cluster)",
-		ToFile:   "Desired State (Processed template)",
-		Context:  3,
-	}
-	text, _ := difflib.GetUnifiedDiffString(diff)
-	fmt.Printf(text)
 }
 
 // askForConfirmation asks the user for confirmation. A user must type in "yes" or "no" and

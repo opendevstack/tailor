@@ -2,8 +2,9 @@ package openshift
 
 import (
 	"fmt"
-	"github.com/opendevstack/tailor/utils"
 	"strings"
+
+	"github.com/opendevstack/tailor/utils"
 )
 
 var availableKinds = []string{

@@ -2,192 +2,377 @@ package openshift
 
 import (
 	"bytes"
-	"strings"
+	"reflect"
 	"testing"
+
+	"github.com/ghodss/yaml"
 )
 
-func TestImmutableFieldsEqual(t *testing.T) {
-	remoteItem, err := getRoute([]byte("old.com"))
-	if err != nil {
-		t.Errorf("Did not get remote route.")
+func TestNewResourceItem(t *testing.T) {
+	item := getItem(t, getBuildConfig(), "template")
+	if item.Kind != "BuildConfig" {
+		t.Errorf("Kind is %s but should be BuildConfig", item.Kind)
 	}
-
-	unchangedLocalItem, err := getRoute([]byte("old.com"))
-	if err != nil {
-		t.Errorf("Did not get local route.")
+	if item.Name != "foo" {
+		t.Errorf("Name is %s but should be foo", item.Name)
 	}
-	if unchangedLocalItem.YamlConfig() != remoteItem.YamlConfig() {
-		t.Errorf("Local and remote route should be in sync.")
-	}
-
-	if !unchangedLocalItem.ImmutableFieldsEqual(remoteItem) {
-		t.Errorf("Immutable field host should be the same.")
-	}
-
-	changedLocalItem, err := getRoute([]byte("new.com"))
-	if err != nil {
-		t.Errorf("Did not get local route.")
-	}
-	if changedLocalItem.YamlConfig() == remoteItem.YamlConfig() {
-		t.Errorf("Local and remote route should have drift.")
-	}
-
-	if changedLocalItem.ImmutableFieldsEqual(remoteItem) {
-		t.Errorf("Immutable field host should be different.")
+	if item.Labels["app"] != "foo" {
+		t.Errorf("Label app is %s but should be foo", item.Labels["app"])
 	}
 }
 
-func TestDesiredConfig(t *testing.T) {
-	localItem, err := getLocalDeploymentConfig()
-	if err != nil {
-		t.Errorf("Did not get local deployment config.")
-	}
-	remoteItem, err := getRemoteDeploymentConfig()
-	if err != nil {
-		t.Errorf("Did not get remote deployment config.")
-	}
+func TestChangesFromEqual(t *testing.T) {
+	currentItem := getItem(t, getBuildConfig(), "platform")
+	desiredItem := getItem(t, getBuildConfig(), "template")
+	desiredItem.ChangesFrom(currentItem)
+}
 
-	if localItem.YamlConfig() != remoteItem.YamlConfig() {
-		t.Errorf("Local and remote deployment config did not match.")
-	}
-
-	desiredConfig := localItem.DesiredConfig(remoteItem)
-
-	if !strings.Contains(desiredConfig, "192.168.0.1:5000") {
-		t.Errorf("Desired config did not contain image ref.")
+func TestChangesFromDifferent(t *testing.T) {
+	currentItem := getItem(t, getBuildConfig(), "platform")
+	desiredItem := getItem(t, getChangedBuildConfig(), "template")
+	changes := desiredItem.ChangesFrom(currentItem)
+	change := changes[0]
+	if len(change.Patches) != 11 {
+		t.Errorf("Got %d instead of %d changes: %s", len(change.Patches), 11, change.JsonPatches(true))
 	}
 }
 
-func getRoute(host []byte) (*ResourceItem, error) {
-	byteList := []byte(
+func TestChangesFromImmutableFields(t *testing.T) {
+	platformItem := getItem(t, getRoute([]byte("old.com")), "platform")
+
+	unchangedTemplateItem := getItem(t, getRoute([]byte("old.com")), "template")
+	changes := unchangedTemplateItem.ChangesFrom(platformItem)
+	if len(changes) > 1 || changes[0].Action != "Noop" {
+		t.Errorf("Platform and template should be in sync, got %d change(s): %v", len(changes), changes[0])
+	}
+
+	changedTemplateItem := getItem(t, getRoute([]byte("new.com")), "template")
+	changes = changedTemplateItem.ChangesFrom(platformItem)
+	if len(changes) == 0 {
+		t.Errorf("Platform and template should have drift.")
+	}
+}
+
+func TestChangesFromPlatformModifiedFields(t *testing.T) {
+	platformItem := getItem(t, getPlatformDeploymentConfig(), "platform")
+	templateItem := getItem(t, getTemplateDeploymentConfig([]byte("latest")), "template")
+	changes := templateItem.ChangesFrom(platformItem)
+	if len(changes) > 1 || changes[0].Action != "Noop" {
+		t.Errorf("Platform and template should be in sync, got %v", changes[0].JsonPatches(true))
+	}
+
+	changedTemplateItem := getItem(t, getTemplateDeploymentConfig([]byte("test")), "template")
+	changes = changedTemplateItem.ChangesFrom(platformItem)
+	if len(changes) != 1 {
+		t.Errorf("Platform and template should have drift for image field")
+	}
+	patch := changes[0].Patches[0]
+	if patch.Op != "replace" {
+		t.Errorf("Got op %s instead of replace", patch.Op)
+	}
+	if patch.Path != "/spec/template/spec/containers/0/image" {
+		t.Errorf("Got path %s instead of /spec/template/spec/containers/0/image", patch.Path)
+	}
+	if patch.Value != "bar/foo:test" {
+		t.Errorf("Got op %s instead of bar/foo:test", patch.Value)
+	}
+}
+
+func TestChangesFromAnnotationFields(t *testing.T) {
+	t.Log("Adding an annotation in the template")
+	platformItem := getItem(t, getConfigMap([]byte("{}")), "platform")
+	templateItem := getItem(t, getConfigMap([]byte("{foo: bar}")), "template")
+	changes := templateItem.ChangesFrom(platformItem)
+	if len(changes) != 1 {
+		t.Errorf("Platform and template should have drift")
+	}
+	actualPatchOne := changes[0].Patches[0]
+	actualPatchTwo := changes[0].Patches[1]
+	expectedPatchOne := &JsonPatch{
+		Op:    "add",
+		Path:  "/metadata/annotations/foo",
+		Value: "bar",
+	}
+	expectedPatchTwo := &JsonPatch{
+		Op:    "add",
+		Path:  "/metadata/annotations/managed-annotations.tailor.opendevstack.org",
+		Value: "foo",
+	}
+	if !reflect.DeepEqual(actualPatchOne, expectedPatchOne) {
+		t.Errorf("Got %v instead of %v", actualPatchOne, expectedPatchOne)
+	}
+	if !reflect.DeepEqual(actualPatchTwo, expectedPatchTwo) {
+		t.Errorf("Got %v instead of %v", actualPatchTwo, expectedPatchTwo)
+	}
+
+	t.Log("Having a platform-managed annotation")
+	platformItem = getItem(t, getConfigMap([]byte("{foo: bar}")), "platform")
+	templateItem = getItem(t, getConfigMap([]byte("{}")), "template")
+	changes = templateItem.ChangesFrom(platformItem)
+	var actualPatch *JsonPatch
+	var expectedPatch *JsonPatch
+	if len(changes) > 1 || changes[0].Action != "Noop" {
+		actualPatch = changes[0].Patches[0]
+		t.Errorf("Platform and template should have no drift, got %v", actualPatch)
+	}
+
+	t.Log("Adding a platform-managed annotation from the template")
+	platformItem = getItem(t, getConfigMap([]byte("{foo: bar}")), "platform")
+	templateItem = getItem(t, getConfigMap([]byte("{foo: bar}")), "template")
+	changes = templateItem.ChangesFrom(platformItem)
+	if len(changes) != 1 {
+		t.Errorf("Platform and template should have drift")
+	}
+	actualPatch = changes[0].Patches[0]
+	expectedPatch = &JsonPatch{
+		Op:    "add",
+		Path:  "/metadata/annotations/managed-annotations.tailor.opendevstack.org",
+		Value: "foo",
+	}
+	if !reflect.DeepEqual(actualPatch, expectedPatch) {
+		t.Errorf("Got %v instead of %v", actualPatch, expectedPatch)
+	}
+
+	t.Log("Changing a platform-managed annotation from the template")
+	platformItem = getItem(t, getConfigMap([]byte("{foo: bar}")), "platform")
+	templateItem = getItem(t, getConfigMap([]byte("{foo: baz}")), "template")
+	changes = templateItem.ChangesFrom(platformItem)
+	if len(changes) == 0 {
+		t.Errorf("Platform and template should have drift")
+	}
+	actualPatch = changes[0].Patches[0]
+	expectedPatch = &JsonPatch{
+		Op:    "replace",
+		Path:  "/metadata/annotations/foo",
+		Value: "baz",
+	}
+	if !reflect.DeepEqual(actualPatch, expectedPatch) {
+		t.Errorf("Got %v instead of %v", actualPatch, expectedPatch)
+	}
+
+	t.Log("Managed annotation")
+	c := getConfigMap([]byte(`
+    managed-annotations.tailor.opendevstack.org: foo
+    foo: bar`))
+	platformItem = getItem(t, c, "platform")
+
+	t.Log("- Modifying it")
+	templateItem = getItem(t, getConfigMap([]byte("{foo: baz}")), "template")
+	changes = templateItem.ChangesFrom(platformItem)
+	if len(changes) == 0 {
+		t.Errorf("Platform and template should have drift")
+	}
+	actualPatch = changes[0].Patches[0]
+	expectedPatch = &JsonPatch{
+		Op:    "replace",
+		Path:  "/metadata/annotations/foo",
+		Value: "baz",
+	}
+	if !reflect.DeepEqual(actualPatch, expectedPatch) {
+		t.Errorf("Got %v instead of %v", actualPatch, expectedPatch)
+	}
+
+	t.Log("- Removing it")
+	templateItem = getItem(t, getConfigMap([]byte("{}")), "template")
+	changes = templateItem.ChangesFrom(platformItem)
+	if len(changes) != 1 {
+		t.Errorf("Platform and template should have drift")
+	}
+	actualPatch = changes[0].Patches[0]
+	expectedPatch = &JsonPatch{
+		Op:   "remove",
+		Path: "/metadata/annotations/foo",
+	}
+	if !reflect.DeepEqual(actualPatch, expectedPatch) {
+		t.Errorf("Got %v instead of %v", actualPatch, expectedPatch)
+	}
+}
+
+func getItem(t *testing.T, input []byte, source string) *ResourceItem {
+	var f interface{}
+	yaml.Unmarshal(input, &f)
+	m := f.(map[string]interface{})
+	item, err := NewResourceItem(m, source)
+	if err != nil {
+		t.Errorf("Could not create item: %v", err)
+	}
+	return item
+}
+
+func getConfigMap(annotations []byte) []byte {
+	config := []byte(
 		`apiVersion: v1
-items:
-- apiVersion: v1
-  kind: Route
-  metadata:
-    annotations: {}
-    creationTimestamp: null
-    name: foo
-  spec:
-    host: HOST
-    tls:
-      insecureEdgeTerminationPolicy: Redirect
-      termination: edge
+kind: ConfigMap
+metadata:
+  creationTimestamp: null
+  labels:
+    app: bar
+  annotations: ANNOTATIONS
+  name: bar
+data:
+  bar: baz`)
+	return bytes.Replace(config, []byte("ANNOTATIONS"), annotations, -1)
+}
+
+func getBuildConfig() []byte {
+	return []byte(
+		`apiVersion: v1
+kind: BuildConfig
+metadata:
+  annotations: {}
+  creationTimestamp: null
+  labels:
+    app: foo
+  name: foo
+spec:
+  failedBuildsHistoryLimit: 5
+  nodeSelector: null
+  output:
     to:
-      kind: Service
-      name: foo
-      weight: 100
-    wildcardPolicy: None
-kind: List
-metadata: {}
-`)
-	config := NewConfigFromList(bytes.Replace(byteList, []byte("HOST"), host, -1))
-	filter := &ResourceFilter{
-		Kinds: []string{"Route"},
-		Name:  "",
-		Label: "",
-	}
-	list := &ResourceList{Filter: filter}
-	list.AppendItems(config)
-	return list.GetItem("Route", "foo")
+      kind: ImageStreamTag
+      name: foo:latest
+  postCommit: {}
+  resources: {}
+  runPolicy: Serial
+  source:
+    binary: {}
+    type: Binary
+  strategy:
+    dockerStrategy: {}
+    type: Docker
+  successfulBuildsHistoryLimit: 5
+  triggers:
+  - generic:
+      secret: password
+    type: Generic
+  - imageChange: {}
+    type: ImageChange
+  - type: ConfigChange`)
 }
 
-func getLocalDeploymentConfig() (*ResourceItem, error) {
-	byteList := []byte(
+func getChangedBuildConfig() []byte {
+	return []byte(
 		`apiVersion: v1
-items:
-- apiVersion: v1
-  kind: DeploymentConfig
-  metadata:
-    creationTimestamp: null
-    name: foo
-  spec:
-    replicas: 1
-    selector:
-      name: foo
-    strategy:
-      type: Recreate
-    template:
-      metadata:
-        annotations: {}
-        creationTimestamp: null
-        labels:
-          name: foo
-      spec:
-        containers:
-        - image: bar/foo:latest
-          imagePullPolicy: IfNotPresent
-          name: foo
-        dnsPolicy: ClusterFirst
-        restartPolicy: Always
-        schedulerName: default-scheduler
-        securityContext: {}
-        serviceAccount: foo
-        serviceAccountName: foo
-        volumes: []
-    test: false
-    triggers: []
-kind: List
-metadata: {}
-`)
-	config := NewConfigFromList(byteList)
-	filter := &ResourceFilter{
-		Kinds: []string{"DeploymentConfig"},
-		Name:  "",
-		Label: "",
-	}
-	list := &ResourceList{Filter: filter}
-	list.AppendItems(config)
-	return list.GetItem("DeploymentConfig", "foo")
+kind: BuildConfig
+metadata:
+  annotations:
+    foo: bar
+  creationTimestamp: null
+  name: foo
+spec:
+  failedBuildsHistoryLimit: 8
+  nodeSelector: null
+  output:
+    to:
+      kind: ImageStreamTag
+      name: foo:experiment
+  postCommit: {}
+  resources: {}
+  runPolicy: Serial
+  source:
+    binary: {}
+    type: Binary
+  strategy:
+    dockerStrategy: {}
+    type: Docker
+  successfulBuildsHistoryLimit: 5
+  triggers:
+  - imageChange: {}
+    type: ImageChange
+  - type: ConfigChange`)
 }
 
-func getRemoteDeploymentConfig() (*ResourceItem, error) {
-	byteList := []byte(
+func getRoute(host []byte) []byte {
+	config := []byte(
 		`apiVersion: v1
-items:
-- apiVersion: v1
-  kind: DeploymentConfig
-  metadata:
-    creationTimestamp: null
+kind: Route
+metadata:
+  annotations: {}
+  creationTimestamp: null
+  name: foo
+spec:
+  host: HOST
+  tls:
+    insecureEdgeTerminationPolicy: Redirect
+    termination: edge
+  to:
+    kind: Service
     name: foo
-    annotations:
-      original-values.tailor.io/spec.template.spec.containers.0.image: 'bar/foo:latest'
-  spec:
-    replicas: 1
-    selector:
-      name: foo
-    strategy:
-      type: Recreate
-    template:
-      metadata:
-        annotations: {}
-        creationTimestamp: null
-        labels:
-          name: foo
-      spec:
-        containers:
-        - image: 192.168.0.1:5000/bar/foo@sha256:51ead8367892a487ca4a1ca7435fa418466901ca2842b777e15a12d0b470ab30
-          imagePullPolicy: IfNotPresent
-          name: foo
-        dnsPolicy: ClusterFirst
-        restartPolicy: Always
-        schedulerName: default-scheduler
-        securityContext: {}
-        serviceAccount: foo
-        serviceAccountName: foo
-        volumes: []
-    test: false
-    triggers: []
-kind: List
-metadata: {}
-`)
-	config := NewConfigFromList(byteList)
-	filter := &ResourceFilter{
-		Kinds: []string{"DeploymentConfig"},
-		Name:  "",
-		Label: "",
-	}
-	list := &ResourceList{Filter: filter}
-	list.AppendItems(config)
-	return list.GetItem("DeploymentConfig", "foo")
+    weight: 100
+  wildcardPolicy: None`)
+
+	return bytes.Replace(config, []byte("HOST"), host, -1)
+}
+
+func getTemplateDeploymentConfig(tag []byte) []byte {
+	config := []byte(
+		`apiVersion: v1
+kind: DeploymentConfig
+metadata:
+  creationTimestamp: null
+  name: foo
+spec:
+  replicas: 1
+  selector:
+    name: foo
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      annotations: {}
+      creationTimestamp: null
+      labels:
+        name: foo
+    spec:
+      containers:
+      - image: bar/foo:TAG
+        imagePullPolicy: IfNotPresent
+        name: foo
+      dnsPolicy: ClusterFirst
+      restartPolicy: Always
+      schedulerName: default-scheduler
+      securityContext: {}
+      serviceAccount: foo
+      serviceAccountName: foo
+      volumes: []
+  test: false
+  triggers: []`)
+	return bytes.Replace(config, []byte("TAG"), tag, -1)
+}
+
+func getPlatformDeploymentConfig() []byte {
+	return []byte(
+		`apiVersion: v1
+kind: DeploymentConfig
+metadata:
+  creationTimestamp: null
+  name: foo
+  annotations:
+    original-values.tailor.io/spec.template.spec.containers.0.image: 'bar/foo:latest'
+spec:
+  replicas: 1
+  selector:
+    name: foo
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      annotations: {}
+      creationTimestamp: null
+      labels:
+        name: foo
+    spec:
+      containers:
+      - image: 192.168.0.1:5000/bar/foo@sha256:51ead8367892a487ca4a1ca7435fa418466901ca2842b777e15a12d0b470ab30
+        imagePullPolicy: IfNotPresent
+        name: foo
+      dnsPolicy: ClusterFirst
+      restartPolicy: Always
+      schedulerName: default-scheduler
+      securityContext: {}
+      serviceAccount: foo
+      serviceAccountName: foo
+      volumes: []
+  test: false
+  triggers: []`)
 }

@@ -32,8 +32,6 @@ kind: List
 metadata: {}
 `)
 
-	config := NewConfigFromList(byteList)
-
 	filter := &ResourceFilter{
 		Kinds: []string{"PersistentVolumeClaim"},
 		Name:  "",
@@ -41,7 +39,7 @@ metadata: {}
 	}
 
 	list := &ResourceList{Filter: filter}
-	list.AppendItems(config)
+	list.CollectItemsFromTemplateList(byteList)
 
 	if len(list.Items) != 1 {
 		t.Errorf("One item should have been extracted, got %v items.", len(list.Items))
@@ -88,8 +86,6 @@ kind: List
 metadata: {}
 `)
 
-	config := NewConfigFromList(byteList)
-
 	filter := &ResourceFilter{
 		Kinds: []string{},
 		Name:  "PersistentVolumeClaim/foo",
@@ -97,7 +93,7 @@ metadata: {}
 	}
 
 	list := &ResourceList{Filter: filter}
-	list.AppendItems(config)
+	list.CollectItemsFromTemplateList(byteList)
 
 	if len(list.Items) != 1 {
 		t.Errorf("One item should have been extracted, got %v items.", len(list.Items))
@@ -176,8 +172,6 @@ kind: List
 metadata: {}
 `)
 
-	config := NewConfigFromList(byteList)
-
 	pvcFilter := &ResourceFilter{
 		Kinds: []string{"PersistentVolumeClaim"},
 		Name:  "",
@@ -195,7 +189,7 @@ metadata: {}
 	}
 
 	pvcList := &ResourceList{Filter: pvcFilter}
-	pvcList.AppendItems(config)
+	pvcList.CollectItemsFromTemplateList(byteList)
 
 	if len(pvcList.Items) != 1 {
 		t.Errorf("One item should have been extracted, got %v items.", len(pvcList.Items))
@@ -207,7 +201,7 @@ metadata: {}
 	}
 
 	cmList := &ResourceList{Filter: cmFilter}
-	cmList.AppendItems(config)
+	cmList.CollectItemsFromTemplateList(byteList)
 
 	if len(cmList.Items) != 1 {
 		t.Errorf("One item should have been extracted, got %v items.", len(cmList.Items))
@@ -219,7 +213,7 @@ metadata: {}
 	}
 
 	secretList := &ResourceList{Filter: secretFilter}
-	secretList.AppendItems(config)
+	secretList.CollectItemsFromTemplateList(byteList)
 
 	if len(secretList.Items) != 0 {
 		t.Errorf("No item should have been extracted, got %v items.", len(secretList.Items))

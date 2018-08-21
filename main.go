@@ -3,11 +3,6 @@ package main
 import (
 	"errors"
 	"fmt"
-	"github.com/alecthomas/kingpin"
-	"github.com/ghodss/yaml"
-	"github.com/opendevstack/tailor/cli"
-	"github.com/opendevstack/tailor/openshift"
-	"github.com/opendevstack/tailor/utils"
 	"io/ioutil"
 	"log"
 	"os"
@@ -16,6 +11,11 @@ import (
 	"runtime/debug"
 	"sort"
 	"strings"
+
+	"github.com/alecthomas/kingpin"
+	"github.com/opendevstack/tailor/cli"
+	"github.com/opendevstack/tailor/openshift"
+	"github.com/opendevstack/tailor/utils"
 )
 
 var (
@@ -90,6 +90,10 @@ var (
 		"param-file",
 		"File containing template parameter values to set/override in the template.",
 	).String()
+	statusDiffFlag = statusCommand.Flag(
+		"diff",
+		"Type of diff (text or json)",
+	).Default("text").String()
 	statusIgnoreUnknownParametersFlag = statusCommand.Flag(
 		"ignore-unknown-parameters",
 		"If true, will not stop processing if a provided parameter does not exist in the template.",
@@ -118,6 +122,10 @@ var (
 		"param-file",
 		"File containing template parameter values to set/override in the template.",
 	).String()
+	updateDiffFlag = updateCommand.Flag(
+		"diff",
+		"Type of diff (text or json)",
+	).Default("text").String()
 	updateIgnoreUnknownParametersFlag = updateCommand.Flag(
 		"ignore-unknown-parameters",
 		"If true, will not stop processing if a provided parameter does not exist in the template.",
@@ -336,6 +344,7 @@ func main() {
 			*statusLabelsFlag,
 			*statusParamFlag,
 			*statusParamFileFlag,
+			*statusDiffFlag,
 			*statusIgnoreUnknownParametersFlag,
 			*statusUpsertOnlyFlag,
 			*statusResourceArg,
@@ -365,6 +374,7 @@ func main() {
 			*updateLabelsFlag,
 			*updateParamFlag,
 			*updateParamFileFlag,
+			*updateDiffFlag,
 			*updateIgnoreUnknownParametersFlag,
 			*updateUpsertOnlyFlag,
 			*updateResourceArg,
@@ -381,14 +391,14 @@ func main() {
 
 		if updateRequired {
 			if globalOptions.NonInteractive {
-				err = openshift.UpdateRemote(changeset, compareOptions)
+				err = changeset.Apply(compareOptions)
 				if err != nil {
 					log.Fatalln(err)
 				}
 			} else {
 				c := cli.AskForConfirmation("Apply changes?")
 				if c {
-					err = openshift.UpdateRemote(changeset, compareOptions)
+					err = changeset.Apply(compareOptions)
 					if err != nil {
 						log.Fatalln(err)
 					}
@@ -472,35 +482,39 @@ func calculateChangeset(compareOptions *cli.CompareOptions) (bool, *openshift.Ch
 
 	resource := compareOptions.Resource
 	selectorFlag := compareOptions.Selector
-	upsertOnly := compareOptions.UpsertOnly
 
 	filter, err := getFilter(resource, selectorFlag)
 	if err != nil {
 		return updateRequired, &openshift.Changeset{}, err
 	}
 
-	localResourceList := assembleLocalResourceList(
+	templateBasedList := assembleTemplateBasedList(
 		filter,
 		compareOptions,
 	)
-	remoteResourceList := assembleRemoteResourceList(filter, compareOptions)
-	remoteResourcesWord := "resources"
-	if remoteResourceList.Length() == 1 {
-		remoteResourcesWord = "resource"
+	platformBasedList := assemblePlatformBasedList(filter, compareOptions)
+	platformResourcesWord := "resources"
+	if platformBasedList.Length() == 1 {
+		platformResourcesWord = "resource"
 	}
-	localResourcesWord := "resources"
-	if localResourceList.Length() == 1 {
-		localResourcesWord = "resource"
+	templateResourcesWord := "resources"
+	if templateBasedList.Length() == 1 {
+		templateResourcesWord = "resource"
 	}
 	fmt.Printf(
 		"Found %d %s in OCP cluster (current state) and %d %s in processed templates (desired state).\n\n",
-		remoteResourceList.Length(),
-		remoteResourcesWord,
-		localResourceList.Length(),
-		localResourcesWord,
+		platformBasedList.Length(),
+		platformResourcesWord,
+		templateBasedList.Length(),
+		templateResourcesWord,
 	)
 
-	changeset := compare(remoteResourceList, localResourceList, upsertOnly)
+	changeset := compare(
+		platformBasedList,
+		templateBasedList,
+		compareOptions.UpsertOnly,
+		compareOptions.Diff,
+	)
 	updateRequired = !changeset.Blank()
 	return updateRequired, changeset, nil
 }
@@ -567,7 +581,7 @@ func checkLoggedIn() {
 	}
 }
 
-func assembleLocalResourceList(filter *openshift.ResourceFilter, compareOptions *cli.CompareOptions) *openshift.ResourceList {
+func assembleTemplateBasedList(filter *openshift.ResourceFilter, compareOptions *cli.CompareOptions) *openshift.ResourceList {
 	list := &openshift.ResourceList{Filter: filter}
 
 	// read files in folders and assemble lists for kinds
@@ -587,23 +601,21 @@ func assembleLocalResourceList(filter *openshift.ResourceFilter, compareOptions 
 			if err != nil {
 				log.Fatalln("Could not process", file.Name(), "template:", err)
 			}
-			processedConfig := openshift.NewConfigFromList(processedOut)
-			list.AppendItems(processedConfig)
+			list.CollectItemsFromTemplateList(processedOut)
 		}
 	}
 
 	return list
 }
 
-func assembleRemoteResourceList(filter *openshift.ResourceFilter, compareOptions *cli.CompareOptions) *openshift.ResourceList {
+func assemblePlatformBasedList(filter *openshift.ResourceFilter, compareOptions *cli.CompareOptions) *openshift.ResourceList {
 	list := &openshift.ResourceList{Filter: filter}
 
 	exportedOut, err := openshift.ExportResources(filter, compareOptions)
 	if err != nil {
 		log.Fatalln("Could not export", filter.String(), " resources.")
 	}
-	exportedConfig := openshift.NewConfigFromList(exportedOut)
-	list.AppendItems(exportedConfig)
+	list.CollectItemsFromPlatformList(exportedOut)
 
 	return list
 }
@@ -623,19 +635,18 @@ func export(filter *openshift.ResourceFilter, exportOptions *cli.ExportOptions) 
 
 	out, err := openshift.ExportAsTemplate(filter, templateName, exportOptions)
 	if err != nil {
-		log.Fatalln("Could not export", filter.String(), "resources as template.")
-	}
-	if len(out) == 0 {
-		return
+		log.Fatalln(
+			"Could not export",
+			filter.String(),
+			"resources as template:",
+			err,
+		)
 	}
 
-	config := openshift.NewConfigFromTemplate(out)
-
-	b, _ := yaml.Marshal(config.Processed)
-	fmt.Println(string(b))
+	fmt.Println(out)
 }
 
-func compare(remoteResourceList *openshift.ResourceList, localResourceList *openshift.ResourceList, upsertOnly bool) *openshift.Changeset {
+func compare(remoteResourceList *openshift.ResourceList, localResourceList *openshift.ResourceList, upsertOnly bool, diff string) *openshift.Changeset {
 	changeset := openshift.NewChangeset(remoteResourceList, localResourceList, upsertOnly)
 
 	for _, change := range changeset.Noop {
@@ -644,17 +655,21 @@ func compare(remoteResourceList *openshift.ResourceList, localResourceList *open
 
 	for _, change := range changeset.Delete {
 		cli.PrintRedf("- %s to be deleted\n", change.ItemName())
-		cli.ShowDiff(change.CurrentState, change.DesiredState)
+		fmt.Printf(change.Diff())
 	}
 
 	for _, change := range changeset.Create {
 		cli.PrintGreenf("+ %s to be created\n", change.ItemName())
-		cli.ShowDiff(change.CurrentState, change.DesiredState)
+		fmt.Printf(change.Diff())
 	}
 
 	for _, change := range changeset.Update {
 		cli.PrintYellowf("~ %s to be updated\n", change.ItemName())
-		cli.ShowDiff(change.CurrentState, change.DesiredState)
+		if diff == "text" {
+			fmt.Printf(change.Diff())
+		} else {
+			fmt.Println(change.JsonPatches(true))
+		}
 	}
 
 	return changeset
