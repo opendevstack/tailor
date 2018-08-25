@@ -204,7 +204,6 @@ func getConfigMap(annotations []byte) []byte {
 		`apiVersion: v1
 kind: ConfigMap
 metadata:
-  creationTimestamp: null
   labels:
     app: bar
   annotations: ANNOTATIONS
@@ -220,7 +219,6 @@ func getBuildConfig() []byte {
 kind: BuildConfig
 metadata:
   annotations: {}
-  creationTimestamp: null
   labels:
     app: foo
   name: foo
@@ -257,7 +255,6 @@ kind: BuildConfig
 metadata:
   annotations:
     foo: bar
-  creationTimestamp: null
   name: foo
 spec:
   failedBuildsHistoryLimit: 8
@@ -288,7 +285,6 @@ func getRoute(host []byte) []byte {
 kind: Route
 metadata:
   annotations: {}
-  creationTimestamp: null
   name: foo
 spec:
   host: HOST
@@ -309,7 +305,6 @@ func getTemplateDeploymentConfig(tag []byte) []byte {
 		`apiVersion: v1
 kind: DeploymentConfig
 metadata:
-  creationTimestamp: null
   name: foo
 spec:
   replicas: 1
@@ -320,7 +315,6 @@ spec:
   template:
     metadata:
       annotations: {}
-      creationTimestamp: null
       labels:
         name: foo
     spec:
@@ -345,7 +339,6 @@ func getPlatformDeploymentConfig() []byte {
 		`apiVersion: v1
 kind: DeploymentConfig
 metadata:
-  creationTimestamp: null
   name: foo
   annotations:
     original-values.tailor.io/spec.template.spec.containers.0.image: 'bar/foo:latest'
@@ -358,7 +351,6 @@ spec:
   template:
     metadata:
       annotations: {}
-      creationTimestamp: null
       labels:
         name: foo
     spec:

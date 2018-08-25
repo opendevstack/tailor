@@ -12,7 +12,6 @@ items:
 - apiVersion: v1
   kind: PersistentVolumeClaim
   metadata:
-    creationTimestamp: null
     labels:
       template: foo-template
     name: foo
@@ -38,7 +37,6 @@ items:
       pv.kubernetes.io/bind-completed: "yes"
       pv.kubernetes.io/bound-by-controller: "yes"
       volume.beta.kubernetes.io/storage-provisioner: kubernetes.io/aws-ebs
-    creationTimestamp: null
     labels:
       template: foo-template
     name: foo
@@ -77,7 +75,6 @@ items:
 - apiVersion: v1
   kind: PersistentVolumeClaim
   metadata:
-    creationTimestamp: null
     name: foo
     labels:
       app: foo
@@ -99,7 +96,6 @@ items:
 - apiVersion: v1
   kind: PersistentVolumeClaim
   metadata:
-    creationTimestamp: null
     name: foo
     annotations:
       kubectl.kubernetes.io/last-applied-configuration: >
@@ -137,7 +133,6 @@ items:
 - apiVersion: v1
   kind: PersistentVolumeClaim
   metadata:
-    creationTimestamp: null
     name: foo
   spec:
     accessModes:
@@ -156,7 +151,6 @@ items:
 - apiVersion: v1
   kind: PersistentVolumeClaim
   metadata:
-    creationTimestamp: null
     name: bar
   spec:
     accessModes:
@@ -193,7 +187,6 @@ items:
 - apiVersion: v1
   kind: PersistentVolumeClaim
   metadata:
-    creationTimestamp: null
     name: foo
   spec:
     accessModes:

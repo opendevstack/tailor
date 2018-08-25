@@ -15,9 +15,11 @@ var (
 	//tailorIgnoredAnnotation = "ignored-fields.tailor.opendevstack.org"
 	platformManagedFields = []string{
 		"/metadata/generation",
+		"/metadata/creationTimestamp",
 		"/spec/tags",
 		"/status",
 		"/spec/volumeName",
+		"/spec/template/metadata/creationTimestamp",
 	}
 	emptyMapFields = []string{
 		"/metadata/annotations",
