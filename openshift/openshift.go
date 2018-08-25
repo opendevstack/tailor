@@ -4,13 +4,17 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
-	"github.com/opendevstack/tailor/cli"
 	"io/ioutil"
 	"os"
+	"strconv"
 	"strings"
+
+	"github.com/ghodss/yaml"
+	"github.com/opendevstack/tailor/cli"
+	"github.com/xeipuuv/gojsonpointer"
 )
 
-func ExportAsTemplate(filter *ResourceFilter, name string, exportOptions *cli.ExportOptions) ([]byte, error) {
+func ExportAsTemplate(filter *ResourceFilter, name string, exportOptions *cli.ExportOptions) (string, error) {
 	ret := ""
 	args := []string{"export", "--as-template=" + name, "--output=yaml"}
 	if len(filter.Label) > 0 {
@@ -29,15 +33,50 @@ func ExportAsTemplate(filter *ResourceFilter, name string, exportOptions *cli.Ex
 		ret = string(out)
 		if strings.Contains(ret, "no resources found") {
 			cli.DebugMsg("No resources '" + target + "' found.")
-			return []byte{}, nil
+			return "", nil
 		}
 		fmt.Printf("Failed to export resources: %s.\n", target)
 		fmt.Println(fmt.Sprint(err) + ": " + ret)
-		return nil, err
+		return "", err
 	}
 
 	cli.DebugMsg("Exported", target, "resources")
-	return out, err
+
+	if len(out) == 0 {
+		return "", nil
+	}
+
+	var f interface{}
+	yaml.Unmarshal(out, &f)
+	m := f.(map[string]interface{})
+
+	objectsPointer, _ := gojsonpointer.NewJsonPointer("/objects")
+	items, _, err := objectsPointer.Get(m)
+	if err != nil {
+		return "", errors.New(fmt.Sprintf(
+			"Could not get objects of exported template: %s", err,
+		))
+	}
+	for k, v := range items.([]interface{}) {
+		item, err := NewResourceItem(v.(map[string]interface{}), "platform")
+		if err != nil {
+			return "", errors.New(fmt.Sprintf(
+				"Could not parse object of exported template: %s", err,
+			))
+		}
+		item.RemoveUnmanagedAnnotations()
+		itemPointer, _ := gojsonpointer.NewJsonPointer("/objects/" + strconv.Itoa(k))
+		itemPointer.Set(m, item.Config)
+	}
+
+	b, err := yaml.Marshal(m)
+	if err != nil {
+		return "", errors.New(fmt.Sprintf(
+			"Could not marshal modified template: %s", err,
+		))
+	}
+
+	return string(b), err
 }
 
 func ExportResources(filter *ResourceFilter, compareOptions *cli.CompareOptions) ([]byte, error) {
@@ -138,80 +177,4 @@ func ProcessTemplate(templateDir string, name string, paramDir string, compareOp
 
 	cli.DebugMsg("Processed template:", filename)
 	return outBytes, err
-}
-
-func UpdateRemote(changeset *Changeset, compareOptions *cli.CompareOptions) error {
-	for _, change := range changeset.Create {
-		err := ocApply(change, "Creating", compareOptions)
-		if err != nil {
-			return err
-		}
-	}
-
-	for _, change := range changeset.Delete {
-		err := ocDelete(change, compareOptions)
-		if err != nil {
-			return err
-		}
-	}
-
-	for _, change := range changeset.Update {
-		err := ocApply(change, "Updating", compareOptions)
-		if err != nil {
-			return err
-		}
-	}
-
-	return nil
-}
-
-func ocDelete(change *Change, compareOptions *cli.CompareOptions) error {
-	kind := change.Kind
-	name := change.Name
-	fmt.Println("Deleting", kind, name)
-	args := []string{"delete", kind, name}
-	cmd := cli.ExecOcCmd(
-		args,
-		compareOptions.Namespace,
-		"", // empty as name and selector is not allowed
-	)
-	out, err := cmd.CombinedOutput()
-	if err == nil {
-		fmt.Printf("Removed %s/%s.\n", kind, name)
-	} else {
-		return errors.New(fmt.Sprintf(
-			"Failed to remove %s/%s - aborting.\n"+
-				"%s\n",
-			kind, name, string(out),
-		))
-	}
-	return nil
-}
-
-func ocApply(change *Change, action string, compareOptions *cli.CompareOptions) error {
-	kind := change.Kind
-	name := change.Name
-	config := change.DesiredConfig
-	fmt.Println(action, kind, name)
-	ioutil.WriteFile(".PROCESSED_TEMPLATE", []byte(config), 0644)
-
-	args := []string{"apply", "--filename=" + ".PROCESSED_TEMPLATE"}
-	cmd := cli.ExecOcCmd(
-		args,
-		compareOptions.Namespace,
-		compareOptions.Selector,
-	)
-	out, err := cmd.CombinedOutput()
-	if err == nil {
-		fmt.Printf("Applied processed %s template.\n", kind)
-		os.Remove(".PROCESSED_TEMPLATE")
-	} else {
-		return errors.New(fmt.Sprintf(
-			"Failed to apply processed %s/%s template - aborting.\n"+
-				"It is left for inspection at .PROCESSED_TEMPLATE.\n"+
-				"%s\n",
-			kind, name, string(out),
-		))
-	}
-	return nil
 }

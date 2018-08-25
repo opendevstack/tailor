@@ -4,13 +4,14 @@ import (
 	"encoding/base64"
 	"errors"
 	"fmt"
-	"github.com/opendevstack/tailor/cli"
-	"github.com/opendevstack/tailor/utils"
-	"golang.org/x/crypto/openpgp"
 	"io/ioutil"
 	"os"
 	"regexp"
 	"strings"
+
+	"github.com/opendevstack/tailor/cli"
+	"github.com/opendevstack/tailor/utils"
+	"golang.org/x/crypto/openpgp"
 )
 
 type Param struct {

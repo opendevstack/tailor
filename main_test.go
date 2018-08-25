@@ -1,9 +1,10 @@
 package main
 
 import (
-	"github.com/opendevstack/tailor/openshift"
 	"reflect"
 	"testing"
+
+	"github.com/opendevstack/tailor/openshift"
 )
 
 func TestGetFilter(t *testing.T) {

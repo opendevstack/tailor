@@ -6,14 +6,15 @@ import (
 	"encoding/base64"
 	"errors"
 	"fmt"
-	"github.com/opendevstack/tailor/cli"
-	"golang.org/x/crypto/openpgp"
-	"golang.org/x/crypto/openpgp/armor"
-	"golang.org/x/crypto/openpgp/packet"
 	"io"
 	"io/ioutil"
 	"os"
 	"strings"
+
+	"github.com/opendevstack/tailor/cli"
+	"golang.org/x/crypto/openpgp"
+	"golang.org/x/crypto/openpgp/armor"
+	"golang.org/x/crypto/openpgp/packet"
 )
 
 func CreateEntity(name, email string) (*openpgp.Entity, error) {

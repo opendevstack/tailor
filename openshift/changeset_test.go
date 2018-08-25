@@ -6,14 +6,12 @@ import (
 
 func TestConfigNoop(t *testing.T) {
 
-	localProcessedTemplate := []byte(
+	templateInput := []byte(
 		`apiVersion: v1
 items:
 - apiVersion: v1
   kind: PersistentVolumeClaim
   metadata:
-    annotations:
-      volume.beta.kubernetes.io/storage-provisioner: kubernetes.io/aws-ebs
     creationTimestamp: null
     labels:
       template: foo-template
@@ -30,7 +28,7 @@ kind: List
 metadata: {}
 `)
 
-	remoteExport := []byte(
+	platformInput := []byte(
 		`apiVersion: v1
 items:
 - apiVersion: v1
@@ -57,14 +55,14 @@ kind: List
 metadata: {}
 `)
 
-	remoteConfig := NewConfigFromList(remoteExport)
-	localConfig := NewConfigFromList(localProcessedTemplate)
 	filter := &ResourceFilter{
 		Kinds: []string{"PersistentVolumeClaim"},
 	}
-	remoteResourceList := NewResourceList(filter, remoteConfig)
-	localResourceList := NewResourceList(filter, localConfig)
-	changeset := NewChangeset(remoteResourceList, localResourceList, false)
+	platformBasedList := &ResourceList{Filter: filter}
+	platformBasedList.CollectItemsFromPlatformList(platformInput)
+	templateBasedList := &ResourceList{Filter: filter}
+	templateBasedList.CollectItemsFromTemplateList(templateInput)
+	changeset := NewChangeset(platformBasedList, templateBasedList, false)
 
 	if !changeset.Blank() {
 		t.Errorf("Changeset is not blank")
@@ -73,7 +71,7 @@ metadata: {}
 
 func TestConfigUpdate(t *testing.T) {
 
-	localProcessedTemplate := []byte(
+	templateInput := []byte(
 		`apiVersion: v1
 items:
 - apiVersion: v1
@@ -81,6 +79,8 @@ items:
   metadata:
     creationTimestamp: null
     name: foo
+    labels:
+      app: foo
   spec:
     accessModes:
     - ReadWriteOnce
@@ -93,7 +93,7 @@ kind: List
 metadata: {}
 `)
 
-	remoteExport := []byte(
+	platformInput := []byte(
 		`apiVersion: v1
 items:
 - apiVersion: v1
@@ -102,8 +102,8 @@ items:
     creationTimestamp: null
     name: foo
     annotations:
-    kubectl.kubernetes.io/last-applied-configuration: >
-      {"apiVersion":"1"}
+      kubectl.kubernetes.io/last-applied-configuration: >
+        {"apiVersion":"1"}
   spec:
     accessModes:
     - ReadWriteOnce
@@ -116,23 +116,22 @@ kind: List
 metadata: {}
 `)
 
-	remoteConfig := NewConfigFromList(remoteExport)
-	localConfig := NewConfigFromList(localProcessedTemplate)
 	filter := &ResourceFilter{
 		Kinds: []string{"PersistentVolumeClaim"},
 	}
-	remoteResourceList := NewResourceList(filter, remoteConfig)
-	localResourceList := NewResourceList(filter, localConfig)
-	changeset := NewChangeset(remoteResourceList, localResourceList, false)
+	platformBasedList := &ResourceList{Filter: filter}
+	platformBasedList.CollectItemsFromPlatformList(platformInput)
+	templateBasedList := &ResourceList{Filter: filter}
+	templateBasedList.CollectItemsFromTemplateList(templateInput)
+	changeset := NewChangeset(platformBasedList, templateBasedList, false)
 
 	if len(changeset.Update) != 1 {
-		t.Errorf("Changeset.Update is blank but should not be")
+		t.Errorf("Changeset.Update has %d items instead of 1", len(changeset.Update))
 	}
 }
 
 func TestConfigCreation(t *testing.T) {
-
-	localProcessedTemplate := []byte(
+	templateInput := []byte(
 		`apiVersion: v1
 items:
 - apiVersion: v1
@@ -149,10 +148,9 @@ items:
     storageClassName: gp2
   status: {}
 kind: List
-metadata: {}
-`)
+metadata: {}`)
 
-	remoteExport := []byte(
+	platformInput := []byte(
 		`apiVersion: v1
 items:
 - apiVersion: v1
@@ -169,17 +167,16 @@ items:
     storageClassName: gp2
   status: {}
 kind: List
-metadata: {}
-`)
+metadata: {}`)
 
-	remoteConfig := NewConfigFromList(remoteExport)
-	localConfig := NewConfigFromList(localProcessedTemplate)
 	filter := &ResourceFilter{
 		Kinds: []string{"PersistentVolumeClaim"},
 	}
-	remoteResourceList := NewResourceList(filter, remoteConfig)
-	localResourceList := NewResourceList(filter, localConfig)
-	changeset := NewChangeset(remoteResourceList, localResourceList, false)
+	platformBasedList := &ResourceList{Filter: filter}
+	platformBasedList.CollectItemsFromPlatformList(platformInput)
+	templateBasedList := &ResourceList{Filter: filter}
+	templateBasedList.CollectItemsFromTemplateList(templateInput)
+	changeset := NewChangeset(platformBasedList, templateBasedList, false)
 
 	if len(changeset.Create) != 1 {
 		t.Errorf("Changeset.Create is blank but should not be")
@@ -188,9 +185,9 @@ metadata: {}
 
 func TestConfigDeletion(t *testing.T) {
 
-	localProcessedTemplate := []byte{}
+	templateInput := []byte{}
 
-	remoteExport := []byte(
+	platformInput := []byte(
 		`apiVersion: v1
 items:
 - apiVersion: v1
@@ -210,14 +207,14 @@ kind: List
 metadata: {}
 `)
 
-	remoteConfig := NewConfigFromList(remoteExport)
-	localConfig := NewConfigFromList(localProcessedTemplate)
 	filter := &ResourceFilter{
 		Kinds: []string{"PersistentVolumeClaim"},
 	}
-	remoteResourceList := NewResourceList(filter, remoteConfig)
-	localResourceList := NewResourceList(filter, localConfig)
-	changeset := NewChangeset(remoteResourceList, localResourceList, false)
+	platformBasedList := &ResourceList{Filter: filter}
+	platformBasedList.CollectItemsFromPlatformList(platformInput)
+	templateBasedList := &ResourceList{Filter: filter}
+	templateBasedList.CollectItemsFromTemplateList(templateInput)
+	changeset := NewChangeset(platformBasedList, templateBasedList, false)
 
 	if len(changeset.Delete) != 1 {
 		t.Errorf("Changeset.Delete is blank but should not be")
