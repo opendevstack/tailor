@@ -80,7 +80,6 @@ func ExportAsTemplate(filter *ResourceFilter, name string, exportOptions *cli.Ex
 }
 
 func ExportResources(filter *ResourceFilter, compareOptions *cli.CompareOptions) ([]byte, error) {
-	ret := ""
 	target := filter.ConvertToKinds()
 	args := []string{"export", target, "--output=yaml"}
 	cmd := cli.ExecOcCmd(
@@ -88,21 +87,31 @@ func ExportResources(filter *ResourceFilter, compareOptions *cli.CompareOptions)
 		compareOptions.Namespace,
 		compareOptions.Selector,
 	)
-	out, err := cmd.CombinedOutput()
+	var stdout, stderr bytes.Buffer
+	cmd.Stdout = &stdout
+	cmd.Stderr = &stderr
+	err := cmd.Run()
+	outBytes := stdout.Bytes()
+	errBytes := stderr.Bytes()
 
 	if err != nil {
-		ret = string(out)
+		ret := string(errBytes)
+
 		if strings.Contains(ret, "no resources found") {
 			cli.DebugMsg("No", target, "resources found.")
 			return []byte{}, nil
 		}
-		fmt.Printf("Failed to export %s resources.\n", target)
-		fmt.Println(fmt.Sprint(err) + ": " + ret)
-		return nil, err
+
+		return []byte{}, errors.New(fmt.Sprintf(
+			"Failed to export %s resources.\n"+
+				"%s\n",
+			target,
+			ret,
+		))
 	}
 
 	cli.DebugMsg("Exported", target, "resources")
-	return out, err
+	return outBytes, nil
 }
 
 func ProcessTemplate(templateDir string, name string, paramDir string, compareOptions *cli.CompareOptions) ([]byte, error) {
