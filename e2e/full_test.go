@@ -26,7 +26,6 @@ func TestFullScope(t *testing.T) {
 		`apiVersion: v1
 kind: Template
 metadata:
-  creationTimestamp: null
   name: configmap
 objects:
 - apiVersion: v1
@@ -34,7 +33,6 @@ objects:
     bar: baz
   kind: ConfigMap
   metadata:
-    creationTimestamp: null
     name: foo
 `)
 	ioutil.WriteFile("cm-template.yml", cmBytes, 0644)

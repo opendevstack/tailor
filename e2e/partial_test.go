@@ -24,13 +24,11 @@ func TestPartialScope(t *testing.T) {
 		`apiVersion: v1
 kind: Template
 metadata:
-  creationTimestamp: null
   name: configmap
 objects:
 - apiVersion: v1
   kind: ConfigMap
   metadata:
-    creationTimestamp: null
     name: foo
     labels:
       app: foo
@@ -39,7 +37,6 @@ objects:
 - apiVersion: v1
   kind: Service
   metadata:
-    creationTimestamp: null
     labels:
       app: foo
     name: foo
@@ -61,13 +58,11 @@ objects:
 		`apiVersion: v1
 kind: Template
 metadata:
-  creationTimestamp: null
   name: configmap
 objects:
 - apiVersion: v1
   kind: ConfigMap
   metadata:
-    creationTimestamp: null
     name: bar
     labels:
       app: bar
@@ -76,7 +71,6 @@ objects:
 - apiVersion: v1
   kind: Service
   metadata:
-    creationTimestamp: null
     labels:
       app: bar
     name: bar

@@ -101,9 +101,9 @@ func TestDiff(t *testing.T) {
 +  annotations:
 +    foo: bar
 +    managed-annotations.tailor.opendevstack.org: foo
-   creationTimestamp: null
    labels:
      app: bar
+   name: bar
 `,
 			[]*JsonPatch{
 				&JsonPatch{
@@ -133,9 +133,9 @@ func TestDiff(t *testing.T) {
 -    foo: bar
 -    managed-annotations.tailor.opendevstack.org: foo
 +  annotations: {}
-   creationTimestamp: null
    labels:
      app: bar
+   name: bar
 `,
 			[]*JsonPatch{
 				&JsonPatch{
@@ -162,8 +162,8 @@ func TestDiff(t *testing.T) {
 -    foo: bar
 +    foo: baz
      managed-annotations.tailor.opendevstack.org: foo
-   creationTimestamp: null
    labels:
+     app: bar
 `,
 			[]*JsonPatch{
 				&JsonPatch{
@@ -189,9 +189,9 @@ func TestDiff(t *testing.T) {
      foo: bar
 -    managed-annotations.tailor.opendevstack.org: foo
 +    managed-annotations.tailor.opendevstack.org: baz,foo
-   creationTimestamp: null
    labels:
      app: bar
+   name: bar
 `,
 			[]*JsonPatch{
 				&JsonPatch{
@@ -219,9 +219,9 @@ func TestDiff(t *testing.T) {
      foo: bar
 -    managed-annotations.tailor.opendevstack.org: foo
 +    managed-annotations.tailor.opendevstack.org: baz,foo
-   creationTimestamp: null
    labels:
      app: bar
+   name: bar
 `,
 			[]*JsonPatch{
 				&JsonPatch{
@@ -270,7 +270,6 @@ func getConfigMapForDiff(annotations, data []byte) []byte {
 		`apiVersion: v1
 kind: ConfigMap
 metadata:
-  creationTimestamp: null
   labels:
     app: bar
   annotations: ANNOTATIONS

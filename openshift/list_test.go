@@ -11,7 +11,6 @@ items:
 - apiVersion: v1
   kind: PersistentVolumeClaim
   metadata:
-    creationTimestamp: null
     name: foo
   spec:
     accessModes:
@@ -24,7 +23,6 @@ items:
 - apiVersion: v1
   kind: ConfigMap
   metadata:
-    creationTimestamp: null
     name: bar
   data:
     bar: baz
@@ -59,7 +57,6 @@ items:
 - apiVersion: v1
   kind: PersistentVolumeClaim
   metadata:
-    creationTimestamp: null
     name: foo
   spec:
     accessModes:
@@ -72,7 +69,6 @@ items:
 - apiVersion: v1
   kind: PersistentVolumeClaim
   metadata:
-    creationTimestamp: null
     name: bar
   spec:
     accessModes:
@@ -113,7 +109,6 @@ items:
 - apiVersion: v1
   kind: PersistentVolumeClaim
   metadata:
-    creationTimestamp: null
     labels:
       app: foo
     name: foo
@@ -128,7 +123,6 @@ items:
 - apiVersion: v1
   kind: PersistentVolumeClaim
   metadata:
-    creationTimestamp: null
     labels:
       app: bar
     name: bar
@@ -143,7 +137,6 @@ items:
 - apiVersion: v1
   kind: ConfigMap
   metadata:
-    creationTimestamp: null
     labels:
       app: foo
     name: foo
@@ -152,7 +145,6 @@ items:
 - apiVersion: v1
   kind: ConfigMap
   metadata:
-    creationTimestamp: null
     labels:
       app: bar
     name: bar
@@ -163,7 +155,6 @@ items:
     auth-token: abcdef
   kind: Secret
   metadata:
-    creationTimestamp: null
     name: bar
     labels:
       app: bar
