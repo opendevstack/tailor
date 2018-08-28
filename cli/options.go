@@ -26,7 +26,7 @@ type CompareOptions struct {
 	*GlobalOptions
 	Labels                  string
 	Params                  []string
-	ParamFile               string
+	ParamFiles              []string
 	Diff                    string
 	IgnoreUnknownParameters bool
 	UpsertOnly              bool
@@ -185,7 +185,7 @@ func (o *CompareOptions) UpdateWithFile(fileFlags map[string]string) {
 		o.Params = strings.Split(val, ",")
 	}
 	if val, ok := fileFlags["param-file"]; ok {
-		o.ParamFile = val
+		o.ParamFiles = strings.Split(val, ",")
 	}
 	if val, ok := fileFlags["diff"]; ok {
 		o.Diff = val
@@ -201,7 +201,7 @@ func (o *CompareOptions) UpdateWithFile(fileFlags map[string]string) {
 	}
 }
 
-func (o *CompareOptions) UpdateWithFlags(labelsFlag string, paramFlag []string, paramFileFlag string, diffFlag string, ignoreUnknownParametersFlag bool, upsertOnlyFlag bool, resourceArg string) {
+func (o *CompareOptions) UpdateWithFlags(labelsFlag string, paramFlag []string, paramFileFlag []string, diffFlag string, ignoreUnknownParametersFlag bool, upsertOnlyFlag bool, resourceArg string) {
 	if len(labelsFlag) > 0 {
 		o.Labels = labelsFlag
 	}
@@ -232,7 +232,7 @@ func (o *CompareOptions) UpdateWithFlags(labelsFlag string, paramFlag []string, 
 		}
 	}
 	if len(paramFileFlag) > 0 {
-		o.ParamFile = paramFileFlag
+		o.ParamFiles = paramFileFlag
 	}
 	if len(diffFlag) > 0 {
 		o.Diff = diffFlag
@@ -249,7 +249,7 @@ func (o *CompareOptions) UpdateWithFlags(labelsFlag string, paramFlag []string, 
 }
 
 func (o *CompareOptions) Process() error {
-	if (len(o.ParamDirs) > 1 || o.ParamDirs[0] != ".") && len(o.ParamFile) > 0 {
+	if (len(o.ParamDirs) > 1 || o.ParamDirs[0] != ".") && len(o.ParamFiles) > 0 {
 		return errors.New("You cannot specify both --param-dir and --param-file.")
 	}
 	for _, p := range o.ParamDirs {

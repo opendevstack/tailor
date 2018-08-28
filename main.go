@@ -88,8 +88,8 @@ var (
 	).Strings()
 	statusParamFileFlag = statusCommand.Flag(
 		"param-file",
-		"File containing template parameter values to set/override in the template.",
-	).String()
+		"File(s) containing template parameter values to set/override in the template.",
+	).Strings()
 	statusDiffFlag = statusCommand.Flag(
 		"diff",
 		"Type of diff (text or json)",
@@ -120,8 +120,8 @@ var (
 	).Strings()
 	updateParamFileFlag = updateCommand.Flag(
 		"param-file",
-		"File containing template parameter values to set/override in the template.",
-	).String()
+		"File(s) containing template parameter values to set/override in the template.",
+	).Strings()
 	updateDiffFlag = updateCommand.Flag(
 		"diff",
 		"Type of diff (text or json)",
@@ -596,7 +596,7 @@ func assembleTemplateBasedList(filter *openshift.ResourceFilter, compareOptions 
 			if !matched {
 				continue
 			}
-			cli.DebugMsg("Reading", file.Name())
+			cli.DebugMsg("Reading template", file.Name())
 			processedOut, err := openshift.ProcessTemplate(templateDir, file.Name(), compareOptions.ParamDirs[i], compareOptions)
 			if err != nil {
 				log.Fatalln("Could not process", file.Name(), "template:", err)
