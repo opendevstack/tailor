@@ -161,11 +161,18 @@ func (o *GlobalOptions) Process() error {
 	verbose = o.Verbose || o.Debug
 	debug = o.Debug
 	if len(o.Namespace) == 0 {
-		n, err := GetOcNamespace()
+		n, err := getOcNamespace()
 		if err != nil {
 			return err
 		}
 		o.Namespace = n
+	} else {
+		err := checkOcNamespace(o.Namespace)
+		if err != nil {
+			return errors.New(
+				fmt.Sprintf("No such project: %s", o.Namespace),
+			)
+		}
 	}
 	return nil
 }
@@ -270,4 +277,16 @@ func (o *ExportOptions) UpdateWithFlags(resourceArg string) {
 	if len(resourceArg) > 0 {
 		o.Resource = resourceArg
 	}
+}
+
+func getOcNamespace() (string, error) {
+	cmd := ExecPlainOcCmd([]string{"project", "--short"})
+	n, err := cmd.CombinedOutput()
+	return strings.TrimSpace(string(n)), err
+}
+
+func checkOcNamespace(n string) error {
+	cmd := ExecPlainOcCmd([]string{"project", n, "--short"})
+	_, err := cmd.CombinedOutput()
+	return err
 }

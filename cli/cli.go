@@ -30,12 +30,6 @@ func init() {
 	verbose = false
 }
 
-func GetOcNamespace() (string, error) {
-	cmd := ExecPlainOcCmd([]string{"project", "--short"})
-	n, err := cmd.CombinedOutput()
-	return strings.TrimSpace(string(n)), err
-}
-
 func VerboseMsg(messages ...string) {
 	if verbose {
 		PrintBluef("--> %s\n", strings.Join(messages, " "))
