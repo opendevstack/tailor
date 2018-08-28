@@ -4,6 +4,54 @@ import (
 	"testing"
 )
 
+func TestAddCreateOrder(t *testing.T) {
+	cs := &Changeset{}
+	cDC := &Change{
+		Action: "Create",
+		Kind:   "DeploymentConfig",
+	}
+	cPVC := &Change{
+		Action: "Create",
+		Kind:   "PersistentVolumeClaim",
+	}
+	cs.Add(cPVC, cDC)
+	if cs.Create[0].Kind != "PersistentVolumeClaim" {
+		t.Errorf("PVC needs to be created before DC")
+	}
+}
+
+func TestAddUpdateOrder(t *testing.T) {
+	cs := &Changeset{}
+	cDC := &Change{
+		Action: "Update",
+		Kind:   "DeploymentConfig",
+	}
+	cPVC := &Change{
+		Action: "Update",
+		Kind:   "PersistentVolumeClaim",
+	}
+	cs.Add(cPVC, cDC)
+	if cs.Update[0].Kind != "PersistentVolumeClaim" {
+		t.Errorf("PVC needs to be updated before DC")
+	}
+}
+
+func TestAddDeleteOrder(t *testing.T) {
+	cs := &Changeset{}
+	cDC := &Change{
+		Action: "Delete",
+		Kind:   "DeploymentConfig",
+	}
+	cPVC := &Change{
+		Action: "Delete",
+		Kind:   "PersistentVolumeClaim",
+	}
+	cs.Add(cPVC, cDC)
+	if cs.Delete[0].Kind != "DeploymentConfig" {
+		t.Errorf("DC needs to be deleted before PVC")
+	}
+}
+
 func TestConfigNoop(t *testing.T) {
 
 	templateInput := []byte(

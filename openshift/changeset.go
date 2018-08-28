@@ -1,7 +1,26 @@
 package openshift
 
 import (
+	"sort"
+
 	"github.com/opendevstack/tailor/cli"
+)
+
+var (
+	// Resources with no dependencies go first
+	kindOrder = map[string]string{
+		"Template":              "a",
+		"ConfigMap":             "b",
+		"Secret":                "c",
+		"PersistentVolumeClaim": "d",
+		"ImageStream":           "e",
+		"BuildConfig":           "f",
+		"DeploymentConfig":      "g",
+		"Service":               "h",
+		"Route":                 "i",
+		"ServiceAccount":        "j",
+		"RoleBinding":           "k",
+	}
 )
 
 type Changeset struct {
@@ -73,10 +92,19 @@ func (c *Changeset) Add(changes ...*Change) {
 		switch change.Action {
 		case "Create":
 			c.Create = append(c.Create, change)
+			sort.Slice(c.Create, func(i, j int) bool {
+				return kindOrder[c.Create[i].Kind] < kindOrder[c.Create[j].Kind]
+			})
 		case "Update":
 			c.Update = append(c.Update, change)
+			sort.Slice(c.Update, func(i, j int) bool {
+				return kindOrder[c.Update[i].Kind] < kindOrder[c.Update[j].Kind]
+			})
 		case "Delete":
 			c.Delete = append(c.Delete, change)
+			sort.Slice(c.Delete, func(i, j int) bool {
+				return kindOrder[c.Delete[i].Kind] > kindOrder[c.Delete[j].Kind]
+			})
 		case "Noop":
 			c.Noop = append(c.Noop, change)
 		}
