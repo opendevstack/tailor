@@ -91,8 +91,12 @@ func (templateItem *ResourceItem) ChangesFrom(platformItem *ResourceItem) []*Cha
 
 		if err != nil {
 			// Pointer does not exist in platformItem
-			comparison[path] = &JsonPatch{Op: "add", Value: templateItemVal}
-			addedPaths = append(addedPaths, path)
+			if templateItem.isImmutableField(path) {
+				return recreateChanges(templateItem, platformItem)
+			} else {
+				comparison[path] = &JsonPatch{Op: "add", Value: templateItemVal}
+				addedPaths = append(addedPaths, path)
+			}
 		} else {
 			// Pointer exists in both items
 			switch templateItemVal.(type) {
@@ -110,21 +114,7 @@ func (templateItem *ResourceItem) ChangesFrom(platformItem *ResourceItem) []*Cha
 					comparison[path] = &JsonPatch{Op: "noop"}
 				} else {
 					if templateItem.isImmutableField(path) {
-						deleteChange := &Change{
-							Action:       "Delete",
-							Kind:         templateItem.Kind,
-							Name:         templateItem.Name,
-							CurrentState: platformItem.YamlConfig(),
-							DesiredState: "",
-						}
-						createChange := &Change{
-							Action:       "Create",
-							Kind:         templateItem.Kind,
-							Name:         templateItem.Name,
-							CurrentState: "",
-							DesiredState: templateItem.YamlConfig(),
-						}
-						return []*Change{deleteChange, createChange}
+						return recreateChanges(templateItem, platformItem)
 					} else {
 						comparison[path] = &JsonPatch{Op: "replace", Value: templateItemVal}
 					}
@@ -384,4 +374,22 @@ func (i *ResourceItem) handleKeyValue(k interface{}, v interface{}, pointer stri
 	case map[string]interface{}:
 		i.walkMap(vv, absolutePointer)
 	}
+}
+
+func recreateChanges(templateItem, platformItem *ResourceItem) []*Change {
+	deleteChange := &Change{
+		Action:       "Delete",
+		Kind:         templateItem.Kind,
+		Name:         templateItem.Name,
+		CurrentState: platformItem.YamlConfig(),
+		DesiredState: "",
+	}
+	createChange := &Change{
+		Action:       "Create",
+		Kind:         templateItem.Kind,
+		Name:         templateItem.Name,
+		CurrentState: "",
+		DesiredState: templateItem.YamlConfig(),
+	}
+	return []*Change{deleteChange, createChange}
 }
