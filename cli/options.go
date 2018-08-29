@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"os"
+	"os/exec"
 	"strings"
 )
 
@@ -20,6 +21,7 @@ type GlobalOptions struct {
 	PublicKeyDir   string
 	PrivateKey     string
 	Passphrase     string
+	IsLoggedIn     bool
 }
 
 type CompareOptions struct {
@@ -167,12 +169,24 @@ func (o *GlobalOptions) Process() error {
 		}
 		o.Namespace = n
 	} else {
+		if !o.CheckLoggedIn() {
+			return errors.New("You need to login with 'oc login' first.")
+		}
 		err := checkOcNamespace(o.Namespace)
 		if err != nil {
 			return fmt.Errorf("No such project: %s", o.Namespace)
 		}
 	}
 	return nil
+}
+
+func (o *GlobalOptions) CheckLoggedIn() bool {
+	if !o.IsLoggedIn {
+		cmd := exec.Command("oc", "whoami")
+		_, err := cmd.CombinedOutput()
+		o.IsLoggedIn = (err == nil)
+	}
+	return o.IsLoggedIn
 }
 
 func (o *CompareOptions) UpdateWithFile(fileFlags map[string]string) {
@@ -260,6 +274,9 @@ func (o *CompareOptions) Process() error {
 	if o.Diff != "text" && o.Diff != "json" {
 		return errors.New("--diff must be either text or json.")
 	}
+	if !o.CheckLoggedIn() {
+		return errors.New("You need to login with 'oc login' first.")
+	}
 	return nil
 }
 
@@ -273,6 +290,13 @@ func (o *ExportOptions) UpdateWithFlags(resourceArg string) {
 	if len(resourceArg) > 0 {
 		o.Resource = resourceArg
 	}
+}
+
+func (o *ExportOptions) Process() error {
+	if !o.CheckLoggedIn() {
+		return errors.New("You need to login with 'oc login' first.")
+	}
+	return nil
 }
 
 func getOcNamespace() (string, error) {

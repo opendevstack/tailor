@@ -6,7 +6,6 @@ import (
 	"io/ioutil"
 	"log"
 	"os"
-	"os/exec"
 	"regexp"
 	"runtime/debug"
 	"sort"
@@ -334,8 +333,6 @@ func main() {
 		fmt.Printf("Private Key written to %s. This file MUST NOT be committed.\n", privateKeyFilename)
 
 	case statusCommand.FullCommand():
-		checkLoggedIn()
-
 		compareOptions := &cli.CompareOptions{
 			GlobalOptions: globalOptions,
 		}
@@ -364,8 +361,6 @@ func main() {
 		}
 
 	case updateCommand.FullCommand():
-		checkLoggedIn()
-
 		compareOptions := &cli.CompareOptions{
 			GlobalOptions: globalOptions,
 		}
@@ -407,8 +402,6 @@ func main() {
 		}
 
 	case exportCommand.FullCommand():
-		checkLoggedIn()
-
 		exportOptions := &cli.ExportOptions{
 			GlobalOptions: globalOptions,
 		}
@@ -416,6 +409,10 @@ func main() {
 		exportOptions.UpdateWithFlags(
 			*exportResourceArg,
 		)
+		err := exportOptions.Process()
+		if err != nil {
+			log.Fatalln("Options could not be processed:", err)
+		}
 
 		filter, err := getFilter(exportOptions.Resource, exportOptions.Selector)
 		if err != nil {
@@ -571,14 +568,6 @@ func getFilter(kindArg string, selectorFlag string) (*openshift.ResourceFilter, 
 	sort.Strings(filter.Kinds)
 
 	return filter, nil
-}
-
-func checkLoggedIn() {
-	cmd := exec.Command("oc", "whoami")
-	_, err := cmd.CombinedOutput()
-	if err != nil {
-		log.Fatalln("You need to login with 'oc login' first.")
-	}
 }
 
 func assembleTemplateBasedList(filter *openshift.ResourceFilter, compareOptions *cli.CompareOptions) *openshift.ResourceList {
