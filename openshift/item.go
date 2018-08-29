@@ -7,11 +7,13 @@ import (
 	"strings"
 
 	"github.com/ghodss/yaml"
+	"github.com/opendevstack/tailor/cli"
 	"github.com/xeipuuv/gojsonpointer"
 )
 
 var (
-	tailorManagedAnnotation = "managed-annotations.tailor.opendevstack.org"
+	tailorManagedAnnotation             = "managed-annotations.tailor.opendevstack.org"
+	tailorOriginalValuesAnnotationStart = "original-values.tailor.io"
 	//tailorIgnoredAnnotation = "ignored-fields.tailor.opendevstack.org"
 	platformManagedFields = []string{
 		"/metadata/generation",
@@ -91,8 +93,12 @@ func (templateItem *ResourceItem) ChangesFrom(platformItem *ResourceItem) []*Cha
 
 		if err != nil {
 			// Pointer does not exist in platformItem
-			comparison[path] = &JsonPatch{Op: "add", Value: templateItemVal}
-			addedPaths = append(addedPaths, path)
+			if templateItem.isImmutableField(path) {
+				return recreateChanges(templateItem, platformItem)
+			} else {
+				comparison[path] = &JsonPatch{Op: "add", Value: templateItemVal}
+				addedPaths = append(addedPaths, path)
+			}
 		} else {
 			// Pointer exists in both items
 			switch templateItemVal.(type) {
@@ -109,22 +115,9 @@ func (templateItem *ResourceItem) ChangesFrom(platformItem *ResourceItem) []*Cha
 				if templateItemVal == platformItemVal {
 					comparison[path] = &JsonPatch{Op: "noop"}
 				} else {
+					cli.DebugMsg("Detected different values for path", path)
 					if templateItem.isImmutableField(path) {
-						deleteChange := &Change{
-							Action:       "Delete",
-							Kind:         templateItem.Kind,
-							Name:         templateItem.Name,
-							CurrentState: platformItem.YamlConfig(),
-							DesiredState: "",
-						}
-						createChange := &Change{
-							Action:       "Create",
-							Kind:         templateItem.Kind,
-							Name:         templateItem.Name,
-							CurrentState: "",
-							DesiredState: templateItem.YamlConfig(),
-						}
-						return []*Change{deleteChange, createChange}
+						return recreateChanges(templateItem, platformItem)
 					} else {
 						comparison[path] = &JsonPatch{Op: "replace", Value: templateItemVal}
 					}
@@ -155,7 +148,7 @@ func (templateItem *ResourceItem) ChangesFrom(platformItem *ResourceItem) []*Cha
 						break
 					}
 				}
-				if !tailorManaged && a != tailorManagedAnnotation {
+				if !tailorManaged && a != tailorManagedAnnotation && !strings.HasPrefix(a, tailorOriginalValuesAnnotationStart) {
 					deletePointer, _ := gojsonpointer.NewJsonPointer(path)
 					_, _ = deletePointer.Delete(platformItem.Config)
 					continue
@@ -297,7 +290,7 @@ func (i *ResourceItem) ParseConfig(m map[string]interface{}) error {
 			matched, _ := regexp.MatchString(platformModifiedField, path)
 			if matched {
 				annotationKey := strings.Replace(strings.TrimLeft(path, "/"), "/", ".", -1)
-				annotationPath := "/metadata/annotations/original-values.tailor.io~1" + annotationKey
+				annotationPath := "/metadata/annotations/" + tailorOriginalValuesAnnotationStart + "~1" + annotationKey
 				annotationPointer, _ := gojsonpointer.NewJsonPointer(annotationPath)
 				specPointer, _ := gojsonpointer.NewJsonPointer(path)
 				specValue, _, _ := specPointer.Get(i.Config)
@@ -384,4 +377,22 @@ func (i *ResourceItem) handleKeyValue(k interface{}, v interface{}, pointer stri
 	case map[string]interface{}:
 		i.walkMap(vv, absolutePointer)
 	}
+}
+
+func recreateChanges(templateItem, platformItem *ResourceItem) []*Change {
+	deleteChange := &Change{
+		Action:       "Delete",
+		Kind:         templateItem.Kind,
+		Name:         templateItem.Name,
+		CurrentState: platformItem.YamlConfig(),
+		DesiredState: "",
+	}
+	createChange := &Change{
+		Action:       "Create",
+		Kind:         templateItem.Kind,
+		Name:         templateItem.Name,
+		CurrentState: "",
+		DesiredState: templateItem.YamlConfig(),
+	}
+	return []*Change{deleteChange, createChange}
 }
