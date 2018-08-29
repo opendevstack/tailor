@@ -187,16 +187,16 @@ var (
 	).Required().String()
 
 	kindMapping = map[string]string{
-		"svc":              "Service",
-		"service":          "Service",
-		"route":            "Route",
-		"dc":               "DeploymentConfig",
-		"deploymentconfig": "DeploymentConfig",
-		"bc":               "BuildConfig",
-		"buildconfig":      "BuildConfig",
-		"is":               "ImageStream",
-		"imagestream":      "ImageStream",
-		"pvc":              "PersistentVolumeClaim",
+		"svc":                   "Service",
+		"service":               "Service",
+		"route":                 "Route",
+		"dc":                    "DeploymentConfig",
+		"deploymentconfig":      "DeploymentConfig",
+		"bc":                    "BuildConfig",
+		"buildconfig":           "BuildConfig",
+		"is":                    "ImageStream",
+		"imagestream":           "ImageStream",
+		"pvc":                   "PersistentVolumeClaim",
 		"persistentvolumeclaim": "PersistentVolumeClaim",
 		"template":              "Template",
 		"cm":                    "ConfigMap",
@@ -428,7 +428,7 @@ func main() {
 func reEncrypt(filename, privateKey, passphrase, publicKeyDir string) error {
 	readParams, err := openshift.NewParamsFromFile(filename, privateKey, passphrase)
 	if err != nil {
-		return errors.New(fmt.Sprintf("Could not read file: %s.", err))
+		return fmt.Errorf("Could not read file: %s.", err)
 	}
 	readContent, _ := readParams.Process(false, false)
 
@@ -443,7 +443,7 @@ func reEncrypt(filename, privateKey, passphrase, publicKeyDir string) error {
 	}
 	err = ioutil.WriteFile(filename, []byte(renderedContent), 0644)
 	if err != nil {
-		return errors.New(fmt.Sprintf("Could not write file: %s.", err))
+		return fmt.Errorf("Could not write file: %s.", err)
 	}
 	return nil
 }
@@ -558,10 +558,10 @@ func getFilter(kindArg string, selectorFlag string) (*openshift.ResourceFilter, 
 	}
 
 	if len(unknownKinds) > 0 {
-		return nil, errors.New(fmt.Sprintf(
+		return nil, fmt.Errorf(
 			"Unknown resource kinds: %s",
 			strings.Join(unknownKinds, ","),
-		))
+		)
 	}
 
 	for kind, _ := range targetedKinds {

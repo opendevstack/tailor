@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"crypto"
 	"encoding/base64"
-	"errors"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -78,8 +77,10 @@ func GetEntityList(keys []string, passphrase string) (openpgp.EntityList, error)
 		defer keyringFileBuffer.Close()
 		l, err := openpgp.ReadArmoredKeyRing(keyringFileBuffer)
 		if err != nil {
-			return entityList, errors.New(
-				fmt.Sprintf("Reading key '%s' failed: %s", filename, err),
+			return entityList, fmt.Errorf(
+				"Reading key '%s' failed: %s",
+				filename,
+				err,
 			)
 		}
 		entity := l[0]
@@ -90,17 +91,15 @@ func GetEntityList(keys []string, passphrase string) (openpgp.EntityList, error)
 			cli.DebugMsg("Decrypting private key using passphrase")
 			err := entity.PrivateKey.Decrypt(passphraseBytes)
 			if err != nil {
-				return entityList, errors.New(
-					fmt.Sprintf("Failed to decrypt key: %s", err),
-				)
+				return entityList, fmt.Errorf("Failed to decrypt key: %s", err)
 			}
 		}
 		for _, subkey := range entity.Subkeys {
 			if subkey.PrivateKey != nil && subkey.PrivateKey.Encrypted {
 				err := subkey.PrivateKey.Decrypt(passphraseBytes)
 				if err != nil {
-					return entityList, errors.New(
-						fmt.Sprintf("Failed to decrypt subkey: %s", err),
+					return entityList, fmt.Errorf(
+						"Failed to decrypt subkey: %s", err,
 					)
 				}
 			}
@@ -117,9 +116,7 @@ func Encrypt(secret string, entityList openpgp.EntityList) (string, error) {
 	buf := new(bytes.Buffer)
 	w, err := openpgp.Encrypt(buf, entityList, nil, nil, nil)
 	if err != nil {
-		return "", errors.New(
-			fmt.Sprintf("Encrypting '%s' failed: %s", secret, err),
-		)
+		return "", fmt.Errorf("Encrypting '%s' failed: %s", secret, err)
 	}
 	_, err = w.Write([]byte(secret))
 	if err != nil {
@@ -144,18 +141,14 @@ func Decrypt(encoded string, entityList openpgp.EntityList) (string, error) {
 	// Decode bas64-encoded string
 	encrypted, err := base64.StdEncoding.DecodeString(encoded)
 	if err != nil {
-		return "", errors.New(
-			fmt.Sprintf("Decoding '%s' failed: %s", encoded, err),
-		)
+		return "", fmt.Errorf("Decoding '%s' failed: %s", encoded, err)
 	}
 
 	// Decrypt encrypted message
 	buf := bytes.NewBuffer([]byte(encrypted))
 	md, err := openpgp.ReadMessage(buf, entityList, nil, nil)
 	if err != nil {
-		return "", errors.New(
-			fmt.Sprintf("Decrypting '%s' failed: %s", encoded, err),
-		)
+		return "", fmt.Errorf("Decrypting '%s' failed: %s", encoded, err)
 	}
 	bytes, err := ioutil.ReadAll(md.UnverifiedBody)
 	return string(bytes), err

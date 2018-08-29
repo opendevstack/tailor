@@ -2,7 +2,6 @@ package cli
 
 import (
 	"bufio"
-	"errors"
 	"fmt"
 	"io/ioutil"
 	"log"
@@ -95,8 +94,9 @@ func EditEnvFile(content string) (string, error) {
 
 	_, err := exec.LookPath(editor)
 	if err != nil {
-		return "", errors.New(
-			fmt.Sprintf("Please install '%s' or set/change $EDITOR", editor),
+		return "", fmt.Errorf(
+			"Please install '%s' or set/change $EDITOR",
+			editor,
 		)
 	}
 

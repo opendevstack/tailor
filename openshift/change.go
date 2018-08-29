@@ -2,7 +2,6 @@ package openshift
 
 import (
 	"encoding/json"
-	"errors"
 	"fmt"
 	"io/ioutil"
 	"os"
@@ -90,11 +89,11 @@ func ocDelete(change *Change, compareOptions *cli.CompareOptions) error {
 	if err == nil {
 		fmt.Printf("Removed %s/%s.\n", kind, name)
 	} else {
-		return errors.New(fmt.Sprintf(
+		return fmt.Errorf(
 			"Failed to remove %s/%s - aborting.\n"+
 				"%s\n",
 			kind, name, string(out),
-		))
+		)
 	}
 	return nil
 }
@@ -117,12 +116,12 @@ func ocCreate(change *Change, compareOptions *cli.CompareOptions) error {
 		fmt.Printf("Applied processed %s template.\n", kind)
 		os.Remove(".PROCESSED_TEMPLATE")
 	} else {
-		return errors.New(fmt.Sprintf(
+		return fmt.Errorf(
 			"Failed to apply processed %s/%s template - aborting.\n"+
 				"It is left for inspection at .PROCESSED_TEMPLATE.\n"+
 				"%s\n",
 			kind, name, string(out),
-		))
+		)
 	}
 	return nil
 }
@@ -143,11 +142,11 @@ func ocPatch(change *Change, compareOptions *cli.CompareOptions) error {
 	)
 	out, err := cmd.CombinedOutput()
 	if err != nil {
-		return errors.New(fmt.Sprintf(
+		return fmt.Errorf(
 			"Failed to patch %s/%s - aborting.\n"+
 				"%s\n",
 			kind, name, string(out),
-		))
+		)
 	}
 	return nil
 }

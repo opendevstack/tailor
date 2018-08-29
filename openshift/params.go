@@ -2,7 +2,6 @@ package openshift
 
 import (
 	"encoding/base64"
-	"errors"
 	"fmt"
 	"io/ioutil"
 	"os"
@@ -142,11 +141,9 @@ func (p Params) Render(publicKeyDir string, previousParams Params) (string, erro
 		keyFiles = append(keyFiles, publicKeyDir+string(os.PathSeparator)+file.Name())
 	}
 	if len(keyFiles) == 0 {
-		return "", errors.New(
-			fmt.Sprintf(
-				"No public key files found in '%s'. Files need to end in '.key'.",
-				publicKeyDir,
-			),
+		return "", fmt.Errorf(
+			"No public key files found in '%s'. Files need to end in '.key'.",
+			publicKeyDir,
 		)
 	}
 

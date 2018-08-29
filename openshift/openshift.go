@@ -2,7 +2,6 @@ package openshift
 
 import (
 	"bytes"
-	"errors"
 	"fmt"
 	"io/ioutil"
 	"os"
@@ -53,16 +52,16 @@ func ExportAsTemplate(filter *ResourceFilter, name string, exportOptions *cli.Ex
 	objectsPointer, _ := gojsonpointer.NewJsonPointer("/objects")
 	items, _, err := objectsPointer.Get(m)
 	if err != nil {
-		return "", errors.New(fmt.Sprintf(
+		return "", fmt.Errorf(
 			"Could not get objects of exported template: %s", err,
-		))
+		)
 	}
 	for k, v := range items.([]interface{}) {
 		item, err := NewResourceItem(v.(map[string]interface{}), "platform")
 		if err != nil {
-			return "", errors.New(fmt.Sprintf(
+			return "", fmt.Errorf(
 				"Could not parse object of exported template: %s", err,
-			))
+			)
 		}
 		item.RemoveUnmanagedAnnotations()
 		itemPointer, _ := gojsonpointer.NewJsonPointer("/objects/" + strconv.Itoa(k))
@@ -71,9 +70,9 @@ func ExportAsTemplate(filter *ResourceFilter, name string, exportOptions *cli.Ex
 
 	b, err := yaml.Marshal(m)
 	if err != nil {
-		return "", errors.New(fmt.Sprintf(
+		return "", fmt.Errorf(
 			"Could not marshal modified template: %s", err,
-		))
+		)
 	}
 
 	return string(b), err
@@ -102,12 +101,12 @@ func ExportResources(filter *ResourceFilter, compareOptions *cli.CompareOptions)
 			return []byte{}, nil
 		}
 
-		return []byte{}, errors.New(fmt.Sprintf(
+		return []byte{}, fmt.Errorf(
 			"Failed to export %s resources.\n"+
 				"%s\n",
 			target,
 			ret,
-		))
+		)
 	}
 
 	cli.DebugMsg("Exported", target, "resources")

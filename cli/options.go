@@ -169,9 +169,7 @@ func (o *GlobalOptions) Process() error {
 	} else {
 		err := checkOcNamespace(o.Namespace)
 		if err != nil {
-			return errors.New(
-				fmt.Sprintf("No such project: %s", o.Namespace),
-			)
+			return fmt.Errorf("No such project: %s", o.Namespace)
 		}
 	}
 	return nil
@@ -255,9 +253,7 @@ func (o *CompareOptions) Process() error {
 	for _, p := range o.ParamDirs {
 		if p != "." {
 			if _, err := os.Stat(p); os.IsNotExist(err) {
-				return errors.New(
-					fmt.Sprintf("Param directory %s does not exist.", p),
-				)
+				return fmt.Errorf("Param directory %s does not exist.", p)
 			}
 		}
 	}
