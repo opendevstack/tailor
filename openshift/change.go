@@ -138,7 +138,7 @@ func ocPatch(change *Change, compareOptions *cli.CompareOptions) error {
 	cmd := cli.ExecOcCmd(
 		args,
 		compareOptions.Namespace,
-		compareOptions.Selector,
+		"", // empty as name and selector is not allowed
 	)
 	out, err := cmd.CombinedOutput()
 	if err != nil {
