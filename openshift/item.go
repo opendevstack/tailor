@@ -7,11 +7,13 @@ import (
 	"strings"
 
 	"github.com/ghodss/yaml"
+	"github.com/opendevstack/tailor/cli"
 	"github.com/xeipuuv/gojsonpointer"
 )
 
 var (
-	tailorManagedAnnotation = "managed-annotations.tailor.opendevstack.org"
+	tailorOriginalValuesAnnotationPrefix = "original-values.tailor.io"
+	tailorManagedAnnotation              = "managed-annotations.tailor.opendevstack.org"
 	//tailorIgnoredAnnotation = "ignored-fields.tailor.opendevstack.org"
 	platformManagedFields = []string{
 		"/metadata/generation",
@@ -145,7 +147,8 @@ func (templateItem *ResourceItem) ChangesFrom(platformItem *ResourceItem) []*Cha
 						break
 					}
 				}
-				if !tailorManaged && a != tailorManagedAnnotation {
+				if !tailorManaged && a != tailorManagedAnnotation && !strings.HasPrefix(a, tailorOriginalValuesAnnotationPrefix) {
+					cli.DebugMsg("Delete path", path, "from configuration")
 					deletePointer, _ := gojsonpointer.NewJsonPointer(path)
 					_, _ = deletePointer.Delete(platformItem.Config)
 					continue
@@ -282,17 +285,19 @@ func (i *ResourceItem) ParseConfig(m map[string]interface{}) error {
 	// Handle platform-modified fields:
 	// If there is an annotation, copy its value into the spec, otherwise
 	// copy the spec value into the annotation.
+	newPaths := []string{}
 	for _, path := range i.Paths {
 		for _, platformModifiedField := range platformModifiedFields {
 			matched, _ := regexp.MatchString(platformModifiedField, path)
 			if matched {
 				annotationKey := strings.Replace(strings.TrimLeft(path, "/"), "/", ".", -1)
-				annotationPath := "/metadata/annotations/original-values.tailor.io~1" + annotationKey
+				annotationPath := "/metadata/annotations/" + tailorOriginalValuesAnnotationPrefix + "~1" + annotationKey
 				annotationPointer, _ := gojsonpointer.NewJsonPointer(annotationPath)
 				specPointer, _ := gojsonpointer.NewJsonPointer(path)
 				specValue, _, _ := specPointer.Get(i.Config)
 				annotationValue, _, err := annotationPointer.Get(i.Config)
 				if err == nil {
+					cli.DebugMsg("Platform: Setting", path, "to", annotationValue.(string))
 					_, err := specPointer.Set(i.Config, annotationValue)
 					if err != nil {
 						return err
@@ -303,14 +308,20 @@ func (i *ResourceItem) ParseConfig(m map[string]interface{}) error {
 					_, _, err := anP.Get(i.Config)
 					if err != nil {
 						anP.Set(i.Config, map[string]interface{}{})
+						newPaths = append(newPaths, "/metadata/annotations")
 					}
+					cli.DebugMsg("Template: Setting", annotationPath, "to", specValue.(string))
 					_, err = annotationPointer.Set(i.Config, specValue)
 					if err != nil {
 						return err
 					}
+					newPaths = append(newPaths, annotationPath)
 				}
 			}
 		}
+	}
+	if len(newPaths) > 0 {
+		i.Paths = append(i.Paths, newPaths...)
 	}
 
 	return nil

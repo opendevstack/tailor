@@ -66,15 +66,26 @@ func TestChangesFromPlatformModifiedFields(t *testing.T) {
 	if len(changes) != 1 {
 		t.Errorf("Platform and template should have drift for image field")
 	}
-	patch := changes[0].Patches[0]
-	if patch.Op != "replace" {
-		t.Errorf("Got op %s instead of replace", patch.Op)
+
+	patchAnnotation := changes[0].Patches[0]
+	if patchAnnotation.Op != "replace" {
+		t.Errorf("Got op %s instead of replace", patchAnnotation.Op)
 	}
-	if patch.Path != "/spec/template/spec/containers/0/image" {
-		t.Errorf("Got path %s instead of /spec/template/spec/containers/0/image", patch.Path)
+	if patchAnnotation.Path != "/metadata/annotations/original-values.tailor.io~1spec.template.spec.containers.0.image" {
+		t.Errorf("Got path %s instead of /metadata/annotations/original-values.tailor.io~1spec.template.spec.containers.0.image", patchAnnotation.Path)
 	}
-	if patch.Value != "bar/foo:test" {
-		t.Errorf("Got op %s instead of bar/foo:test", patch.Value)
+	if patchAnnotation.Value != "bar/foo:test" {
+		t.Errorf("Got op %s instead of bar/foo:test", patchAnnotation.Value)
+	}
+	patchImage := changes[0].Patches[1]
+	if patchImage.Op != "replace" {
+		t.Errorf("Got op %s instead of replace", patchImage.Op)
+	}
+	if patchImage.Path != "/spec/template/spec/containers/0/image" {
+		t.Errorf("Got path %s instead of /spec/template/spec/containers/0/image", patchImage.Path)
+	}
+	if patchImage.Value != "bar/foo:test" {
+		t.Errorf("Got op %s instead of bar/foo:test", patchImage.Value)
 	}
 }
 
