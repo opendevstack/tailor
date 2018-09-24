@@ -108,10 +108,12 @@ metadata: {}
 	platformBasedList.CollectItemsFromPlatformList(platformInput)
 	templateBasedList := &ResourceList{Filter: filter}
 	templateBasedList.CollectItemsFromTemplateList(templateInput)
-	changeset := NewChangeset(platformBasedList, templateBasedList, false)
-
+	changeset, err := NewChangeset(platformBasedList, templateBasedList, false)
+	if err != nil {
+		t.Errorf(err.Error())
+	}
 	if !changeset.Blank() {
-		t.Errorf("Changeset is not blank")
+		t.Errorf("Changeset is not blank, got %v", changeset.Update[0].JsonPatches(true))
 	}
 }
 
@@ -167,8 +169,10 @@ metadata: {}
 	platformBasedList.CollectItemsFromPlatformList(platformInput)
 	templateBasedList := &ResourceList{Filter: filter}
 	templateBasedList.CollectItemsFromTemplateList(templateInput)
-	changeset := NewChangeset(platformBasedList, templateBasedList, false)
-
+	changeset, err := NewChangeset(platformBasedList, templateBasedList, false)
+	if err != nil {
+		t.Errorf(err.Error())
+	}
 	if len(changeset.Update) != 1 {
 		t.Errorf("Changeset.Update has %d items instead of 1", len(changeset.Update))
 	}
@@ -218,8 +222,10 @@ metadata: {}`)
 	platformBasedList.CollectItemsFromPlatformList(platformInput)
 	templateBasedList := &ResourceList{Filter: filter}
 	templateBasedList.CollectItemsFromTemplateList(templateInput)
-	changeset := NewChangeset(platformBasedList, templateBasedList, false)
-
+	changeset, err := NewChangeset(platformBasedList, templateBasedList, false)
+	if err != nil {
+		t.Errorf(err.Error())
+	}
 	if len(changeset.Create) != 1 {
 		t.Errorf("Changeset.Create is blank but should not be")
 	}
@@ -255,8 +261,10 @@ metadata: {}
 	platformBasedList.CollectItemsFromPlatformList(platformInput)
 	templateBasedList := &ResourceList{Filter: filter}
 	templateBasedList.CollectItemsFromTemplateList(templateInput)
-	changeset := NewChangeset(platformBasedList, templateBasedList, false)
-
+	changeset, err := NewChangeset(platformBasedList, templateBasedList, false)
+	if err != nil {
+		t.Errorf(err.Error())
+	}
 	if len(changeset.Delete) != 1 {
 		t.Errorf("Changeset.Delete is blank but should not be")
 	}

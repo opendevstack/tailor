@@ -1,6 +1,7 @@
 package openshift
 
 import (
+	"fmt"
 	"regexp"
 	"sort"
 	"strconv"
@@ -8,14 +9,14 @@ import (
 
 	"github.com/ghodss/yaml"
 	"github.com/opendevstack/tailor/cli"
+	"github.com/opendevstack/tailor/utils"
 	"github.com/xeipuuv/gojsonpointer"
 )
 
 var (
 	tailorOriginalValuesAnnotationPrefix = "original-values.tailor.io"
 	tailorManagedAnnotation              = "managed-annotations.tailor.opendevstack.org"
-	//tailorIgnoredAnnotation = "ignored-fields.tailor.opendevstack.org"
-	platformManagedFields = []string{
+	platformManagedFields                = []string{
 		"/metadata/generation",
 		"/metadata/creationTimestamp",
 		"/spec/tags",
@@ -25,6 +26,7 @@ var (
 	}
 	emptyMapFields = []string{
 		"/metadata/annotations",
+		"/spec/template/metadata/annotations",
 	}
 	immutableFields = map[string][]string{
 		"Route": []string{
@@ -50,12 +52,11 @@ type ResourceItem struct {
 	Paths                    []string
 	Config                   map[string]interface{}
 	TailorManagedAnnotations []string
-	//TailorIgnoredFields      []string
 }
 
 func NewResourceItem(m map[string]interface{}, source string) (*ResourceItem, error) {
 	item := &ResourceItem{Source: source}
-	err := item.ParseConfig(m)
+	err := item.parseConfig(m)
 	return item, err
 }
 
@@ -63,27 +64,22 @@ func (i *ResourceItem) FullName() string {
 	return i.Kind + "/" + i.Name
 }
 
-func (templateItem *ResourceItem) ChangesFrom(platformItem *ResourceItem) []*Change {
+func (templateItem *ResourceItem) ChangesFrom(platformItem *ResourceItem) ([]*Change, error) {
+	err := templateItem.prepareForComparisonWithPlatformItem(platformItem)
+	if err != nil {
+		return nil, err
+	}
+	err = platformItem.prepareForComparisonWithTemplateItem(templateItem)
+	if err != nil {
+		return nil, err
+	}
+
 	comparison := map[string]*JsonPatch{}
 	addedPaths := []string{}
 
 	for _, path := range templateItem.Paths {
-		// // Skip ignored fields
-		// for _, i := range templateItem.TailorIgnoredFields {
-		// 	if path == i {
-		// 		// TODO: Delete path from platformItem
-		// 		continue
-		// 	}
-		// }
-
 		// Skip subpaths of already added paths
-		skip := false
-		for _, addedPath := range addedPaths {
-			if strings.HasPrefix(path, addedPath) {
-				skip = true
-			}
-		}
-		if skip {
+		if utils.IncludesPrefix(addedPaths, path) {
 			continue
 		}
 
@@ -94,7 +90,7 @@ func (templateItem *ResourceItem) ChangesFrom(platformItem *ResourceItem) []*Cha
 		if err != nil {
 			// Pointer does not exist in platformItem
 			if templateItem.isImmutableField(path) {
-				return recreateChanges(templateItem, platformItem)
+				return recreateChanges(templateItem, platformItem), nil
 			} else {
 				comparison[path] = &JsonPatch{Op: "add", Value: templateItemVal}
 				addedPaths = append(addedPaths, path)
@@ -116,7 +112,7 @@ func (templateItem *ResourceItem) ChangesFrom(platformItem *ResourceItem) []*Cha
 					comparison[path] = &JsonPatch{Op: "noop"}
 				} else {
 					if templateItem.isImmutableField(path) {
-						return recreateChanges(templateItem, platformItem)
+						return recreateChanges(templateItem, platformItem), nil
 					} else {
 						comparison[path] = &JsonPatch{Op: "replace", Value: templateItemVal}
 					}
@@ -128,44 +124,11 @@ func (templateItem *ResourceItem) ChangesFrom(platformItem *ResourceItem) []*Cha
 	deletedPaths := []string{}
 
 	for _, path := range platformItem.Paths {
-		// Skip ignored fields
-		// for _, i := range templateItem.TailorIgnoredFields {
-		// 	if path == i {
-		// 		// TODO: Delete path from platformItem
-		// 		continue
-		// 	}
-		// }
 		if _, ok := comparison[path]; !ok {
-			// If path is an annotation and is currently managed
-			// by Tailor on the platform, we do not want to delete it.
-			if strings.HasPrefix(path, "/metadata/annotations") && path != "/metadata/annotations" {
-				tailorManaged := false
-				a := strings.Replace(path, "/metadata/annotations/", "", -1)
-				for _, v := range platformItem.TailorManagedAnnotations {
-					if a == v {
-						tailorManaged = true
-						break
-					}
-				}
-				if !tailorManaged && a != tailorManagedAnnotation && !strings.HasPrefix(a, tailorOriginalValuesAnnotationPrefix) {
-					cli.DebugMsg("Delete path", path, "from configuration")
-					deletePointer, _ := gojsonpointer.NewJsonPointer(path)
-					_, _ = deletePointer.Delete(platformItem.Config)
-					continue
-				}
-			}
-
 			// Do not delete subpaths of already deleted paths
-			skip := false
-			for _, deletedPath := range deletedPaths {
-				if strings.HasPrefix(path, deletedPath) {
-					skip = true
-				}
-			}
-			if skip {
+			if utils.IncludesPrefix(deletedPaths, path) {
 				continue
 			}
-
 			// Pointer exist only in platformItem
 			comparison[path] = &JsonPatch{Op: "remove"}
 			deletedPaths = append(deletedPaths, path)
@@ -193,7 +156,7 @@ func (templateItem *ResourceItem) ChangesFrom(platformItem *ResourceItem) []*Cha
 		c.Action = "Noop"
 	}
 
-	return []*Change{c}
+	return []*Change{c}, nil
 }
 
 func (i *ResourceItem) YamlConfig() string {
@@ -201,7 +164,10 @@ func (i *ResourceItem) YamlConfig() string {
 	return string(y)
 }
 
-func (i *ResourceItem) ParseConfig(m map[string]interface{}) error {
+// parseConfig uses the config to initialise an item. The logic is the same
+// for template and platform items, with no knowledge of the "other" item - it
+// may or may not exist.
+func (i *ResourceItem) parseConfig(m map[string]interface{}) error {
 	// Extract kind and name
 	kindPointer, _ := gojsonpointer.NewJsonPointer("/kind")
 	kind, _, err := kindPointer.Get(m)
@@ -243,19 +209,22 @@ func (i *ResourceItem) ParseConfig(m map[string]interface{}) error {
 			i.Annotations[k] = v
 		}
 	}
-	// If some annotations are managed, the ones that are *not* managed can be
-	// removed - they are effectively platform-managed fields.
+
+	// Figure out which annotations are managed by Tailor
 	i.TailorManagedAnnotations = []string{}
 	if i.Source == "platform" {
+		// For platform items, only annotation listed in tailorManagedAnnotation are managed
 		p, _ := gojsonpointer.NewJsonPointer("/metadata/annotations/" + tailorManagedAnnotation)
 		managedAnnotations, _, err := p.Get(m)
 		if err == nil {
 			i.TailorManagedAnnotations = strings.Split(managedAnnotations.(string), ",")
 		}
 	} else { // source = template
+		// For template items, all annotations are managed
 		for k, _ := range i.Annotations {
 			i.TailorManagedAnnotations = append(i.TailorManagedAnnotations, k)
 		}
+		// If there are any managed annotations, we need to set tailorManagedAnnotation
 		if len(i.TailorManagedAnnotations) > 0 {
 			p, _ := gojsonpointer.NewJsonPointer("/metadata/annotations/" + tailorManagedAnnotation)
 			sort.Strings(i.TailorManagedAnnotations)
@@ -268,14 +237,6 @@ func (i *ResourceItem) ParseConfig(m map[string]interface{}) error {
 		deletePointer, _ := gojsonpointer.NewJsonPointer(p)
 		_, _ = deletePointer.Delete(m)
 	}
-
-	// Ignored fields
-	// i.TailorIgnoredFields = []string{}
-	// p, _ := gojsonpointer.NewJsonPointer("/metadata/annotations/" + tailorIgnoredAnnotation)
-	// ignoredAnnotation, _, err := p.Get(m)
-	// if err == nil {
-	// 	i.TailorIgnoredFields = strings.Split(ignoredAnnotation.(string), ",")
-	// }
 
 	i.Config = m
 
@@ -403,4 +364,46 @@ func recreateChanges(templateItem, platformItem *ResourceItem) []*Change {
 		DesiredState: templateItem.YamlConfig(),
 	}
 	return []*Change{deleteChange, createChange}
+}
+
+// prepareForComparisonWithPlatformItem massages template item in such a way
+// that it can be compared with the given platform item.
+func (templateItem *ResourceItem) prepareForComparisonWithPlatformItem(platformItem *ResourceItem) error {
+	// nothing to do at the moment
+	return nil
+}
+
+// prepareForComparisonWithTemplateItem massages platform item in such a way
+// that it can be compared with the given template item:
+// - remove all annotations which are not managed
+func (platformItem *ResourceItem) prepareForComparisonWithTemplateItem(templateItem *ResourceItem) error {
+	unmanagedAnnotations := []string{}
+	for a, _ := range platformItem.Annotations {
+		if a == tailorManagedAnnotation {
+			continue
+		}
+		if strings.HasPrefix(a, tailorOriginalValuesAnnotationPrefix) {
+			continue
+		}
+		if utils.Includes(templateItem.TailorManagedAnnotations, a) {
+			continue
+		}
+		if utils.Includes(platformItem.TailorManagedAnnotations, a) {
+			continue
+		}
+		unmanagedAnnotations = append(unmanagedAnnotations, a)
+	}
+	for _, a := range unmanagedAnnotations {
+		a = strings.Replace(a, "~", "~0", -1)
+		a = strings.Replace(a, "/", "~1", -1)
+		path := "/metadata/annotations/" + a
+		cli.DebugMsg("Delete path", path, "from configuration")
+		deletePointer, _ := gojsonpointer.NewJsonPointer(path)
+		_, err := deletePointer.Delete(platformItem.Config)
+		if err != nil {
+			return fmt.Errorf("Could not delete %s from configuration", path)
+		}
+		platformItem.Paths = utils.Remove(platformItem.Paths, path)
+	}
+	return nil
 }

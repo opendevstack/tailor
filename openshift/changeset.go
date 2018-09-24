@@ -30,7 +30,7 @@ type Changeset struct {
 	Noop   []*Change
 }
 
-func NewChangeset(platformBasedList, templateBasedList *ResourceList, upsertOnly bool) *Changeset {
+func NewChangeset(platformBasedList, templateBasedList *ResourceList, upsertOnly bool) (*Changeset, error) {
 	changeset := &Changeset{
 		Create: []*Change{},
 		Delete: []*Change{},
@@ -75,12 +75,15 @@ func NewChangeset(platformBasedList, templateBasedList *ResourceList, upsertOnly
 			templateItem.Name,
 		)
 		if err == nil {
-			changes := templateItem.ChangesFrom(platformItem)
+			changes, err := templateItem.ChangesFrom(platformItem)
+			if err != nil {
+				return changeset, err
+			}
 			changeset.Add(changes...)
 		}
 	}
 
-	return changeset
+	return changeset, nil
 }
 
 func (c *Changeset) Blank() bool {

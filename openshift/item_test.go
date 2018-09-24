@@ -30,7 +30,10 @@ func TestChangesFromEqual(t *testing.T) {
 func TestChangesFromDifferent(t *testing.T) {
 	currentItem := getItem(t, getBuildConfig(), "platform")
 	desiredItem := getItem(t, getChangedBuildConfig(), "template")
-	changes := desiredItem.ChangesFrom(currentItem)
+	changes, err := desiredItem.ChangesFrom(currentItem)
+	if err != nil {
+		t.Errorf(err.Error())
+	}
 	change := changes[0]
 	if len(change.Patches) != 11 {
 		t.Errorf("Got %d instead of %d changes: %s", len(change.Patches), 11, change.JsonPatches(true))
@@ -41,13 +44,19 @@ func TestChangesFromImmutableFields(t *testing.T) {
 	platformItem := getItem(t, getRoute([]byte("old.com")), "platform")
 
 	unchangedTemplateItem := getItem(t, getRoute([]byte("old.com")), "template")
-	changes := unchangedTemplateItem.ChangesFrom(platformItem)
+	changes, err := unchangedTemplateItem.ChangesFrom(platformItem)
+	if err != nil {
+		t.Errorf(err.Error())
+	}
 	if len(changes) > 1 || changes[0].Action != "Noop" {
 		t.Errorf("Platform and template should be in sync, got %d change(s): %v", len(changes), changes[0])
 	}
 
 	changedTemplateItem := getItem(t, getRoute([]byte("new.com")), "template")
-	changes = changedTemplateItem.ChangesFrom(platformItem)
+	changes, err = changedTemplateItem.ChangesFrom(platformItem)
+	if err != nil {
+		t.Errorf(err.Error())
+	}
 	if len(changes) == 0 {
 		t.Errorf("Platform and template should have drift.")
 	}
@@ -56,13 +65,19 @@ func TestChangesFromImmutableFields(t *testing.T) {
 func TestChangesFromPlatformModifiedFields(t *testing.T) {
 	platformItem := getItem(t, getPlatformDeploymentConfig(), "platform")
 	templateItem := getItem(t, getTemplateDeploymentConfig([]byte("latest")), "template")
-	changes := templateItem.ChangesFrom(platformItem)
+	changes, err := templateItem.ChangesFrom(platformItem)
+	if err != nil {
+		t.Errorf(err.Error())
+	}
 	if len(changes) > 1 || changes[0].Action != "Noop" {
 		t.Errorf("Platform and template should be in sync, got %v", changes[0].JsonPatches(true))
 	}
 
 	changedTemplateItem := getItem(t, getTemplateDeploymentConfig([]byte("test")), "template")
-	changes = changedTemplateItem.ChangesFrom(platformItem)
+	changes, err = changedTemplateItem.ChangesFrom(platformItem)
+	if err != nil {
+		t.Errorf(err.Error())
+	}
 	if len(changes) != 1 {
 		t.Errorf("Platform and template should have drift for image field")
 	}
@@ -90,10 +105,13 @@ func TestChangesFromPlatformModifiedFields(t *testing.T) {
 }
 
 func TestChangesFromAnnotationFields(t *testing.T) {
-	t.Log("Adding an annotation in the template")
+	t.Log("> Adding an annotation in the template")
 	platformItem := getItem(t, getConfigMap([]byte("{}")), "platform")
 	templateItem := getItem(t, getConfigMap([]byte("{foo: bar}")), "template")
-	changes := templateItem.ChangesFrom(platformItem)
+	changes, err := templateItem.ChangesFrom(platformItem)
+	if err != nil {
+		t.Errorf(err.Error())
+	}
 	if len(changes) != 1 {
 		t.Errorf("Platform and template should have drift")
 	}
@@ -116,10 +134,13 @@ func TestChangesFromAnnotationFields(t *testing.T) {
 		t.Errorf("Got %v instead of %v", actualPatchTwo, expectedPatchTwo)
 	}
 
-	t.Log("Having a platform-managed annotation")
+	t.Log("> Having a platform-managed annotation")
 	platformItem = getItem(t, getConfigMap([]byte("{foo: bar}")), "platform")
 	templateItem = getItem(t, getConfigMap([]byte("{}")), "template")
-	changes = templateItem.ChangesFrom(platformItem)
+	changes, err = templateItem.ChangesFrom(platformItem)
+	if err != nil {
+		t.Errorf(err.Error())
+	}
 	var actualPatch *JsonPatch
 	var expectedPatch *JsonPatch
 	if len(changes) > 1 || changes[0].Action != "Noop" {
@@ -127,10 +148,13 @@ func TestChangesFromAnnotationFields(t *testing.T) {
 		t.Errorf("Platform and template should have no drift, got %v", actualPatch)
 	}
 
-	t.Log("Adding a platform-managed annotation from the template")
+	t.Log("> Adding a platform-managed annotation from the template")
 	platformItem = getItem(t, getConfigMap([]byte("{foo: bar}")), "platform")
 	templateItem = getItem(t, getConfigMap([]byte("{foo: bar}")), "template")
-	changes = templateItem.ChangesFrom(platformItem)
+	changes, err = templateItem.ChangesFrom(platformItem)
+	if err != nil {
+		t.Errorf(err.Error())
+	}
 	if len(changes) != 1 {
 		t.Errorf("Platform and template should have drift")
 	}
@@ -144,10 +168,13 @@ func TestChangesFromAnnotationFields(t *testing.T) {
 		t.Errorf("Got %v instead of %v", actualPatch, expectedPatch)
 	}
 
-	t.Log("Changing a platform-managed annotation from the template")
+	t.Log("> Changing a platform-managed annotation from the template")
 	platformItem = getItem(t, getConfigMap([]byte("{foo: bar}")), "platform")
 	templateItem = getItem(t, getConfigMap([]byte("{foo: baz}")), "template")
-	changes = templateItem.ChangesFrom(platformItem)
+	changes, err = templateItem.ChangesFrom(platformItem)
+	if err != nil {
+		t.Errorf(err.Error())
+	}
 	if len(changes) == 0 {
 		t.Errorf("Platform and template should have drift")
 	}
@@ -161,15 +188,18 @@ func TestChangesFromAnnotationFields(t *testing.T) {
 		t.Errorf("Got %v instead of %v", actualPatch, expectedPatch)
 	}
 
-	t.Log("Managed annotation")
+	t.Log("> Managed annotation")
 	c := getConfigMap([]byte(`
     managed-annotations.tailor.opendevstack.org: foo
     foo: bar`))
 	platformItem = getItem(t, c, "platform")
 
-	t.Log("- Modifying it")
+	t.Log("> - Modifying it")
 	templateItem = getItem(t, getConfigMap([]byte("{foo: baz}")), "template")
-	changes = templateItem.ChangesFrom(platformItem)
+	changes, err = templateItem.ChangesFrom(platformItem)
+	if err != nil {
+		t.Errorf(err.Error())
+	}
 	if len(changes) == 0 {
 		t.Errorf("Platform and template should have drift")
 	}
@@ -183,9 +213,12 @@ func TestChangesFromAnnotationFields(t *testing.T) {
 		t.Errorf("Got %v instead of %v", actualPatch, expectedPatch)
 	}
 
-	t.Log("- Removing it")
+	t.Log("> - Removing it")
 	templateItem = getItem(t, getConfigMap([]byte("{}")), "template")
-	changes = templateItem.ChangesFrom(platformItem)
+	changes, err = templateItem.ChangesFrom(platformItem)
+	if err != nil {
+		t.Errorf(err.Error())
+	}
 	if len(changes) != 1 {
 		t.Errorf("Platform and template should have drift")
 	}

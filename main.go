@@ -506,12 +506,15 @@ func calculateChangeset(compareOptions *cli.CompareOptions) (bool, *openshift.Ch
 		templateResourcesWord,
 	)
 
-	changeset := compare(
+	changeset, err := compare(
 		platformBasedList,
 		templateBasedList,
 		compareOptions.UpsertOnly,
 		compareOptions.Diff,
 	)
+	if err != nil {
+		return false, changeset, err
+	}
 	updateRequired = !changeset.Blank()
 	return updateRequired, changeset, nil
 }
@@ -635,8 +638,11 @@ func export(filter *openshift.ResourceFilter, exportOptions *cli.ExportOptions) 
 	fmt.Println(out)
 }
 
-func compare(remoteResourceList *openshift.ResourceList, localResourceList *openshift.ResourceList, upsertOnly bool, diff string) *openshift.Changeset {
-	changeset := openshift.NewChangeset(remoteResourceList, localResourceList, upsertOnly)
+func compare(remoteResourceList *openshift.ResourceList, localResourceList *openshift.ResourceList, upsertOnly bool, diff string) (*openshift.Changeset, error) {
+	changeset, err := openshift.NewChangeset(remoteResourceList, localResourceList, upsertOnly)
+	if err != nil {
+		return changeset, err
+	}
 
 	for _, change := range changeset.Noop {
 		fmt.Printf("* %s is in sync\n", change.ItemName())
@@ -661,5 +667,5 @@ func compare(remoteResourceList *openshift.ResourceList, localResourceList *open
 		}
 	}
 
-	return changeset
+	return changeset, nil
 }
