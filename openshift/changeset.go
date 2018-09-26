@@ -2,6 +2,7 @@ package openshift
 
 import (
 	"sort"
+	"strings"
 
 	"github.com/opendevstack/tailor/cli"
 )
@@ -30,7 +31,7 @@ type Changeset struct {
 	Noop   []*Change
 }
 
-func NewChangeset(platformBasedList, templateBasedList *ResourceList, upsertOnly bool) (*Changeset, error) {
+func NewChangeset(platformBasedList, templateBasedList *ResourceList, upsertOnly bool, ignoredPaths []string) (*Changeset, error) {
 	changeset := &Changeset{
 		Create: []*Change{},
 		Delete: []*Change{},
@@ -75,7 +76,15 @@ func NewChangeset(platformBasedList, templateBasedList *ResourceList, upsertOnly
 			templateItem.Name,
 		)
 		if err == nil {
-			changes, err := templateItem.ChangesFrom(platformItem)
+			externallyModifiedPaths := []string{}
+			for _, path := range ignoredPaths {
+				pathParts := strings.Split(path, ":")
+				if templateItem.Kind == KindMapping[strings.ToLower(pathParts[0])] {
+					externallyModifiedPaths = append(externallyModifiedPaths, pathParts[1])
+				}
+			}
+
+			changes, err := templateItem.ChangesFrom(platformItem, externallyModifiedPaths)
 			if err != nil {
 				return changeset, err
 			}

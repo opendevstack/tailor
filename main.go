@@ -93,6 +93,10 @@ var (
 		"diff",
 		"Type of diff (text or json)",
 	).Default("text").String()
+	statusIgnorePathFlag = statusCommand.Flag(
+		"ignore-path",
+		"Path(s) per kind to ignore (e.g. because they are externally modified) in RFC 6901 format.",
+	).Default("bc:/spec/output/to/name").Strings()
 	statusIgnoreUnknownParametersFlag = statusCommand.Flag(
 		"ignore-unknown-parameters",
 		"If true, will not stop processing if a provided parameter does not exist in the template.",
@@ -125,6 +129,10 @@ var (
 		"diff",
 		"Type of diff (text or json)",
 	).Default("text").String()
+	updateIgnorePathFlag = updateCommand.Flag(
+		"ignore-path",
+		"Path(s) per kind to ignore (e.g. because they are externally modified) in RFC 6901 format.",
+	).Default("bc:/spec/output/to/name").Strings()
 	updateIgnoreUnknownParametersFlag = updateCommand.Flag(
 		"ignore-unknown-parameters",
 		"If true, will not stop processing if a provided parameter does not exist in the template.",
@@ -184,26 +192,6 @@ var (
 	generateKeyEmailArg = generateKeyCommand.Arg(
 		"email", "Emil of keypair",
 	).Required().String()
-
-	kindMapping = map[string]string{
-		"svc":                   "Service",
-		"service":               "Service",
-		"route":                 "Route",
-		"dc":                    "DeploymentConfig",
-		"deploymentconfig":      "DeploymentConfig",
-		"bc":                    "BuildConfig",
-		"buildconfig":           "BuildConfig",
-		"is":                    "ImageStream",
-		"imagestream":           "ImageStream",
-		"pvc":                   "PersistentVolumeClaim",
-		"persistentvolumeclaim": "PersistentVolumeClaim",
-		"template":              "Template",
-		"cm":                    "ConfigMap",
-		"configmap":             "ConfigMap",
-		"secret":                "Secret",
-		"rolebinding":           "RoleBinding",
-		"serviceaccount":        "ServiceAccount",
-	}
 )
 
 func main() {
@@ -342,6 +330,7 @@ func main() {
 			*statusParamFlag,
 			*statusParamFileFlag,
 			*statusDiffFlag,
+			*statusIgnorePathFlag,
 			*statusIgnoreUnknownParametersFlag,
 			*statusUpsertOnlyFlag,
 			*statusResourceArg,
@@ -370,6 +359,7 @@ func main() {
 			*updateParamFlag,
 			*updateParamFileFlag,
 			*updateDiffFlag,
+			*updateIgnorePathFlag,
 			*updateIgnoreUnknownParametersFlag,
 			*updateUpsertOnlyFlag,
 			*updateResourceArg,
@@ -511,6 +501,7 @@ func calculateChangeset(compareOptions *cli.CompareOptions) (bool, *openshift.Ch
 		templateBasedList,
 		compareOptions.UpsertOnly,
 		compareOptions.Diff,
+		compareOptions.IgnorePaths,
 	)
 	if err != nil {
 		return false, changeset, err
@@ -542,7 +533,7 @@ func getFilter(kindArg string, selectorFlag string) (*openshift.ResourceFilter, 
 			)
 		}
 		nameParts := strings.Split(kindArg, "/")
-		filter.Name = kindMapping[nameParts[0]] + "/" + nameParts[1]
+		filter.Name = openshift.KindMapping[nameParts[0]] + "/" + nameParts[1]
 		return filter, nil
 	}
 
@@ -550,10 +541,10 @@ func getFilter(kindArg string, selectorFlag string) (*openshift.ResourceFilter, 
 	unknownKinds := []string{}
 	kinds := strings.Split(kindArg, ",")
 	for _, kind := range kinds {
-		if _, ok := kindMapping[kind]; !ok {
+		if _, ok := openshift.KindMapping[kind]; !ok {
 			unknownKinds = append(unknownKinds, kind)
 		} else {
-			targetedKinds[kindMapping[kind]] = true
+			targetedKinds[openshift.KindMapping[kind]] = true
 		}
 	}
 
@@ -638,8 +629,8 @@ func export(filter *openshift.ResourceFilter, exportOptions *cli.ExportOptions) 
 	fmt.Println(out)
 }
 
-func compare(remoteResourceList *openshift.ResourceList, localResourceList *openshift.ResourceList, upsertOnly bool, diff string) (*openshift.Changeset, error) {
-	changeset, err := openshift.NewChangeset(remoteResourceList, localResourceList, upsertOnly)
+func compare(remoteResourceList *openshift.ResourceList, localResourceList *openshift.ResourceList, upsertOnly bool, diff string, ignorePaths []string) (*openshift.Changeset, error) {
+	changeset, err := openshift.NewChangeset(remoteResourceList, localResourceList, upsertOnly, ignorePaths)
 	if err != nil {
 		return changeset, err
 	}

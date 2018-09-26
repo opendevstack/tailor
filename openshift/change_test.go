@@ -244,7 +244,7 @@ func TestDiff(t *testing.T) {
 			getConfigMapForDiff(tt.desiredAnnotations, tt.desiredData),
 			"template",
 		)
-		changes, err := desiredItem.ChangesFrom(currentItem)
+		changes, err := desiredItem.ChangesFrom(currentItem, []string{})
 		if err != nil {
 			t.Errorf(err.Error())
 		}

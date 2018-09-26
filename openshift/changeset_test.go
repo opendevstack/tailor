@@ -108,7 +108,7 @@ metadata: {}
 	platformBasedList.CollectItemsFromPlatformList(platformInput)
 	templateBasedList := &ResourceList{Filter: filter}
 	templateBasedList.CollectItemsFromTemplateList(templateInput)
-	changeset, err := NewChangeset(platformBasedList, templateBasedList, false)
+	changeset, err := NewChangeset(platformBasedList, templateBasedList, false, []string{})
 	if err != nil {
 		t.Errorf(err.Error())
 	}
@@ -169,7 +169,7 @@ metadata: {}
 	platformBasedList.CollectItemsFromPlatformList(platformInput)
 	templateBasedList := &ResourceList{Filter: filter}
 	templateBasedList.CollectItemsFromTemplateList(templateInput)
-	changeset, err := NewChangeset(platformBasedList, templateBasedList, false)
+	changeset, err := NewChangeset(platformBasedList, templateBasedList, false, []string{})
 	if err != nil {
 		t.Errorf(err.Error())
 	}
@@ -222,7 +222,7 @@ metadata: {}`)
 	platformBasedList.CollectItemsFromPlatformList(platformInput)
 	templateBasedList := &ResourceList{Filter: filter}
 	templateBasedList.CollectItemsFromTemplateList(templateInput)
-	changeset, err := NewChangeset(platformBasedList, templateBasedList, false)
+	changeset, err := NewChangeset(platformBasedList, templateBasedList, false, []string{})
 	if err != nil {
 		t.Errorf(err.Error())
 	}
@@ -261,7 +261,7 @@ metadata: {}
 	platformBasedList.CollectItemsFromPlatformList(platformInput)
 	templateBasedList := &ResourceList{Filter: filter}
 	templateBasedList.CollectItemsFromTemplateList(templateInput)
-	changeset, err := NewChangeset(platformBasedList, templateBasedList, false)
+	changeset, err := NewChangeset(platformBasedList, templateBasedList, false, []string{})
 	if err != nil {
 		t.Errorf(err.Error())
 	}
