@@ -64,8 +64,8 @@ func (i *ResourceItem) FullName() string {
 	return i.Kind + "/" + i.Name
 }
 
-func (templateItem *ResourceItem) ChangesFrom(platformItem *ResourceItem) ([]*Change, error) {
-	err := templateItem.prepareForComparisonWithPlatformItem(platformItem)
+func (templateItem *ResourceItem) ChangesFrom(platformItem *ResourceItem, externallyModifiedPaths []string) ([]*Change, error) {
+	err := templateItem.prepareForComparisonWithPlatformItem(platformItem, externallyModifiedPaths)
 	if err != nil {
 		return nil, err
 	}
@@ -367,9 +367,28 @@ func recreateChanges(templateItem, platformItem *ResourceItem) []*Change {
 }
 
 // prepareForComparisonWithPlatformItem massages template item in such a way
-// that it can be compared with the given platform item.
-func (templateItem *ResourceItem) prepareForComparisonWithPlatformItem(platformItem *ResourceItem) error {
-	// nothing to do at the moment
+// that it can be compared with the given platform item:
+// - copy value from platformItem to templateItem for externally modified paths
+func (templateItem *ResourceItem) prepareForComparisonWithPlatformItem(platformItem *ResourceItem, externallyModifiedPaths []string) error {
+	for _, path := range externallyModifiedPaths {
+		pathPointer, _ := gojsonpointer.NewJsonPointer(path)
+		platformItemVal, _, err := pathPointer.Get(platformItem.Config)
+		if err != nil {
+			cli.DebugMsg("No such path", path, "in platform item", platformItem.FullName())
+		}
+		_, err = pathPointer.Set(templateItem.Config, platformItemVal)
+		if err != nil {
+			cli.DebugMsg(
+				"Could not set",
+				path,
+				"to",
+				platformItemVal.(string),
+				"in template item",
+				templateItem.FullName(),
+			)
+		}
+	}
+
 	return nil
 }
 

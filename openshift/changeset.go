@@ -1,7 +1,9 @@
 package openshift
 
 import (
+	"fmt"
 	"sort"
+	"strings"
 
 	"github.com/opendevstack/tailor/cli"
 )
@@ -30,7 +32,7 @@ type Changeset struct {
 	Noop   []*Change
 }
 
-func NewChangeset(platformBasedList, templateBasedList *ResourceList, upsertOnly bool) (*Changeset, error) {
+func NewChangeset(platformBasedList, templateBasedList *ResourceList, upsertOnly bool, ignoredPaths []string) (*Changeset, error) {
 	changeset := &Changeset{
 		Create: []*Change{},
 		Delete: []*Change{},
@@ -75,7 +77,26 @@ func NewChangeset(platformBasedList, templateBasedList *ResourceList, upsertOnly
 			templateItem.Name,
 		)
 		if err == nil {
-			changes, err := templateItem.ChangesFrom(platformItem)
+			externallyModifiedPaths := []string{}
+			for _, path := range ignoredPaths {
+				pathParts := strings.Split(path, ":")
+				if len(pathParts) > 3 {
+					return changeset, fmt.Errorf(
+						"%s is not a valid ignore-path argument",
+						path,
+					)
+				}
+				if len(pathParts) == 1 ||
+					(len(pathParts) == 2 &&
+						templateItem.Kind == KindMapping[strings.ToLower(pathParts[0])]) ||
+					(len(pathParts) == 3 &&
+						templateItem.Kind == KindMapping[strings.ToLower(pathParts[0])] &&
+						templateItem.Name == strings.ToLower(pathParts[1])) {
+					externallyModifiedPaths = append(externallyModifiedPaths, pathParts[len(pathParts)-1])
+				}
+			}
+
+			changes, err := templateItem.ChangesFrom(platformItem, externallyModifiedPaths)
 			if err != nil {
 				return changeset, err
 			}

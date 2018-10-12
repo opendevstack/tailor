@@ -24,13 +24,13 @@ func TestNewResourceItem(t *testing.T) {
 func TestChangesFromEqual(t *testing.T) {
 	currentItem := getItem(t, getBuildConfig(), "platform")
 	desiredItem := getItem(t, getBuildConfig(), "template")
-	desiredItem.ChangesFrom(currentItem)
+	desiredItem.ChangesFrom(currentItem, []string{})
 }
 
 func TestChangesFromDifferent(t *testing.T) {
 	currentItem := getItem(t, getBuildConfig(), "platform")
 	desiredItem := getItem(t, getChangedBuildConfig(), "template")
-	changes, err := desiredItem.ChangesFrom(currentItem)
+	changes, err := desiredItem.ChangesFrom(currentItem, []string{})
 	if err != nil {
 		t.Errorf(err.Error())
 	}
@@ -44,7 +44,7 @@ func TestChangesFromImmutableFields(t *testing.T) {
 	platformItem := getItem(t, getRoute([]byte("old.com")), "platform")
 
 	unchangedTemplateItem := getItem(t, getRoute([]byte("old.com")), "template")
-	changes, err := unchangedTemplateItem.ChangesFrom(platformItem)
+	changes, err := unchangedTemplateItem.ChangesFrom(platformItem, []string{})
 	if err != nil {
 		t.Errorf(err.Error())
 	}
@@ -53,7 +53,7 @@ func TestChangesFromImmutableFields(t *testing.T) {
 	}
 
 	changedTemplateItem := getItem(t, getRoute([]byte("new.com")), "template")
-	changes, err = changedTemplateItem.ChangesFrom(platformItem)
+	changes, err = changedTemplateItem.ChangesFrom(platformItem, []string{})
 	if err != nil {
 		t.Errorf(err.Error())
 	}
@@ -65,7 +65,7 @@ func TestChangesFromImmutableFields(t *testing.T) {
 func TestChangesFromPlatformModifiedFields(t *testing.T) {
 	platformItem := getItem(t, getPlatformDeploymentConfig(), "platform")
 	templateItem := getItem(t, getTemplateDeploymentConfig([]byte("latest")), "template")
-	changes, err := templateItem.ChangesFrom(platformItem)
+	changes, err := templateItem.ChangesFrom(platformItem, []string{})
 	if err != nil {
 		t.Errorf(err.Error())
 	}
@@ -74,7 +74,7 @@ func TestChangesFromPlatformModifiedFields(t *testing.T) {
 	}
 
 	changedTemplateItem := getItem(t, getTemplateDeploymentConfig([]byte("test")), "template")
-	changes, err = changedTemplateItem.ChangesFrom(platformItem)
+	changes, err = changedTemplateItem.ChangesFrom(platformItem, []string{})
 	if err != nil {
 		t.Errorf(err.Error())
 	}
@@ -108,7 +108,7 @@ func TestChangesFromAnnotationFields(t *testing.T) {
 	t.Log("> Adding an annotation in the template")
 	platformItem := getItem(t, getConfigMap([]byte("{}")), "platform")
 	templateItem := getItem(t, getConfigMap([]byte("{foo: bar}")), "template")
-	changes, err := templateItem.ChangesFrom(platformItem)
+	changes, err := templateItem.ChangesFrom(platformItem, []string{})
 	if err != nil {
 		t.Errorf(err.Error())
 	}
@@ -137,7 +137,7 @@ func TestChangesFromAnnotationFields(t *testing.T) {
 	t.Log("> Having a platform-managed annotation")
 	platformItem = getItem(t, getConfigMap([]byte("{foo: bar}")), "platform")
 	templateItem = getItem(t, getConfigMap([]byte("{}")), "template")
-	changes, err = templateItem.ChangesFrom(platformItem)
+	changes, err = templateItem.ChangesFrom(platformItem, []string{})
 	if err != nil {
 		t.Errorf(err.Error())
 	}
@@ -151,7 +151,7 @@ func TestChangesFromAnnotationFields(t *testing.T) {
 	t.Log("> Adding a platform-managed annotation from the template")
 	platformItem = getItem(t, getConfigMap([]byte("{foo: bar}")), "platform")
 	templateItem = getItem(t, getConfigMap([]byte("{foo: bar}")), "template")
-	changes, err = templateItem.ChangesFrom(platformItem)
+	changes, err = templateItem.ChangesFrom(platformItem, []string{})
 	if err != nil {
 		t.Errorf(err.Error())
 	}
@@ -171,7 +171,7 @@ func TestChangesFromAnnotationFields(t *testing.T) {
 	t.Log("> Changing a platform-managed annotation from the template")
 	platformItem = getItem(t, getConfigMap([]byte("{foo: bar}")), "platform")
 	templateItem = getItem(t, getConfigMap([]byte("{foo: baz}")), "template")
-	changes, err = templateItem.ChangesFrom(platformItem)
+	changes, err = templateItem.ChangesFrom(platformItem, []string{})
 	if err != nil {
 		t.Errorf(err.Error())
 	}
@@ -196,7 +196,7 @@ func TestChangesFromAnnotationFields(t *testing.T) {
 
 	t.Log("> - Modifying it")
 	templateItem = getItem(t, getConfigMap([]byte("{foo: baz}")), "template")
-	changes, err = templateItem.ChangesFrom(platformItem)
+	changes, err = templateItem.ChangesFrom(platformItem, []string{})
 	if err != nil {
 		t.Errorf(err.Error())
 	}
@@ -215,7 +215,7 @@ func TestChangesFromAnnotationFields(t *testing.T) {
 
 	t.Log("> - Removing it")
 	templateItem = getItem(t, getConfigMap([]byte("{}")), "template")
-	changes, err = templateItem.ChangesFrom(platformItem)
+	changes, err = templateItem.ChangesFrom(platformItem, []string{})
 	if err != nil {
 		t.Errorf(err.Error())
 	}

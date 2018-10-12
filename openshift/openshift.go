@@ -13,6 +13,28 @@ import (
 	"github.com/xeipuuv/gojsonpointer"
 )
 
+var (
+	KindMapping = map[string]string{
+		"svc":                   "Service",
+		"service":               "Service",
+		"route":                 "Route",
+		"dc":                    "DeploymentConfig",
+		"deploymentconfig":      "DeploymentConfig",
+		"bc":                    "BuildConfig",
+		"buildconfig":           "BuildConfig",
+		"is":                    "ImageStream",
+		"imagestream":           "ImageStream",
+		"pvc":                   "PersistentVolumeClaim",
+		"persistentvolumeclaim": "PersistentVolumeClaim",
+		"template":              "Template",
+		"cm":                    "ConfigMap",
+		"configmap":             "ConfigMap",
+		"secret":                "Secret",
+		"rolebinding":           "RoleBinding",
+		"serviceaccount":        "ServiceAccount",
+	}
+)
+
 func ExportAsTemplate(filter *ResourceFilter, name string, exportOptions *cli.ExportOptions) (string, error) {
 	ret := ""
 	args := []string{"export", "--as-template=" + name, "--output=yaml"}
