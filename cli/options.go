@@ -209,7 +209,7 @@ func (o *CompareOptions) UpdateWithFile(fileFlags map[string]string) {
 	if fileFlags["upsert-only"] == "true" {
 		o.UpsertOnly = true
 	}
-	if val, ok := fileFlags["ignore-paths"]; ok {
+	if val, ok := fileFlags["ignore-path"]; ok {
 		o.IgnorePaths = strings.Split(val, ",")
 	}
 	if val, ok := fileFlags["resource"]; ok {

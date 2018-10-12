@@ -95,8 +95,8 @@ var (
 	).Default("text").String()
 	statusIgnorePathFlag = statusCommand.Flag(
 		"ignore-path",
-		"Path(s) per kind to ignore (e.g. because they are externally modified) in RFC 6901 format.",
-	).Default("bc:/spec/output/to/name").Strings()
+		"Path(s) per kind/name to ignore (e.g. because they are externally modified) in RFC 6901 format.",
+	).PlaceHolder("bc:foobar:/spec/output/to/name").Strings()
 	statusIgnoreUnknownParametersFlag = statusCommand.Flag(
 		"ignore-unknown-parameters",
 		"If true, will not stop processing if a provided parameter does not exist in the template.",
@@ -132,7 +132,7 @@ var (
 	updateIgnorePathFlag = updateCommand.Flag(
 		"ignore-path",
 		"Path(s) per kind to ignore (e.g. because they are externally modified) in RFC 6901 format.",
-	).Default("bc:/spec/output/to/name").Strings()
+	).PlaceHolder("bc:foobar:/spec/output/to/name").Strings()
 	updateIgnoreUnknownParametersFlag = updateCommand.Flag(
 		"ignore-unknown-parameters",
 		"If true, will not stop processing if a provided parameter does not exist in the template.",

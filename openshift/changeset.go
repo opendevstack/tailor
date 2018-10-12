@@ -1,6 +1,7 @@
 package openshift
 
 import (
+	"fmt"
 	"sort"
 	"strings"
 
@@ -79,8 +80,19 @@ func NewChangeset(platformBasedList, templateBasedList *ResourceList, upsertOnly
 			externallyModifiedPaths := []string{}
 			for _, path := range ignoredPaths {
 				pathParts := strings.Split(path, ":")
-				if templateItem.Kind == KindMapping[strings.ToLower(pathParts[0])] {
-					externallyModifiedPaths = append(externallyModifiedPaths, pathParts[1])
+				if len(pathParts) > 3 {
+					return changeset, fmt.Errorf(
+						"%s is not a valid ignore-path argument",
+						path,
+					)
+				}
+				if len(pathParts) == 1 ||
+					(len(pathParts) == 2 &&
+						templateItem.Kind == KindMapping[strings.ToLower(pathParts[0])]) ||
+					(len(pathParts) == 3 &&
+						templateItem.Kind == KindMapping[strings.ToLower(pathParts[0])] &&
+						templateItem.Name == strings.ToLower(pathParts[1])) {
+					externallyModifiedPaths = append(externallyModifiedPaths, pathParts[len(pathParts)-1])
 				}
 			}
 
