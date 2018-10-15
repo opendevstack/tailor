@@ -105,6 +105,10 @@ var (
 		"upsert-only",
 		"Don't delete resource, only create / update.",
 	).Short('u').Bool()
+	statusForceFlag = statusCommand.Flag(
+		"force",
+		"Force to delete all resources.",
+	).Bool()
 	statusResourceArg = statusCommand.Arg(
 		"resource", "Remote resource (defaults to all)",
 	).String()
@@ -141,6 +145,10 @@ var (
 		"upsert-only",
 		"Don't delete resource, only create / update.",
 	).Short('u').Bool()
+	updateForceFlag = updateCommand.Flag(
+		"force",
+		"Force to delete all resources.",
+	).Bool()
 	updateResourceArg = updateCommand.Arg(
 		"resource", "Remote resource (defaults to all)",
 	).String()
@@ -333,6 +341,7 @@ func main() {
 			*statusIgnorePathFlag,
 			*statusIgnoreUnknownParametersFlag,
 			*statusUpsertOnlyFlag,
+			*statusForceFlag,
 			*statusResourceArg,
 		)
 		err := compareOptions.Process()
@@ -362,6 +371,7 @@ func main() {
 			*updateIgnorePathFlag,
 			*updateIgnoreUnknownParametersFlag,
 			*updateUpsertOnlyFlag,
+			*updateForceFlag,
 			*updateResourceArg,
 		)
 		err := compareOptions.Process()
@@ -495,6 +505,36 @@ func calculateChangeset(compareOptions *cli.CompareOptions) (bool, *openshift.Ch
 		templateBasedList.Length(),
 		templateResourcesWord,
 	)
+
+	if templateBasedList.Length() == 0 && !compareOptions.Force {
+		fmt.Printf("No items where found in desired state. ")
+		if len(compareOptions.Resource) == 0 && len(compareOptions.Selector) == 0 {
+			fmt.Printf(
+				"Are there any templates in %s?\n",
+				where,
+			)
+		} else {
+			fmt.Printf(
+				"Possible reasons are:\n"+
+					"* No templates are located in %s\n",
+				where,
+			)
+			if len(compareOptions.Resource) > 0 {
+				fmt.Printf(
+					"* No templates contain resources of kinds: %s\n",
+					compareOptions.Resource,
+				)
+			}
+			if len(compareOptions.Selector) > 0 {
+				fmt.Printf(
+					"* No templates contain resources matching selector: %s\n",
+					compareOptions.Selector,
+				)
+			}
+		}
+		fmt.Println("\nRefusing to continue without --force")
+		return updateRequired, &openshift.Changeset{}, nil
+	}
 
 	changeset, err := compare(
 		platformBasedList,
