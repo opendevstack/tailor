@@ -425,7 +425,7 @@ func main() {
 func reEncrypt(filename, privateKey, passphrase, publicKeyDir string) error {
 	readParams, err := openshift.NewParamsFromFile(filename, privateKey, passphrase)
 	if err != nil {
-		return fmt.Errorf("Could not read file: %s.", err)
+		return fmt.Errorf("Could not read file: %s", err)
 	}
 	readContent, _ := readParams.Process(false, false)
 
@@ -440,7 +440,7 @@ func reEncrypt(filename, privateKey, passphrase, publicKeyDir string) error {
 	}
 	err = ioutil.WriteFile(filename, []byte(renderedContent), 0644)
 	if err != nil {
-		return fmt.Errorf("Could not write file: %s.", err)
+		return fmt.Errorf("Could not write file: %s", err)
 	}
 	return nil
 }
@@ -595,7 +595,7 @@ func getFilter(kindArg string, selectorFlag string) (*openshift.ResourceFilter, 
 		)
 	}
 
-	for kind, _ := range targetedKinds {
+	for kind := range targetedKinds {
 		filter.Kinds = append(filter.Kinds, kind)
 	}
 
