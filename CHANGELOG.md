@@ -2,6 +2,21 @@
 
 ## Unreleased
 
+* [Feature] Rewrite diff engine. Tailor now uses `oc patch` under the hood to
+  to update resources (instead of `oc apply`). The new behaviour is more correct
+  and less dangerous. (#49)
+* [Feature] Warn before all resources are deleted. `--force` has to be given to
+  proceed in this case. (#66)
+* [Feature] Implement flag to ignore paths, `--ignore-path`. Paths can be
+  ignored for all kinds, for one kind or for one resource. (#63)
+* [Feature] Add change summary at the end of `status` and `update` commands.
+* [Feature] Support multiple param files via repearing `--param-file`. (#56)
+* [Feature] Check if OCP project exists during initialisation. (#55)
+* [Fix] Apply resource changes in specific order, starting with resources that
+  do not have dependencies. (#54)
+* [Task] Treat creationTimestamp as platform managed field (#51)
+* [Task] Switch to Go 1.11 modules (#52)
+
 ## 0.8.0 (2018-08-01)
 
 * [Feature] Implement general handling of immutable fields. Previously Tailor tried to modify the resource which resulted in an error, now it recreates the resource (#33).
