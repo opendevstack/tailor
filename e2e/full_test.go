@@ -44,17 +44,18 @@ objects:
 		t.Fatalf("Status command should have exited with 3")
 	}
 	fmt.Println("Got status in test project (should show created resource)")
-	if !strings.Contains(string(out), "to be created") {
-		t.Fatalf("One resource should need to be created")
+
+	if !strings.Contains(string(out), "1 to create") {
+		t.Fatalf("One resource should be to create")
 	}
-	if strings.Contains(string(out), "to be updated") {
-		t.Fatalf("No resources should need to be updated")
+	if !strings.Contains(string(out), "0 to update") {
+		t.Fatalf("No resource should be to update")
 	}
-	if strings.Contains(string(out), "to be deleted") {
-		t.Fatalf("No resources should need to be deleted")
+	if !strings.Contains(string(out), "0 to delete") {
+		t.Fatalf("No resource should be to delete")
 	}
-	if !strings.Contains(string(out), "is in sync") {
-		t.Fatalf("Some resources should be listed")
+	if !strings.Contains(string(out), "in sync") {
+		t.Fatalf("Some resources should be in synce")
 	}
 
 	update(t, tailorBinary)
@@ -83,17 +84,17 @@ objects:
 		t.Fatalf("Status command should have exited with 3")
 	}
 	fmt.Println("Got status in test project (should show updated resource)")
-	if strings.Contains(string(out), "to be created") {
-		t.Fatalf("No resources should need to be created")
+	if !strings.Contains(string(out), "0 to create") {
+		t.Fatalf("No resource should be to create")
 	}
-	if !strings.Contains(string(out), "to be updated") {
-		t.Fatalf("One resource should need to be updated")
+	if !strings.Contains(string(out), "1 to update") {
+		t.Fatalf("One resource should be to update")
 	}
-	if strings.Contains(string(out), "to be deleted") {
-		t.Fatalf("No resources should need to be deleted")
+	if !strings.Contains(string(out), "0 to delete") {
+		t.Fatalf("No resource should be to delete")
 	}
-	if !strings.Contains(string(out), "is in sync") {
-		t.Fatalf("Some resources should be listed")
+	if !strings.Contains(string(out), "in sync") {
+		t.Fatalf("Some resources should be in synce")
 	}
 
 	update(t, tailorBinary)
@@ -113,18 +114,17 @@ objects:
 	if err == nil {
 		t.Fatalf("Status command should have exited with 3")
 	}
-	fmt.Println("Got status in test project (should show updated resource)")
-	if strings.Contains(string(out), "to be created") {
-		t.Fatalf("No resources should need to be created")
+	if !strings.Contains(string(out), "0 to create") {
+		t.Fatalf("No resource should be to create")
 	}
-	if !strings.Contains(string(out), "to be updated") {
-		t.Fatalf("One resource should need to be updated")
+	if !strings.Contains(string(out), "1 to update") {
+		t.Fatalf("One resource should be to update")
 	}
-	if strings.Contains(string(out), "to be deleted") {
-		t.Fatalf("No resources should need to be deleted")
+	if !strings.Contains(string(out), "0 to delete") {
+		t.Fatalf("No resource should be to delete")
 	}
-	if !strings.Contains(string(out), "is in sync") {
-		t.Fatalf("Some resources should be listed")
+	if !strings.Contains(string(out), "in sync") {
+		t.Fatalf("Some resources should be in synce")
 	}
 
 	update(t, tailorBinary)
@@ -139,18 +139,18 @@ objects:
 	if err == nil {
 		t.Fatalf("Status command should have exited with 3")
 	}
-	fmt.Println("Got status in test project (should show updated resource)")
-	if strings.Contains(string(out), "to be created") {
-		t.Fatalf("No resources should need to be created")
+	fmt.Println("Got status in test project (should show deleted resource)")
+	if !strings.Contains(string(out), "0 to create") {
+		t.Fatalf("No resource should be to create")
 	}
-	if strings.Contains(string(out), "to be updated") {
-		t.Fatalf("No resources should need to be updated")
+	if !strings.Contains(string(out), "0 to update") {
+		t.Fatalf("No resource should be to update")
 	}
-	if !strings.Contains(string(out), "to be deleted") {
-		t.Fatalf("One resource should need to be deleted")
+	if !strings.Contains(string(out), "1 to delete") {
+		t.Fatalf("One resource should be to delete")
 	}
-	if !strings.Contains(string(out), "is in sync") {
-		t.Fatalf("Some resources should be listed")
+	if !strings.Contains(string(out), "in sync") {
+		t.Fatalf("Some resources should be in synce")
 	}
 
 	update(t, tailorBinary)
@@ -175,17 +175,17 @@ func statusWithNoExpectedDrift(t *testing.T, tailorBinary string) {
 		t.Fatalf("Could not get status in test project: %s", out)
 	}
 	fmt.Println("Got status in test project (should have no drift)")
-	if strings.Contains(string(out), "to be created") {
-		t.Fatalf("No resources should need to be created")
+	if !strings.Contains(string(out), "0 to create") {
+		t.Fatalf("No resource should be to create")
 	}
-	if strings.Contains(string(out), "to be updated") {
-		t.Fatalf("No resources should need to be updated")
+	if !strings.Contains(string(out), "0 to update") {
+		t.Fatalf("No resource should be to update")
 	}
-	if strings.Contains(string(out), "to be deleted") {
-		t.Fatalf("No resources should need to be deleted")
+	if !strings.Contains(string(out), "0 to delete") {
+		t.Fatalf("No resource should be to delete")
 	}
-	if !strings.Contains(string(out), "is in sync") {
-		t.Fatalf("Some resources should be listed")
+	if !strings.Contains(string(out), "in sync") {
+		t.Fatalf("Some resources should be in sync")
 	}
 }
 

@@ -105,17 +105,17 @@ objects:
 		t.Fatalf("Status command should have exited with 3")
 	}
 	fmt.Println("Got status for app=foo in test project (should show updated resource)")
-	if strings.Contains(string(out), "to be created") {
-		t.Fatalf("No resources should need to be created")
+	if !strings.Contains(string(out), "0 to create") {
+		t.Fatalf("No resource should be to create")
 	}
-	if !strings.Contains(string(out), "to be updated") {
-		t.Fatalf("One resource should need to be updated")
+	if !strings.Contains(string(out), "1 to update") {
+		t.Fatalf("One resource should be to update")
 	}
-	if strings.Contains(string(out), "to be deleted") {
-		t.Fatalf("No resources should need to be deleted")
+	if !strings.Contains(string(out), "0 to delete") {
+		t.Fatalf("No resource should be to delete")
 	}
-	if !strings.Contains(string(out), "is in sync") {
-		t.Fatalf("Some resources should be listed")
+	if !strings.Contains(string(out), "in sync") {
+		t.Fatalf("Some resources should be in sync")
 	}
 
 	partialStatusWithNoExpectedDrift(t, tailorBinary, "app=bar")
@@ -128,16 +128,16 @@ func partialStatusWithNoExpectedDrift(t *testing.T, tailorBinary string, label s
 		t.Fatalf("Could not get status for %s in test project", label)
 	}
 	fmt.Println("Got status for", label, "in test project (should have no drift)")
-	if strings.Contains(string(out), "to be created") {
-		t.Fatalf("No resources should need to be created")
+	if !strings.Contains(string(out), "0 to create") {
+		t.Fatalf("No resource should be to create")
 	}
-	if strings.Contains(string(out), "to be updated") {
-		t.Fatalf("No resources should need to be updated")
+	if !strings.Contains(string(out), "0 to update") {
+		t.Fatalf("No resource should be to update")
 	}
-	if strings.Contains(string(out), "to be deleted") {
-		t.Fatalf("No resources should need to be deleted")
+	if !strings.Contains(string(out), "0 to delete") {
+		t.Fatalf("No resource should be to delete")
 	}
-	if !strings.Contains(string(out), "is in sync") {
-		t.Fatalf("Some resources should be listed")
+	if !strings.Contains(string(out), "in sync") {
+		t.Fatalf("Some resources should be in sync")
 	}
 }

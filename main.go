@@ -698,14 +698,12 @@ func compare(remoteResourceList *openshift.ResourceList, localResourceList *open
 		}
 	}
 
-	if !changeset.Blank() {
-		fmt.Printf("\nChange Summary: ")
-		cli.PrintGreenf("%d to create", len(changeset.Create))
-		fmt.Printf(", ")
-		cli.PrintYellowf("%d to update", len(changeset.Update))
-		fmt.Printf(", ")
-		cli.PrintRedf("%d to delete\n", len(changeset.Delete))
-	}
+	fmt.Printf("\nSummary: %d in sync, ", len(changeset.Noop))
+	cli.PrintGreenf("%d to create", len(changeset.Create))
+	fmt.Printf(", ")
+	cli.PrintYellowf("%d to update", len(changeset.Update))
+	fmt.Printf(", ")
+	cli.PrintRedf("%d to delete\n", len(changeset.Delete))
 
 	return changeset, nil
 }
