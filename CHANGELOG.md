@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## 0.9.0 (2018-10-29)
+
 * [Feature] Rewrite diff engine. Tailor now uses `oc patch` under the hood to
   to update resources (instead of `oc apply`). The new behaviour is more correct
   and less dangerous. (#49)
