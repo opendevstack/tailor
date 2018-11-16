@@ -162,6 +162,9 @@ func ProcessTemplate(templateDir string, name string, paramDir string, compareOp
 	for _, param := range compareOptions.Params {
 		args = append(args, "--param="+param)
 	}
+	if templateContainsTailorNamespaceParam(filename) {
+		args = append(args, "--param=TAILOR_NAMESPACE="+compareOptions.Namespace)
+	}
 
 	actualParamFiles := compareOptions.ParamFiles
 	if len(actualParamFiles) == 0 {
@@ -230,4 +233,28 @@ func ProcessTemplate(templateDir string, name string, paramDir string, compareOp
 
 	cli.DebugMsg("Processed template:", filename)
 	return outBytes, err
+}
+
+// Returns true if template contains a param like "name: TAILOR_NAMESPACE"
+func templateContainsTailorNamespaceParam(filename string) bool {
+	b, err := ioutil.ReadFile(filename)
+	if err != nil {
+		return false
+	}
+	var f interface{}
+	yaml.Unmarshal(b, &f)
+	m := f.(map[string]interface{})
+	objectsPointer, _ := gojsonpointer.NewJsonPointer("/parameters")
+	items, _, err := objectsPointer.Get(m)
+	if err != nil {
+		return false
+	}
+	for _, v := range items.([]interface{}) {
+		nameVal := v.(map[string]interface{})["name"]
+		paramName := strings.TrimSpace(nameVal.(string))
+		if paramName == "TAILOR_NAMESPACE" {
+			return true
+		}
+	}
+	return false
 }

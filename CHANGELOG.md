@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+### Added
+
+* Automatically pass `TAILOR_NAMESPACE` param to templates if they define it in
+  the `parameters` section. The value is set to the namespace that Tailor runs
+  against (#77).
+
 ### Changed
 
 * Remove metadata from template as it is unsused by Tailor (#74).
