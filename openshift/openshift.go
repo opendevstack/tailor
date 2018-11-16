@@ -48,27 +48,35 @@ func ExportAsTemplate(filter *ResourceFilter, name string, exportOptions *cli.Ex
 		exportOptions.Namespace,
 		exportOptions.Selector,
 	)
-	out, err := cmd.CombinedOutput()
+	var stdout, stderr bytes.Buffer
+	cmd.Stdout = &stdout
+	cmd.Stderr = &stderr
+	err := cmd.Run()
+	outBytes := stdout.Bytes()
+	errBytes := stderr.Bytes()
 
 	if err != nil {
-		ret = string(out)
+		ret = string(errBytes)
 		if strings.Contains(ret, "no resources found") {
-			cli.DebugMsg("No resources '" + target + "' found.")
+			cli.DebugMsg("No", target, "resources found.")
 			return "", nil
 		}
-		fmt.Printf("Failed to export resources: %s.\n", target)
-		fmt.Println(fmt.Sprint(err) + ": " + ret)
-		return "", err
+		return "", fmt.Errorf(
+			"Failed to export %s resources.\n"+
+				"%s\n",
+			target,
+			ret,
+		)
 	}
 
 	cli.DebugMsg("Exported", target, "resources")
 
-	if len(out) == 0 {
+	if len(outBytes) == 0 {
 		return "", nil
 	}
 
 	var f interface{}
-	yaml.Unmarshal(out, &f)
+	yaml.Unmarshal(outBytes, &f)
 	m := f.(map[string]interface{})
 
 	objectsPointer, _ := gojsonpointer.NewJsonPointer("/objects")
