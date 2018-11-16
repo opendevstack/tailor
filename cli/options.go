@@ -276,20 +276,24 @@ func (o *CompareOptions) UpdateWithFlags(labelsFlag string, paramFlag []string, 
 
 func (o *CompareOptions) Process() error {
 	if (len(o.ParamDirs) > 1 || o.ParamDirs[0] != ".") && len(o.ParamFiles) > 0 {
-		return errors.New("You cannot specify both --param-dir and --param-file.")
+		return errors.New("You cannot specify both --param-dir and --param-file")
 	}
 	for _, p := range o.ParamDirs {
 		if p != "." {
 			if _, err := os.Stat(p); os.IsNotExist(err) {
-				return fmt.Errorf("Param directory %s does not exist.", p)
+				return fmt.Errorf("Param directory %s does not exist", p)
 			}
 		}
 	}
 	if o.Diff != "text" && o.Diff != "json" {
-		return errors.New("--diff must be either text or json.")
+		return errors.New("--diff must be either text or json")
 	}
 	if !o.CheckLoggedIn() {
-		return errors.New("You need to login with 'oc login' first.")
+		return errors.New("You need to login with 'oc login' first")
+	}
+	if strings.Contains(o.Resource, "/") && len(o.Selector) > 0 {
+		DebugMsg("Ignoring selector", o.Selector, "as resource is given")
+		o.Selector = ""
 	}
 	return nil
 }
@@ -308,7 +312,11 @@ func (o *ExportOptions) UpdateWithFlags(resourceArg string) {
 
 func (o *ExportOptions) Process() error {
 	if !o.CheckLoggedIn() {
-		return errors.New("You need to login with 'oc login' first.")
+		return errors.New("You need to login with 'oc login' first")
+	}
+	if strings.Contains(o.Resource, "/") && len(o.Selector) > 0 {
+		DebugMsg("Ignoring selector", o.Selector, "as resource is given")
+		o.Selector = ""
 	}
 	return nil
 }
