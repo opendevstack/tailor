@@ -8,6 +8,11 @@
   given as Openshift does not accept both selector and resource (#72).
 * Surface errors during export as template (#70).
 
+### Fixed
+
+* Remove annotations from exported templates also in case they contain slashes
+  (#73).
+
 ## 0.9.0 (2018-10-29)
 
 * [Feature] Rewrite diff engine. Tailor now uses `oc patch` under the hood to

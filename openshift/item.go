@@ -288,7 +288,7 @@ func (i *ResourceItem) parseConfig(m map[string]interface{}) error {
 	return nil
 }
 func (i *ResourceItem) RemoveUnmanagedAnnotations() {
-	for a, _ := range i.Annotations {
+	for a := range i.Annotations {
 		managed := false
 		for _, m := range i.TailorManagedAnnotations {
 			if a == m {
@@ -296,8 +296,14 @@ func (i *ResourceItem) RemoveUnmanagedAnnotations() {
 			}
 		}
 		if !managed {
-			deletePointer, _ := gojsonpointer.NewJsonPointer("/metadata/annotations/" + a)
-			deletePointer.Delete(i.Config)
+			cli.DebugMsg("Removing unmanaged annotation", a)
+			path := "/metadata/annotations/" + utils.JSONPointerPath(a)
+			deletePointer, _ := gojsonpointer.NewJsonPointer(path)
+			_, err := deletePointer.Delete(i.Config)
+			if err != nil {
+				cli.DebugMsg("WARN: Could not remove unmanaged annotation", a)
+				fmt.Printf("%v", i.Config)
+			}
 		}
 	}
 }
@@ -333,10 +339,7 @@ func (i *ResourceItem) handleKeyValue(k interface{}, v interface{}, pointer stri
 		strK = strconv.Itoa(kv)
 	}
 
-	// Build JSON pointer according to spec, see
-	// https://tools.ietf.org/html/draft-ietf-appsawg-json-pointer-07#section-3.
-	relativePointer := strings.Replace(strK, "~", "~0", -1)
-	relativePointer = strings.Replace(relativePointer, "/", "~1", -1)
+	relativePointer := utils.JSONPointerPath(strK)
 	absolutePointer := pointer + "/" + relativePointer
 	i.Paths = append(i.Paths, absolutePointer)
 
@@ -413,9 +416,7 @@ func (platformItem *ResourceItem) prepareForComparisonWithTemplateItem(templateI
 		unmanagedAnnotations = append(unmanagedAnnotations, a)
 	}
 	for _, a := range unmanagedAnnotations {
-		a = strings.Replace(a, "~", "~0", -1)
-		a = strings.Replace(a, "/", "~1", -1)
-		path := "/metadata/annotations/" + a
+		path := "/metadata/annotations/" + utils.JSONPointerPath(a)
 		cli.DebugMsg("Delete path", path, "from configuration")
 		deletePointer, _ := gojsonpointer.NewJsonPointer(path)
 		_, err := deletePointer.Delete(platformItem.Config)

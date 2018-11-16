@@ -31,3 +31,10 @@ func Remove(s []string, val string) []string {
 	}
 	return s
 }
+
+// JSONPointerPath builds a JSON pointer path according to spec, see
+// https://tools.ietf.org/html/draft-ietf-appsawg-json-pointer-07#section-3.
+func JSONPointerPath(s string) string {
+	pointer := strings.Replace(s, "~", "~0", -1)
+	return strings.Replace(pointer, "/", "~1", -1)
+}
