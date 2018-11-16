@@ -35,9 +35,9 @@ var (
 	}
 )
 
-func ExportAsTemplate(filter *ResourceFilter, name string, exportOptions *cli.ExportOptions) (string, error) {
+func ExportAsTemplate(filter *ResourceFilter, exportOptions *cli.ExportOptions) (string, error) {
 	ret := ""
-	args := []string{"export", "--as-template=" + name, "--output=yaml"}
+	args := []string{"export", "--as-template=tailor", "--output=yaml"}
 	if len(filter.Label) > 0 {
 		args = append(args, "--selector="+filter.Label)
 	}
@@ -96,6 +96,13 @@ func ExportAsTemplate(filter *ResourceFilter, name string, exportOptions *cli.Ex
 		item.RemoveUnmanagedAnnotations()
 		itemPointer, _ := gojsonpointer.NewJsonPointer("/objects/" + strconv.Itoa(k))
 		itemPointer.Set(m, item.Config)
+	}
+
+	cli.DebugMsg("Remove metadata from template")
+	metadataPointer, _ := gojsonpointer.NewJsonPointer("/metadata")
+	_, err = metadataPointer.Delete(m)
+	if err != nil {
+		cli.DebugMsg("Could not delete metadata from template")
 	}
 
 	b, err := yaml.Marshal(m)
