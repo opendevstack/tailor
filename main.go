@@ -644,19 +644,7 @@ func assemblePlatformBasedList(filter *openshift.ResourceFilter, compareOptions 
 }
 
 func export(filter *openshift.ResourceFilter, exportOptions *cli.ExportOptions) {
-	var templateName string
-	if len(filter.Name) > 0 {
-		templateName = strings.Replace(filter.Name, "/", "-", -1)
-	} else if len(filter.Label) > 0 {
-		labelParts := strings.Split(filter.Label, "=")
-		templateName = labelParts[1]
-	} else if len(filter.Kinds) > 0 {
-		templateName = strings.ToLower(strings.Join(filter.Kinds, "-"))
-	} else {
-		templateName = "all"
-	}
-
-	out, err := openshift.ExportAsTemplate(filter, templateName, exportOptions)
+	out, err := openshift.ExportAsTemplate(filter, exportOptions)
 	if err != nil {
 		log.Fatalln(
 			"Could not export",
