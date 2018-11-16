@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+### Changed
+
+* Ignore selector (e.g. set in a `Tailorfile`) when a specific resource is
+  given as Openshift does not accept both selector and resource (#72).
+
 ## 0.9.0 (2018-10-29)
 
 * [Feature] Rewrite diff engine. Tailor now uses `oc patch` under the hood to
