@@ -2,6 +2,7 @@ package cli
 
 import (
 	"bufio"
+	"bytes"
 	"fmt"
 	"io/ioutil"
 	"log"
@@ -53,6 +54,17 @@ func ExecOcCmd(args []string, namespace string, selector string) *exec.Cmd {
 
 func ExecPlainOcCmd(args []string) *exec.Cmd {
 	return execCmd("oc", args)
+}
+
+// RunCmd runs the given command and returns the result
+func RunCmd(cmd *exec.Cmd) (outBytes, errBytes []byte, err error) {
+	var stdout, stderr bytes.Buffer
+	cmd.Stdout = &stdout
+	cmd.Stderr = &stderr
+	err = cmd.Run()
+	outBytes = stdout.Bytes()
+	errBytes = stderr.Bytes()
+	return outBytes, errBytes, err
 }
 
 func execCmd(executable string, args []string) *exec.Cmd {
