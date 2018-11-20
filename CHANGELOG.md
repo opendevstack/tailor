@@ -10,6 +10,7 @@
 
 ### Changed
 
+* Unify log output during update (#78).
 * Remove metadata from template as it is unsused by Tailor (#74).
 * Ignore selector (e.g. set in a `Tailorfile`) when a specific resource is
   given as Openshift does not accept both selector and resource (#72).
