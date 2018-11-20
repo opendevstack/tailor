@@ -1,7 +1,6 @@
 package openshift
 
 import (
-	"bytes"
 	"fmt"
 	"io/ioutil"
 	"os"
@@ -48,12 +47,7 @@ func ExportAsTemplate(filter *ResourceFilter, exportOptions *cli.ExportOptions) 
 		exportOptions.Namespace,
 		exportOptions.Selector,
 	)
-	var stdout, stderr bytes.Buffer
-	cmd.Stdout = &stdout
-	cmd.Stderr = &stderr
-	err := cmd.Run()
-	outBytes := stdout.Bytes()
-	errBytes := stderr.Bytes()
+	outBytes, errBytes, err := cli.RunCmd(cmd)
 
 	if err != nil {
 		ret = string(errBytes)
@@ -123,12 +117,7 @@ func ExportResources(filter *ResourceFilter, compareOptions *cli.CompareOptions)
 		compareOptions.Namespace,
 		compareOptions.Selector,
 	)
-	var stdout, stderr bytes.Buffer
-	cmd.Stdout = &stdout
-	cmd.Stderr = &stderr
-	err := cmd.Run()
-	outBytes := stdout.Bytes()
-	errBytes := stderr.Bytes()
+	outBytes, errBytes, err := cli.RunCmd(cmd)
 
 	if err != nil {
 		ret := string(errBytes)
@@ -217,12 +206,7 @@ func ProcessTemplate(templateDir string, name string, paramDir string, compareOp
 		args = append(args, "--ignore-unknown-parameters=true")
 	}
 	cmd := cli.ExecPlainOcCmd(args)
-	var stdout, stderr bytes.Buffer
-	cmd.Stdout = &stdout
-	cmd.Stderr = &stderr
-	err := cmd.Run()
-	outBytes := stdout.Bytes()
-	errBytes := stderr.Bytes()
+	outBytes, errBytes, err := cli.RunCmd(cmd)
 
 	if len(errBytes) > 0 {
 		fmt.Println(string(errBytes))
