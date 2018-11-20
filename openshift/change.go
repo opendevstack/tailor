@@ -2,6 +2,7 @@ package openshift
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io/ioutil"
 	"os"
@@ -78,22 +79,19 @@ func (c *Change) Diff() string {
 func ocDelete(change *Change, compareOptions *cli.CompareOptions) error {
 	kind := change.Kind
 	name := change.Name
-	fmt.Println("Deleting", kind, name)
+	fmt.Printf("Deleting %s/%s ... ", kind, name)
 	args := []string{"delete", kind, name}
 	cmd := cli.ExecOcCmd(
 		args,
 		compareOptions.Namespace,
 		"", // empty as name and selector is not allowed
 	)
-	out, err := cmd.CombinedOutput()
+	_, errBytes, err := cli.RunCmd(cmd)
 	if err == nil {
-		fmt.Printf("Removed %s/%s.\n", kind, name)
+		fmt.Println("done")
 	} else {
-		return fmt.Errorf(
-			"Failed to remove %s/%s - aborting.\n"+
-				"%s\n",
-			kind, name, string(out),
-		)
+		fmt.Println("failed")
+		return errors.New(string(errBytes))
 	}
 	return nil
 }
@@ -102,7 +100,8 @@ func ocCreate(change *Change, compareOptions *cli.CompareOptions) error {
 	kind := change.Kind
 	name := change.Name
 	config := change.DesiredState
-	fmt.Println("Creating", kind, name)
+	fmt.Printf("Creating %s/%s ... ", kind, name)
+	defer os.Remove(".PROCESSED_TEMPLATE")
 	ioutil.WriteFile(".PROCESSED_TEMPLATE", []byte(config), 0644)
 
 	args := []string{"create", "--filename=" + ".PROCESSED_TEMPLATE"}
@@ -111,18 +110,14 @@ func ocCreate(change *Change, compareOptions *cli.CompareOptions) error {
 		compareOptions.Namespace,
 		compareOptions.Selector,
 	)
-	out, err := cmd.CombinedOutput()
+	_, errBytes, err := cli.RunCmd(cmd)
 	if err == nil {
-		fmt.Printf("Applied processed %s template.\n", kind)
-		os.Remove(".PROCESSED_TEMPLATE")
+		fmt.Println("done")
 	} else {
-		return fmt.Errorf(
-			"Failed to apply processed %s/%s template - aborting.\n"+
-				"It is left for inspection at .PROCESSED_TEMPLATE.\n"+
-				"%s\n",
-			kind, name, string(out),
-		)
+		fmt.Println("failed")
+		return errors.New(string(errBytes))
 	}
+
 	return nil
 }
 
@@ -132,7 +127,7 @@ func ocPatch(change *Change, compareOptions *cli.CompareOptions) error {
 
 	j := change.JsonPatches(false)
 
-	fmt.Println("Patch", kind, name)
+	fmt.Printf("Patching %s/%s ... ", kind, name)
 
 	args := []string{"patch", kind + "/" + name, "--type=json", "--patch", j}
 	cmd := cli.ExecOcCmd(
@@ -140,13 +135,12 @@ func ocPatch(change *Change, compareOptions *cli.CompareOptions) error {
 		compareOptions.Namespace,
 		"", // empty as name and selector is not allowed
 	)
-	out, err := cmd.CombinedOutput()
-	if err != nil {
-		return fmt.Errorf(
-			"Failed to patch %s/%s - aborting.\n"+
-				"%s\n",
-			kind, name, string(out),
-		)
+	_, errBytes, err := cli.RunCmd(cmd)
+	if err == nil {
+		fmt.Println("done")
+	} else {
+		fmt.Println("failed")
+		return errors.New(string(errBytes))
 	}
 	return nil
 }

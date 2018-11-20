@@ -388,14 +388,17 @@ func main() {
 			if globalOptions.NonInteractive {
 				err = changeset.Apply(compareOptions)
 				if err != nil {
-					log.Fatalln(err)
+					fmt.Println(err)
+					log.Fatalln("Update aborted")
 				}
 			} else {
 				c := cli.AskForConfirmation("Apply changes?")
 				if c {
+					fmt.Println("")
 					err = changeset.Apply(compareOptions)
 					if err != nil {
-						log.Fatalln(err)
+						fmt.Println(err)
+						log.Fatalln("Update aborted")
 					}
 				}
 			}
@@ -691,7 +694,7 @@ func compare(remoteResourceList *openshift.ResourceList, localResourceList *open
 	fmt.Printf(", ")
 	cli.PrintYellowf("%d to update", len(changeset.Update))
 	fmt.Printf(", ")
-	cli.PrintRedf("%d to delete\n", len(changeset.Delete))
+	cli.PrintRedf("%d to delete\n\n", len(changeset.Delete))
 
 	return changeset, nil
 }
