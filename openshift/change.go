@@ -4,8 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"io/ioutil"
-	"os"
+	"io"
 	"sort"
 
 	"github.com/opendevstack/tailor/cli"
@@ -101,15 +100,20 @@ func ocCreate(change *Change, compareOptions *cli.CompareOptions) error {
 	name := change.Name
 	config := change.DesiredState
 	fmt.Printf("Creating %s/%s ... ", kind, name)
-	defer os.Remove(".PROCESSED_TEMPLATE")
-	ioutil.WriteFile(".PROCESSED_TEMPLATE", []byte(config), 0644)
-
-	args := []string{"create", "--filename=" + ".PROCESSED_TEMPLATE"}
+	args := []string{"create", "-f", "-"}
 	cmd := cli.ExecOcCmd(
 		args,
 		compareOptions.Namespace,
 		compareOptions.Selector,
 	)
+	stdin, err := cmd.StdinPipe()
+	if err != nil {
+		return err
+	}
+	go func() {
+		defer stdin.Close()
+		io.WriteString(stdin, config)
+	}()
 	_, errBytes, err := cli.RunCmd(cmd)
 	if err == nil {
 		fmt.Println("done")
