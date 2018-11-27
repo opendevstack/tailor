@@ -237,7 +237,7 @@ func main() {
 
 	switch command {
 	case versionCommand.FullCommand():
-		fmt.Println("0.9.0")
+		fmt.Println("0.9.1")
 
 	case editCommand.FullCommand():
 		readParams, err := openshift.NewParamsFromFile(*editFileArg, globalOptions.PrivateKey, globalOptions.Passphrase)

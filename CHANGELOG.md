@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## [0.9.1] - 2018-11-27
+
 ### Added
 
 * Automatically pass `TAILOR_NAMESPACE` param to templates if they define it in
