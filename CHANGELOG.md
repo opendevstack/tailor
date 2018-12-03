@@ -6,22 +6,23 @@
 
 ### Added
 
-* Automatically pass `TAILOR_NAMESPACE` param to templates if they define it in
+- Automatically pass `TAILOR_NAMESPACE` param to templates if they define it in
   the `parameters` section. The value is set to the namespace that Tailor runs
   against (#77).
 
 ### Changed
 
-* Unify log output during update (#78).
-* Remove metadata from template as it is unsused by Tailor (#74).
-* Ignore selector (e.g. set in a `Tailorfile`) when a specific resource is
+- Unify log output during update (#78).
+- Remove metadata from template as it is unsused by Tailor (#74).
+- Ignore selector (e.g. set in a `Tailorfile`) when a specific resource is
   given as Openshift does not accept both selector and resource (#72).
-* Surface errors during export as template (#70).
+- Surface errors during export as template (#70).
 
 ### Fixed
 
-* Remove annotations from exported templates also in case they contain slashes
+- Remove annotations from exported templates also in case they contain slashes
   (#73).
+
 
 ## 0.9.0 (2018-10-29)
 
