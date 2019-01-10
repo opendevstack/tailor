@@ -1,6 +1,12 @@
+services:
+  - docker
 language: go
 go:
   - "1.11.x"
 before_install:
   - go get golang.org/x/tools/cmd/goimports
-script: env GO111MODULE=on make test-unit
+  - wget https://mirror.openshift.com/pub/openshift-v3/clients/3.11.43/linux/oc.tar.gz
+  - tar -xzvf oc.tar.gz
+  - export PATH=$PATH:$PWD
+
+script: env GO111MODULE=on make test
