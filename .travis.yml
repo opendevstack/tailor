@@ -9,6 +9,7 @@ before_install:
   - cd /lib/x86_64-linux-gnu
   - sudo ln -s libssl.so.1.0.0 libssl.so.10
   - sudo ln -s libcrypto.so.1.0.0 libcrypto.so.10
+  - cd -
   - wget https://mirror.openshift.com/pub/openshift-v3/clients/3.11.43/linux/oc.tar.gz
   - tar -xzvf oc.tar.gz
   - export PATH=$PATH:$PWD
