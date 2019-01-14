@@ -9,6 +9,7 @@ import (
 
 	"github.com/ghodss/yaml"
 	"github.com/opendevstack/tailor/cli"
+	"github.com/opendevstack/tailor/utils"
 	"github.com/xeipuuv/gojsonpointer"
 )
 
@@ -70,7 +71,13 @@ func ExportAsTemplate(filter *ResourceFilter, exportOptions *cli.ExportOptions) 
 	}
 
 	var f interface{}
-	yaml.Unmarshal(outBytes, &f)
+	err = yaml.Unmarshal(outBytes, &f)
+	if err != nil {
+		err = utils.DisplaySyntaxError(outBytes, err)
+		return "", fmt.Errorf(
+			"Could not parse template: %s", err,
+		)
+	}
 	m := f.(map[string]interface{})
 
 	objectsPointer, _ := gojsonpointer.NewJsonPointer("/objects")
@@ -151,7 +158,11 @@ func ProcessTemplate(templateDir string, name string, paramDir string, compareOp
 	for _, param := range compareOptions.Params {
 		args = append(args, "--param="+param)
 	}
-	if templateContainsTailorNamespaceParam(filename) {
+	containsNamespace, err := templateContainsTailorNamespaceParam(filename)
+	if err != nil {
+		return []byte{}, err
+	}
+	if containsNamespace {
 		args = append(args, "--param=TAILOR_NAMESPACE="+compareOptions.Namespace)
 	}
 
@@ -220,25 +231,31 @@ func ProcessTemplate(templateDir string, name string, paramDir string, compareOp
 }
 
 // Returns true if template contains a param like "name: TAILOR_NAMESPACE"
-func templateContainsTailorNamespaceParam(filename string) bool {
+func templateContainsTailorNamespaceParam(filename string) (bool, error) {
 	b, err := ioutil.ReadFile(filename)
 	if err != nil {
-		return false
+		return false, nil
 	}
 	var f interface{}
-	yaml.Unmarshal(b, &f)
+	err = yaml.Unmarshal(b, &f)
+	if err != nil {
+		err = utils.DisplaySyntaxError(b, err)
+		return false, fmt.Errorf(
+			"Could not parse template: %s", err,
+		)
+	}
 	m := f.(map[string]interface{})
 	objectsPointer, _ := gojsonpointer.NewJsonPointer("/parameters")
 	items, _, err := objectsPointer.Get(m)
 	if err != nil {
-		return false
+		return false, nil
 	}
 	for _, v := range items.([]interface{}) {
 		nameVal := v.(map[string]interface{})["name"]
 		paramName := strings.TrimSpace(nameVal.(string))
 		if paramName == "TAILOR_NAMESPACE" {
-			return true
+			return false, nil
 		}
 	}
-	return false
+	return false, nil
 }
