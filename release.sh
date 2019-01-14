@@ -14,7 +14,7 @@ make test
 
 echo "Update version..."
 old_version=$(grep -o "[0-9]*\.[0-9]*\.[0-9]*" main.go)
-sed -i.bak 's/fmt.Println("'$old_version'")/fmt.Println("'$version'")/' main.go
+sed -i.bak 's/fmt.Println("'$old_version'+master")/fmt.Println("'$version'")/' main.go
 sed -i.bak 's/'$old_version'/'$version'/' README.md
 
 echo "Mark version as released in changelog..."
@@ -34,6 +34,10 @@ git commit -m "Bump version to ${version}"
 git tag --message="v$version" --force "v$version"
 git tag --message="latest" --force latest
 
+echo "Set master version again"
+sed -i.bak 's/fmt.Println("'$version'")/fmt.Println("'$version'+master")/' main.go
+git add main.go
+git commit -m "Set master version to ${version}+master"
 
 echo "v$version tagged."
 echo "Now, run 'git push origin master && git push --tags --force' and publish the release on GitHub."

@@ -212,6 +212,11 @@ func main() {
 
 	command := kingpin.MustParse(app.Parse(os.Args[1:]))
 
+	if command == versionCommand.FullCommand() {
+		fmt.Println("0.9.1+master")
+		return
+	}
+
 	fileFlags, err := cli.GetFileFlags(*fileFlag, (*verboseFlag || *debugFlag))
 	if err != nil {
 		log.Fatalln("Could not read Tailorfile:", err)
@@ -236,9 +241,6 @@ func main() {
 	}
 
 	switch command {
-	case versionCommand.FullCommand():
-		fmt.Println("0.9.1")
-
 	case editCommand.FullCommand():
 		readParams, err := openshift.NewParamsFromFile(*editFileArg, globalOptions.PrivateKey, globalOptions.Passphrase)
 		if err != nil {
