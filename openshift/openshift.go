@@ -74,9 +74,7 @@ func ExportAsTemplate(filter *ResourceFilter, exportOptions *cli.ExportOptions) 
 	err = yaml.Unmarshal(outBytes, &f)
 	if err != nil {
 		err = utils.DisplaySyntaxError(outBytes, err)
-		return "", fmt.Errorf(
-			"Could not parse template: %s", err,
-		)
+		return "", err
 	}
 	m := f.(map[string]interface{})
 
@@ -240,9 +238,7 @@ func templateContainsTailorNamespaceParam(filename string) (bool, error) {
 	err = yaml.Unmarshal(b, &f)
 	if err != nil {
 		err = utils.DisplaySyntaxError(b, err)
-		return false, fmt.Errorf(
-			"Could not parse template: %s", err,
-		)
+		return false, err
 	}
 	m := f.(map[string]interface{})
 	objectsPointer, _ := gojsonpointer.NewJsonPointer("/parameters")
