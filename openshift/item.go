@@ -398,6 +398,8 @@ func (templateItem *ResourceItem) prepareForComparisonWithPlatformItem(platformI
 // prepareForComparisonWithTemplateItem massages platform item in such a way
 // that it can be compared with the given template item:
 // - remove all annotations which are not managed
+// - massage apiVersion to deal with namespace introduction in 3.11 on cluster
+//   if client is still on 3.9
 func (platformItem *ResourceItem) prepareForComparisonWithTemplateItem(templateItem *ResourceItem) error {
 	unmanagedAnnotations := []string{}
 	for a, _ := range platformItem.Annotations {
@@ -425,5 +427,23 @@ func (platformItem *ResourceItem) prepareForComparisonWithTemplateItem(templateI
 		}
 		platformItem.Paths = utils.Remove(platformItem.Paths, path)
 	}
+
+	templateAPIVersionPointer, _ := gojsonpointer.NewJsonPointer("/apiVersion")
+	templateAPIVersionVal, _, err := templateAPIVersionPointer.Get(templateItem.Config)
+	cli.DebugMsg("Got version", templateAPIVersionVal.(string), "in template item")
+	if err != nil {
+		return nil
+	}
+	platformAPIVersionPointer, _ := gojsonpointer.NewJsonPointer("/apiVersion")
+	platformAPIVersionVal, _, err := platformAPIVersionPointer.Get(platformItem.Config)
+	cli.DebugMsg("Got version", platformAPIVersionVal.(string), "in platform item")
+	if err != nil {
+		return nil
+	}
+	if strings.HasSuffix(templateAPIVersionVal.(string), "/v1") && platformAPIVersionVal.(string) == "v1" {
+		cli.DebugMsg("Setting platform version to", templateAPIVersionVal.(string))
+		platformAPIVersionPointer.Set(platformItem.Config, templateAPIVersionVal)
+	}
+
 	return nil
 }
