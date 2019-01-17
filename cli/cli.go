@@ -15,6 +15,7 @@ import (
 
 var verbose bool
 var debug bool
+var ocBinary string
 
 var PrintGreenf func(format string, a ...interface{})
 var PrintBluef func(format string, a ...interface{})
@@ -53,7 +54,7 @@ func ExecOcCmd(args []string, namespace string, selector string) *exec.Cmd {
 }
 
 func ExecPlainOcCmd(args []string) *exec.Cmd {
-	return execCmd("oc", args)
+	return execCmd(ocBinary, args)
 }
 
 // RunCmd runs the given command and returns the result

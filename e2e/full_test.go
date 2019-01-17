@@ -38,7 +38,7 @@ objects:
 	ioutil.WriteFile("cm-template.yml", cmBytes, 0644)
 
 	// Status -> expected to have one created resource
-	cmd := exec.Command(tailorBinary, []string{"status"}...)
+	cmd := exec.Command(tailorBinary, []string{"status", "--force"}...)
 	out, err := cmd.CombinedOutput()
 	if err == nil {
 		t.Fatalf("Status command should have exited with 3")
@@ -78,7 +78,7 @@ objects:
 	ioutil.WriteFile("cm-template.yml", changedCmBytes, 0644)
 
 	// Status -> expected to have drift (updated resource)
-	cmd = exec.Command(tailorBinary, []string{"status"}...)
+	cmd = exec.Command(tailorBinary, []string{"status", "--force"}...)
 	out, err = cmd.CombinedOutput()
 	if err == nil {
 		t.Fatalf("Status command should have exited with 3")
@@ -109,7 +109,7 @@ objects:
 	fmt.Println("Patched content of ConfigMap")
 
 	// Status -> expected to have drift (updated resource)
-	cmd = exec.Command(tailorBinary, []string{"status"}...)
+	cmd = exec.Command(tailorBinary, []string{"status", "--force"}...)
 	out, err = cmd.CombinedOutput()
 	if err == nil {
 		t.Fatalf("Status command should have exited with 3")
@@ -134,7 +134,7 @@ objects:
 	os.Remove("cm-template.yml")
 
 	// Status -> expected to have drift (deleted resource)
-	cmd = exec.Command(tailorBinary, []string{"status"}...)
+	cmd = exec.Command(tailorBinary, []string{"status", "--force"}...)
 	out, err = cmd.CombinedOutput()
 	if err == nil {
 		t.Fatalf("Status command should have exited with 3")
@@ -159,7 +159,7 @@ objects:
 
 func update(t *testing.T, tailorBinary string) {
 	fmt.Println("Updating test project")
-	cmd := exec.Command(tailorBinary, []string{"update", "--non-interactive"}...)
+	cmd := exec.Command(tailorBinary, []string{"update", "--non-interactive", "--force"}...)
 	out, err := cmd.CombinedOutput()
 	if err != nil {
 		t.Fatalf("Could not update test project: %s", out)
@@ -169,7 +169,7 @@ func update(t *testing.T, tailorBinary string) {
 
 func statusWithNoExpectedDrift(t *testing.T, tailorBinary string) {
 	fmt.Println("Getting status with no expected drift")
-	cmd := exec.Command(tailorBinary, []string{"status"}...)
+	cmd := exec.Command(tailorBinary, []string{"status", "--force"}...)
 	out, err := cmd.CombinedOutput()
 	if err != nil {
 		t.Fatalf("Could not get status in test project: %s", out)
@@ -190,7 +190,7 @@ func statusWithNoExpectedDrift(t *testing.T, tailorBinary string) {
 }
 
 func export(t *testing.T, tailorBinary string) {
-	cmd := exec.Command(tailorBinary, []string{"export"}...)
+	cmd := exec.Command(tailorBinary, []string{"export", "--force"}...)
 	out, err := cmd.CombinedOutput()
 	if err != nil {
 		t.Fatalf("Could not export resources in test project: %s", out)
