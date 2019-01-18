@@ -356,12 +356,12 @@ func (o *ExportOptions) Process() error {
 //   kubernetes v1.11.0+d4cacc0
 func checkOcVersionMatches() (string, string, bool) {
 	cmd := ExecPlainOcCmd([]string{"version"})
-	outBytes, err := cmd.CombinedOutput()
-	output := string(outBytes)
+	outBytes, errBytes, err := RunCmd(cmd)
 	if err != nil {
-		VerboseMsg("Failed to query client and server version, got:\n%s\n", output)
+		VerboseMsg("Failed to query client and server version, got:\n%s\n", string(errBytes))
 		return "?", "?", false
 	}
+	output := string(outBytes)
 
 	ocClientVersion := ""
 	ocServerVersion := ""
