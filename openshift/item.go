@@ -16,13 +16,16 @@ import (
 var (
 	tailorOriginalValuesAnnotationPrefix = "original-values.tailor.io"
 	tailorManagedAnnotation              = "managed-annotations.tailor.opendevstack.org"
-	platformManagedFields                = []string{
+	platformManagedSimpleFields          = []string{
 		"/metadata/generation",
 		"/metadata/creationTimestamp",
 		"/spec/tags",
 		"/status",
 		"/spec/volumeName",
 		"/spec/template/metadata/creationTimestamp",
+	}
+	platformManagedRegexFields = []string{
+		"^/spec/triggers/[0-9]*/imageChangeParams/lastTriggeredImage",
 	}
 	emptyMapFields = []string{
 		"/metadata/annotations",
@@ -232,8 +235,8 @@ func (i *ResourceItem) parseConfig(m map[string]interface{}) error {
 		}
 	}
 
-	// Remove platform-managed fields
-	for _, p := range platformManagedFields {
+	// Remove platform-managed simple fields
+	for _, p := range platformManagedSimpleFields {
 		deletePointer, _ := gojsonpointer.NewJsonPointer(p)
 		_, _ = deletePointer.Delete(m)
 	}
@@ -243,11 +246,24 @@ func (i *ResourceItem) parseConfig(m map[string]interface{}) error {
 	// Build list of JSON pointers
 	i.walkMap(m, "")
 
-	// Handle platform-modified fields:
-	// If there is an annotation, copy its value into the spec, otherwise
-	// copy the spec value into the annotation.
+	// Iterate over extracted paths and massage as necessary
 	newPaths := []string{}
-	for _, path := range i.Paths {
+	deletedPathIndices := []int{}
+	for pathIndex, path := range i.Paths {
+
+		// Remove platform-managed regex fields
+		for _, platformManagedField := range platformManagedRegexFields {
+			matched, _ := regexp.MatchString(platformManagedField, path)
+			if matched {
+				deletePointer, _ := gojsonpointer.NewJsonPointer(path)
+				_, _ = deletePointer.Delete(i.Config)
+				deletedPathIndices = append(deletedPathIndices, pathIndex)
+			}
+		}
+
+		// Deal with platform-modified fields
+		// If there is an annotation, copy its value into the spec, otherwise
+		// copy the spec value into the annotation.
 		for _, platformModifiedField := range platformModifiedFields {
 			matched, _ := regexp.MatchString(platformModifiedField, path)
 			if matched {
@@ -280,6 +296,16 @@ func (i *ResourceItem) parseConfig(m map[string]interface{}) error {
 				}
 			}
 		}
+	}
+
+	// As we delete items from a slice, we need to adjust the pre-calculated
+	// indices to delete (shift to left by one for each deletion).
+	indexOffset := 0
+	for _, pathIndex := range deletedPathIndices {
+		deletionIndex := pathIndex + indexOffset
+		cli.DebugMsg("Removing platform managed path", i.Paths[deletionIndex])
+		i.Paths = append(i.Paths[:deletionIndex], i.Paths[deletionIndex+1:]...)
+		indexOffset = indexOffset - 1
 	}
 	if len(newPaths) > 0 {
 		i.Paths = append(i.Paths, newPaths...)
@@ -417,7 +443,7 @@ func (platformItem *ResourceItem) prepareForComparisonWithTemplateItem(templateI
 	}
 	for _, a := range unmanagedAnnotations {
 		path := "/metadata/annotations/" + utils.JSONPointerPath(a)
-		cli.DebugMsg("Delete path", path, "from configuration")
+		cli.DebugMsg("Deleting unmanaged annotation", path)
 		deletePointer, _ := gojsonpointer.NewJsonPointer(path)
 		_, err := deletePointer.Delete(platformItem.Config)
 		if err != nil {
