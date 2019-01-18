@@ -36,6 +36,7 @@ git tag --message="latest" --force latest
 
 echo "Set master version again"
 sed -i.bak 's/fmt.Println("'$version'")/fmt.Println("'$version'+master")/' main.go
+rm main.go.bak
 git add main.go
 git commit -m "Set master version to ${version}+master"
 
