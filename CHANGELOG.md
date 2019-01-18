@@ -10,7 +10,7 @@
   clusters with differing versions can now specify the `oc` binary to use via
   `--oc-binary` or disregard the warning and proceed with `--force`. As a
   side-effect of this change, all operations require an `oc login` now. See 
-  ([#88](https://github.com/opendevstack/tailor/pull/88)).
+  [#88](https://github.com/opendevstack/tailor/pull/88).
 - In OCP versions above 3.9, a new field `lastTriggeredImage` is added to 
   `imageChangeParams` automatically. The value is not known to template authors
   and consequently stripped from the export before comparison ([#90](https://github.com/opendevstack/tailor/pull/90)).
