@@ -374,7 +374,9 @@ spec:
       serviceAccountName: foo
       volumes: []
   test: false
-  triggers: []`)
+  triggers:
+  - type: ImageChange
+    imageChangeParams: {}`)
 	return bytes.Replace(config, []byte("TAG"), tag, -1)
 }
 
@@ -410,5 +412,8 @@ spec:
       serviceAccountName: foo
       volumes: []
   test: false
-  triggers: []`)
+  triggers:
+  - type: ImageChange
+    imageChangeParams:
+      lastTriggeredImage: 127.0.0.1:5000/bar/foo@sha256:123`)
 }
