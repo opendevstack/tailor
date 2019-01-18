@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## [0.9.2] - 2019-01-18
+
 ### Changed
 - The `oc` binary might have a different version than the targeted cluster. This
   can lead to incorrect behaviour (e.g. constant drift). To avoid this, Tailor
