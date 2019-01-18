@@ -13,6 +13,7 @@ type GlobalOptions struct {
 	Verbose        bool
 	Debug          bool
 	NonInteractive bool
+	OcBinary       string
 	File           string
 	Namespace      string
 	Selector       string
@@ -21,6 +22,7 @@ type GlobalOptions struct {
 	PublicKeyDir   string
 	PrivateKey     string
 	Passphrase     string
+	Force          bool
 	IsLoggedIn     bool
 }
 
@@ -33,7 +35,6 @@ type CompareOptions struct {
 	IgnorePaths             []string
 	IgnoreUnknownParameters bool
 	UpsertOnly              bool
-	Force                   bool
 	Resource                string
 }
 
@@ -92,6 +93,9 @@ func (o *GlobalOptions) UpdateWithFile(fileFlags map[string]string) {
 	if fileFlags["non-interactive"] == "true" {
 		o.NonInteractive = true
 	}
+	if val, ok := fileFlags["oc-binary"]; ok {
+		o.OcBinary = val
+	}
 	if val, ok := fileFlags["namespace"]; ok {
 		o.Namespace = val
 	}
@@ -113,9 +117,12 @@ func (o *GlobalOptions) UpdateWithFile(fileFlags map[string]string) {
 	if val, ok := fileFlags["passphrase"]; ok {
 		o.Passphrase = val
 	}
+	if fileFlags["force"] == "true" {
+		o.Force = true
+	}
 }
 
-func (o *GlobalOptions) UpdateWithFlags(verboseFlag bool, debugFlag bool, nonInteractiveFlag bool, namespaceFlag string, selectorFlag string, templateDirFlag []string, paramDirFlag []string, publicKeyDirFlag string, privateKeyFlag string, passphraseFlag string) {
+func (o *GlobalOptions) UpdateWithFlags(verboseFlag bool, debugFlag bool, nonInteractiveFlag bool, ocBinaryFlag string, namespaceFlag string, selectorFlag string, templateDirFlag []string, paramDirFlag []string, publicKeyDirFlag string, privateKeyFlag string, passphraseFlag string, forceFlag bool) {
 	if verboseFlag {
 		o.Verbose = true
 	}
@@ -126,6 +133,10 @@ func (o *GlobalOptions) UpdateWithFlags(verboseFlag bool, debugFlag bool, nonInt
 
 	if nonInteractiveFlag {
 		o.NonInteractive = true
+	}
+
+	if len(ocBinaryFlag) > 0 {
+		o.OcBinary = ocBinaryFlag
 	}
 
 	if len(namespaceFlag) > 0 {
@@ -159,11 +170,31 @@ func (o *GlobalOptions) UpdateWithFlags(verboseFlag bool, debugFlag bool, nonInt
 	if len(passphraseFlag) > 0 {
 		o.Passphrase = passphraseFlag
 	}
+
+	if forceFlag {
+		o.Force = true
+	}
 }
 
 func (o *GlobalOptions) Process() error {
 	verbose = o.Verbose || o.Debug
 	debug = o.Debug
+	ocBinary = o.OcBinary
+	if !o.checkOcBinary() {
+		return fmt.Errorf("No such oc binary: %s", o.OcBinary)
+	}
+	if !o.checkLoggedIn() {
+		return errors.New("You need to login with 'oc login' first")
+	}
+	if clientVersion, serverVersion, matches := checkOcVersionMatches(); !matches {
+		errorMsg := fmt.Sprintf("Version mismatch between client (%s) and server (%s) detected. "+
+			"This can lead to incorrect behaviour. "+
+			"Update your oc binary or point to an alternative binary with --oc-binary.", clientVersion, serverVersion)
+		if !o.Force {
+			return fmt.Errorf("%s\n\nRefusing to continue without --force", errorMsg)
+		}
+		VerboseMsg(errorMsg)
+	}
 	if len(o.Namespace) == 0 {
 		n, err := getOcNamespace()
 		if err != nil {
@@ -171,9 +202,6 @@ func (o *GlobalOptions) Process() error {
 		}
 		o.Namespace = n
 	} else {
-		if !o.CheckLoggedIn() {
-			return errors.New("You need to login with 'oc login' first.")
-		}
 		err := checkOcNamespace(o.Namespace)
 		if err != nil {
 			return fmt.Errorf("No such project: %s", o.Namespace)
@@ -182,13 +210,22 @@ func (o *GlobalOptions) Process() error {
 	return nil
 }
 
-func (o *GlobalOptions) CheckLoggedIn() bool {
+func (o *GlobalOptions) checkLoggedIn() bool {
 	if !o.IsLoggedIn {
-		cmd := exec.Command("oc", "whoami")
+		cmd := exec.Command(o.OcBinary, "whoami")
 		_, err := cmd.CombinedOutput()
 		o.IsLoggedIn = (err == nil)
 	}
 	return o.IsLoggedIn
+}
+
+func (o *GlobalOptions) checkOcBinary() bool {
+	if !strings.Contains(o.OcBinary, string(os.PathSeparator)) {
+		_, err := exec.LookPath(o.OcBinary)
+		return err == nil
+	}
+	_, err := os.Stat(o.OcBinary)
+	return !os.IsNotExist(err)
 }
 
 func (o *CompareOptions) UpdateWithFile(fileFlags map[string]string) {
@@ -210,9 +247,6 @@ func (o *CompareOptions) UpdateWithFile(fileFlags map[string]string) {
 	if fileFlags["upsert-only"] == "true" {
 		o.UpsertOnly = true
 	}
-	if fileFlags["force"] == "true" {
-		o.Force = true
-	}
 	if val, ok := fileFlags["ignore-path"]; ok {
 		o.IgnorePaths = strings.Split(val, ",")
 	}
@@ -221,7 +255,7 @@ func (o *CompareOptions) UpdateWithFile(fileFlags map[string]string) {
 	}
 }
 
-func (o *CompareOptions) UpdateWithFlags(labelsFlag string, paramFlag []string, paramFileFlag []string, diffFlag string, ignorePathFlag []string, ignoreUnknownParametersFlag bool, upsertOnlyFlag bool, forceFlag bool, resourceArg string) {
+func (o *CompareOptions) UpdateWithFlags(labelsFlag string, paramFlag []string, paramFileFlag []string, diffFlag string, ignorePathFlag []string, ignoreUnknownParametersFlag bool, upsertOnlyFlag bool, resourceArg string) {
 	if len(labelsFlag) > 0 {
 		o.Labels = labelsFlag
 	}
@@ -263,9 +297,6 @@ func (o *CompareOptions) UpdateWithFlags(labelsFlag string, paramFlag []string, 
 	if upsertOnlyFlag {
 		o.UpsertOnly = true
 	}
-	if forceFlag {
-		o.Force = true
-	}
 	if len(ignorePathFlag) > 0 {
 		o.IgnorePaths = ignorePathFlag
 	}
@@ -288,9 +319,6 @@ func (o *CompareOptions) Process() error {
 	if o.Diff != "text" && o.Diff != "json" {
 		return errors.New("--diff must be either text or json")
 	}
-	if !o.CheckLoggedIn() {
-		return errors.New("You need to login with 'oc login' first")
-	}
 	if strings.Contains(o.Resource, "/") && len(o.Selector) > 0 {
 		DebugMsg("Ignoring selector", o.Selector, "as resource is given")
 		o.Selector = ""
@@ -311,14 +339,63 @@ func (o *ExportOptions) UpdateWithFlags(resourceArg string) {
 }
 
 func (o *ExportOptions) Process() error {
-	if !o.CheckLoggedIn() {
-		return errors.New("You need to login with 'oc login' first")
-	}
 	if strings.Contains(o.Resource, "/") && len(o.Selector) > 0 {
 		DebugMsg("Ignoring selector", o.Selector, "as resource is given")
 		o.Selector = ""
 	}
 	return nil
+}
+
+// Check that OC client and server version match.
+// The output of "oc version" is e.g.:
+//   oc v3.9.0+191fece
+//   kubernetes v1.9.1+a0ce1bc657
+//   features: Basic-Auth
+//   Server https://api.domain.com:443
+//   openshift v3.11.43
+//   kubernetes v1.11.0+d4cacc0
+func checkOcVersionMatches() (string, string, bool) {
+	cmd := ExecPlainOcCmd([]string{"version"})
+	outBytes, errBytes, err := RunCmd(cmd)
+	if err != nil {
+		VerboseMsg("Failed to query client and server version, got:\n%s\n", string(errBytes))
+		return "?", "?", false
+	}
+	output := string(outBytes)
+
+	ocClientVersion := ""
+	ocServerVersion := ""
+	extractVersion := func(versionPart string) string {
+		ocVersionParts := strings.SplitN(versionPart, ".", 3)
+		return strings.Join(ocVersionParts[:len(ocVersionParts)-1], ".")
+	}
+
+	lines := strings.Split(strings.TrimSuffix(output, "\n"), "\n")
+	for _, line := range lines {
+		if len(line) > 0 {
+			parts := strings.SplitN(line, " ", 2)
+			if parts[0] == "oc" {
+				ocClientVersion = extractVersion(parts[1])
+			}
+			if parts[0] == "openshift" {
+				ocServerVersion = extractVersion(parts[1])
+			}
+		}
+	}
+
+	if len(ocClientVersion) == 0 || !strings.Contains(ocClientVersion, ".") {
+		ocClientVersion = "?"
+	}
+	if len(ocServerVersion) == 0 || !strings.Contains(ocServerVersion, ".") {
+		ocServerVersion = "?"
+	}
+
+	if ocClientVersion == "?" || ocServerVersion == "?" {
+		VerboseMsg("Client and server version could not be detected properly, got:\n%s\n", output)
+		return ocClientVersion, ocServerVersion, false
+	}
+
+	return ocClientVersion, ocServerVersion, ocClientVersion == ocServerVersion
 }
 
 func getOcNamespace() (string, error) {

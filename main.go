@@ -34,6 +34,10 @@ var (
 		"non-interactive",
 		"Disable interactive mode.",
 	).Bool()
+	ocBinaryFlag = app.Flag(
+		"oc-binary",
+		"oc binary to use",
+	).Default("oc").String()
 	fileFlag = app.Flag(
 		"file",
 		"Tailorfile with flags.",
@@ -67,6 +71,10 @@ var (
 		"passphrase",
 		"Passphrase to unlock key",
 	).String()
+	forceFlag = app.Flag(
+		"force",
+		"Force to continue despite warning (e.g. deleting all resources).",
+	).Bool()
 
 	versionCommand = app.Command(
 		"version",
@@ -105,10 +113,6 @@ var (
 		"upsert-only",
 		"Don't delete resource, only create / update.",
 	).Short('u').Bool()
-	statusForceFlag = statusCommand.Flag(
-		"force",
-		"Force to delete all resources.",
-	).Bool()
 	statusResourceArg = statusCommand.Arg(
 		"resource", "Remote resource (defaults to all)",
 	).String()
@@ -145,10 +149,6 @@ var (
 		"upsert-only",
 		"Don't delete resource, only create / update.",
 	).Short('u').Bool()
-	updateForceFlag = updateCommand.Flag(
-		"force",
-		"Force to delete all resources.",
-	).Bool()
 	updateResourceArg = updateCommand.Arg(
 		"resource", "Remote resource (defaults to all)",
 	).String()
@@ -227,6 +227,7 @@ func main() {
 		*verboseFlag,
 		*debugFlag,
 		*nonInteractiveFlag,
+		*ocBinaryFlag,
 		*namespaceFlag,
 		*selectorFlag,
 		*templateDirFlag,
@@ -234,6 +235,7 @@ func main() {
 		*publicKeyDirFlag,
 		*privateKeyFlag,
 		*passphraseFlag,
+		*forceFlag,
 	)
 	err = globalOptions.Process()
 	if err != nil {
@@ -343,7 +345,6 @@ func main() {
 			*statusIgnorePathFlag,
 			*statusIgnoreUnknownParametersFlag,
 			*statusUpsertOnlyFlag,
-			*statusForceFlag,
 			*statusResourceArg,
 		)
 		err := compareOptions.Process()
@@ -373,7 +374,6 @@ func main() {
 			*updateIgnorePathFlag,
 			*updateIgnoreUnknownParametersFlag,
 			*updateUpsertOnlyFlag,
-			*updateForceFlag,
 			*updateResourceArg,
 		)
 		err := compareOptions.Process()
