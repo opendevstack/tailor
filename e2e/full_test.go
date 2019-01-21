@@ -27,7 +27,7 @@ func TestFullScope(t *testing.T) {
 kind: Template
 metadata:
   name: configmap
-objects:
+items:
 - apiVersion: v1
   data:
     bar: baz

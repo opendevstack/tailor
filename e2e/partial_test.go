@@ -25,7 +25,7 @@ func TestPartialScope(t *testing.T) {
 kind: Template
 metadata:
   name: configmap
-objects:
+items:
 - apiVersion: v1
   kind: ConfigMap
   metadata:
@@ -59,7 +59,7 @@ objects:
 kind: Template
 metadata:
   name: configmap
-objects:
+items:
 - apiVersion: v1
   kind: ConfigMap
   metadata:
