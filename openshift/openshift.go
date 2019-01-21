@@ -36,7 +36,7 @@ var (
 
 func ExportAsTemplate(filter *ResourceFilter, exportOptions *cli.ExportOptions) (string, error) {
 	ret := ""
-	args := []string{"export", "--as-template=tailor", "--output=yaml"}
+	args := []string{"get", "-o", "yaml", "--export"}
 	if len(filter.Label) > 0 {
 		args = append(args, "--selector="+filter.Label)
 	}
@@ -73,7 +73,7 @@ func ExportAsTemplate(filter *ResourceFilter, exportOptions *cli.ExportOptions) 
 	yaml.Unmarshal(outBytes, &f)
 	m := f.(map[string]interface{})
 
-	objectsPointer, _ := gojsonpointer.NewJsonPointer("/objects")
+	objectsPointer, _ := gojsonpointer.NewJsonPointer("/items")
 	items, _, err := objectsPointer.Get(m)
 	if err != nil {
 		return "", fmt.Errorf(
@@ -88,7 +88,7 @@ func ExportAsTemplate(filter *ResourceFilter, exportOptions *cli.ExportOptions) 
 			)
 		}
 		item.RemoveUnmanagedAnnotations()
-		itemPointer, _ := gojsonpointer.NewJsonPointer("/objects/" + strconv.Itoa(k))
+		itemPointer, _ := gojsonpointer.NewJsonPointer("/items/" + strconv.Itoa(k))
 		itemPointer.Set(m, item.Config)
 	}
 
@@ -105,7 +105,12 @@ func ExportAsTemplate(filter *ResourceFilter, exportOptions *cli.ExportOptions) 
 			"Could not marshal modified template: %s", err,
 		)
 	}
-
+	err = ioutil.WriteFile("Tailor", b, 0644)
+	if err != nil {
+		return "", fmt.Errorf(
+			"Failed to create Tailor file  %s", err,
+		)
+	}
 	return string(b), err
 }
 
