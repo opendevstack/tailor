@@ -10,6 +10,7 @@ import (
 
 func TestNewResourceItem(t *testing.T) {
 	item := getItem(t, getBuildConfig(), "template")
+	metadata := item.Config["metadata"].(map[string]interface{})
 	if item.Kind != "BuildConfig" {
 		t.Errorf("Kind is %s but should be BuildConfig", item.Kind)
 	}
@@ -18,6 +19,18 @@ func TestNewResourceItem(t *testing.T) {
 	}
 	if item.Labels["app"] != "foo" {
 		t.Errorf("Label app is %s but should be foo", item.Labels["app"])
+	}
+	if metadata["namespace"] != nil {
+		t.Errorf("Platform managed property namespace should not be present in template")
+	}
+	if metadata["resourceVersion"] != nil {
+		t.Errorf("Platform managed property resourceVersion should not be present in template")
+	}
+	if metadata["selfLink"] != nil {
+		t.Errorf("Platform managed property selfLink should not be present in template")
+	}
+	if metadata["uid"] != nil {
+		t.Errorf("Platform managed property uid should not be present in template")
 	}
 }
 
@@ -266,6 +279,10 @@ metadata:
   labels:
     app: foo
   name: foo
+  namespace: foo-cd
+  resourceVersion: "123456789"
+  selfLink: /foo/test/1234
+  uid: 123-test-000
 spec:
   failedBuildsHistoryLimit: 5
   nodeSelector: null

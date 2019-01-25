@@ -23,6 +23,10 @@ var (
 		"/status",
 		"/spec/volumeName",
 		"/spec/template/metadata/creationTimestamp",
+		"/metadata/namespace",
+		"/metadata/resourceVersion",
+		"/metadata/selfLink",
+		"/metadata/uid",
 	}
 	platformManagedRegexFields = []string{
 		"^/spec/triggers/[0-9]*/imageChangeParams/lastTriggeredImage",
@@ -239,10 +243,7 @@ func (i *ResourceItem) parseConfig(m map[string]interface{}) error {
 	}
 
 	// Remove platform-managed simple fields
-	for _, p := range platformManagedSimpleFields {
-		deletePointer, _ := gojsonpointer.NewJsonPointer(p)
-		_, _ = deletePointer.Delete(m)
-	}
+	i.removePlatformManagedFields(m)
 
 	i.Config = m
 
@@ -334,6 +335,13 @@ func (i *ResourceItem) RemoveUnmanagedAnnotations() {
 				fmt.Printf("%v", i.Config)
 			}
 		}
+	}
+}
+func (i *ResourceItem) removePlatformManagedFields(m map[string]interface{}) {
+	for _, p := range platformManagedSimpleFields {
+		deletePointer, _ := gojsonpointer.NewJsonPointer(p)
+		_, _ = deletePointer.Delete(m)
+
 	}
 }
 

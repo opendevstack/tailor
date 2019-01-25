@@ -37,7 +37,7 @@ var (
 
 func ExportAsTemplate(filter *ResourceFilter, exportOptions *cli.ExportOptions) (string, error) {
 	ret := ""
-	args := []string{"export", "--as-template=tailor", "--output=yaml"}
+	args := []string{"get", "--output=yaml", "--export"}
 	if len(filter.Label) > 0 {
 		args = append(args, "--selector="+filter.Label)
 	}
@@ -78,6 +78,17 @@ func ExportAsTemplate(filter *ResourceFilter, exportOptions *cli.ExportOptions) 
 	}
 	m := f.(map[string]interface{})
 
+	// since 3.11, oc get --export returns only list,
+	// to manipulate Templates,'items' has to be exchanged for 'objects'
+	if _, ok := m["items"]; ok {
+		m["objects"] = m["items"]
+		delete(m, "items")
+
+		// setting kind to Template from List
+		kindPointer, _ := gojsonpointer.NewJsonPointer("/kind")
+		kindPointer.Set(m, "Template")
+	}
+
 	objectsPointer, _ := gojsonpointer.NewJsonPointer("/objects")
 	items, _, err := objectsPointer.Get(m)
 	if err != nil {
@@ -110,7 +121,6 @@ func ExportAsTemplate(filter *ResourceFilter, exportOptions *cli.ExportOptions) 
 			"Could not marshal modified template: %s", err,
 		)
 	}
-
 	return string(b), err
 }
 
