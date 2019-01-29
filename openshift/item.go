@@ -32,13 +32,16 @@ var (
 		"/spec/template/metadata/annotations",
 	}
 	immutableFields = map[string][]string{
-		"Route": []string{
-			"/spec/host",
-		},
 		"PersistentVolumeClaim": []string{
 			"/spec/accessModes",
 			"/spec/storageClassName",
 			"/spec/resources/requests/storage",
+		},
+		"Route": []string{
+			"/spec/host",
+		},
+		"Secret": []string{
+			"/type",
 		},
 	}
 	platformModifiedFields = []string{
