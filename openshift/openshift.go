@@ -126,7 +126,7 @@ func ExportAsTemplate(filter *ResourceFilter, exportOptions *cli.ExportOptions) 
 
 func ExportResources(filter *ResourceFilter, compareOptions *cli.CompareOptions) ([]byte, error) {
 	target := filter.ConvertToKinds()
-	args := []string{"export", target, "--output=yaml"}
+	args := []string{"get", target, "--output=yaml"}
 	cmd := cli.ExecOcCmd(
 		args,
 		compareOptions.Namespace,
