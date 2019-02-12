@@ -23,6 +23,7 @@ var (
 		"/status",
 		"/spec/volumeName",
 		"/spec/template/metadata/creationTimestamp",
+		"/spec/clusterIP",
 		"/metadata/namespace",
 		"/metadata/resourceVersion",
 		"/metadata/selfLink",
