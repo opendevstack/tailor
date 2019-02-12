@@ -183,6 +183,10 @@ func (o *GlobalOptions) Process() error {
 	if !o.checkOcBinary() {
 		return fmt.Errorf("No such oc binary: %s", o.OcBinary)
 	}
+	return nil
+}
+
+func (o *GlobalOptions) setupClusterCommunication() error {
 	if !o.checkLoggedIn() {
 		return errors.New("You need to login with 'oc login' first")
 	}
@@ -323,7 +327,7 @@ func (o *CompareOptions) Process() error {
 		DebugMsg("Ignoring selector", o.Selector, "as resource is given")
 		o.Selector = ""
 	}
-	return nil
+	return o.setupClusterCommunication()
 }
 
 func (o *ExportOptions) UpdateWithFile(fileFlags map[string]string) {
@@ -343,7 +347,7 @@ func (o *ExportOptions) Process() error {
 		DebugMsg("Ignoring selector", o.Selector, "as resource is given")
 		o.Selector = ""
 	}
-	return nil
+	return o.setupClusterCommunication()
 }
 
 // Check that OC client and server version match.

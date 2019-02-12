@@ -13,107 +13,103 @@ import (
 	"golang.org/x/crypto/openpgp"
 )
 
-type Param struct {
-	Key       string
-	Value     string
-	IsSecret  bool
-	Decrypted string
+type paramConverter struct {
+	PublicEntityList  openpgp.EntityList
+	PrivateEntityList openpgp.EntityList
+	PreviousParams    map[string]string
 }
 
-type Params []*Param
+func (c *paramConverter) encode(key, val string) (string, string, error) {
+	// If the value is already base64-encoded, we pass it through
+	if strings.HasSuffix(key, ".B64") {
+		return strings.TrimSuffix(key, ".B64"), val, nil
+	}
+	return key, base64.StdEncoding.EncodeToString([]byte(val)), nil
+}
 
-func NewParams(content, privateKey, passphrase string) (Params, error) {
-	params := Params{}
-	entityList := openpgp.EntityList{}
-	text := strings.TrimSuffix(content, "\n")
-	lines := strings.Split(text, "\n")
+func (c *paramConverter) decode(key, val string) (string, string, error) {
+	decoded, err := base64.StdEncoding.DecodeString(val)
+	if err != nil {
+		return key, "", err
+	}
+	return key, string(decoded), nil
+}
 
-	for _, line := range lines {
-		if len(line) == 0 {
-			continue
-		}
-		pair := strings.SplitN(line, "=", 2)
-		key := pair[0]
-		value := pair[1]
-		param := &Param{}
+// Decrypt given string
+func (c *paramConverter) decrypt(key, val string) (string, string, error) {
+	newVal, err := utils.Decrypt(val, c.PrivateEntityList)
+	return key, newVal, err
+}
 
-		// If the key ends with .STRING, base64 encode the value and then
-		// change the key to end with .ENC to trigger the next step.
-		if strings.HasSuffix(key, ".STRING") {
-			key = strings.Replace(key, ".STRING", ".ENC", -1)
-			cli.DebugMsg("Encountered STRING param", key)
-			value = base64.StdEncoding.EncodeToString([]byte(value))
-		}
-
-		if strings.HasSuffix(key, ".ENC") {
-			param.IsSecret = true
-			param.Key = strings.Replace(key, ".ENC", "", -1)
-			cli.DebugMsg("Encountered ENC param", param.Key)
-			if len(privateKey) > 0 {
-				if len(entityList) == 0 {
-					el, err := utils.GetEntityList([]string{privateKey}, passphrase)
-					if err != nil {
-						return nil, err
-					}
-					entityList = el
-				}
-				param.Value = value
-				decrypted, err := utils.Decrypt(value, entityList)
-				if err != nil {
-					return params, err
-				}
-				param.Decrypted = decrypted
-			} else {
-				param.Decrypted = value
+// Encrypt encrypts given value. If the key was already present previously
+// and the cleartext value did not change, then the previous encrypted string
+// is returned.
+func (c *paramConverter) encrypt(key, val string) (string, string, error) {
+	if c.PreviousParams != nil {
+		if _, exists := c.PreviousParams[key]; exists {
+			previousEncryptedValue := c.PreviousParams[key]
+			key, previousDecryptedValue, err := c.decrypt(key, previousEncryptedValue)
+			if err != nil {
+				// When decrypting fails, we display the error, but continue
+				// as we can still encrypt ...
+				cli.DebugMsg(err.Error())
 			}
-		} else {
-			cli.DebugMsg("Encountered RAW param", key)
-			param.IsSecret = false
-			param.Value = value
-			param.Key = key
+			if previousDecryptedValue == val {
+				return key, previousEncryptedValue, nil
+			}
 		}
-
-		params = append(params, param)
 	}
-
-	return params, nil
+	newVal, err := utils.Encrypt(val, c.PublicEntityList)
+	return key, newVal, err
 }
 
-func NewParamsFromInput(content string) (Params, error) {
-	cli.DebugMsg("Reading params from input")
-	return NewParams(content, "", "")
-}
+type converterFunc func(key, val string) (string, string, error)
 
-func NewParamsFromFile(filename, privateKey, passphrase string) (Params, error) {
-	cli.DebugMsg("Reading params from file", filename)
-	content := ""
-	if _, err := os.Stat(filename); err == nil {
-		bytes, err := ioutil.ReadFile(filename)
-		if err != nil {
-			return nil, err
-		}
-		content = string(bytes)
+// DecryptedParams is used to edit/reveal secrets
+func DecryptedParams(input, privateKey, passphrase string) (string, error) {
+	c, err := newReadConverter(privateKey, passphrase)
+	if err != nil {
+		return "", err
 	}
-	return NewParams(content, privateKey, passphrase)
+	return transformValues(input, []converterFunc{c.decrypt})
 }
 
-func (p Params) String() string {
-	out := ""
-	for _, param := range p {
-		var val string
-		if param.IsSecret {
-			val = param.Decrypted
-		} else {
-			val = param.Value
-		}
-		out = out + param.Key + "=" + val + "\n"
+// EncodedParams is used to pass params to oc
+func EncodedParams(input, privateKey, passphrase string) (string, error) {
+	c, err := newReadConverter(privateKey, passphrase)
+	if err != nil {
+		return "", err
 	}
-	return out
+	return transformValues(input, []converterFunc{c.decrypt, c.encode})
 }
 
-// Encrypt params and create string from them
-func (p Params) Render(publicKeyDir string, previousParams Params) (string, error) {
-	out := ""
+// EncryptedParams is used to save cleartext params to file
+func EncryptedParams(input, previous, publicKeyDir, privateKey, passphrase string) (string, error) {
+	c, err := newWriteConverter(previous, publicKeyDir, privateKey, passphrase)
+	if err != nil {
+		return "", err
+	}
+	return transformValues(input, []converterFunc{c.encrypt})
+}
+
+func newReadConverter(privateKey, passphrase string) (*paramConverter, error) {
+	el, err := utils.GetEntityList([]string{privateKey}, passphrase)
+	if err != nil {
+		return nil, err
+	}
+	return &paramConverter{PrivateEntityList: el}, nil
+}
+
+func newWriteConverter(previous, publicKeyDir, privateKey, passphrase string) (*paramConverter, error) {
+	// Read previous params
+	previousParams := map[string]string{}
+	err := extractKeyValuePairs(previous, func(key, val string) error {
+		previousParams[key] = val
+		return nil
+	}, func(line string) {})
+	if err != nil {
+		return nil, err
+	}
 
 	// Prefer "public-keys" folder over current directory
 	if publicKeyDir == "." {
@@ -126,12 +122,12 @@ func (p Params) Render(publicKeyDir string, previousParams Params) (string, erro
 	cli.DebugMsg(fmt.Sprintf("Looking for public keys in '%s'", publicKeyDir))
 	files, err := ioutil.ReadDir(publicKeyDir)
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 	filePattern := ".*\\.key$"
 	keyFiles := []string{}
 	for _, file := range files {
-		if file.Name() == "private.key" {
+		if strings.HasSuffix(file.Name(), "private.key") {
 			continue
 		}
 		matched, _ := regexp.MatchString(filePattern, file.Name())
@@ -141,83 +137,73 @@ func (p Params) Render(publicKeyDir string, previousParams Params) (string, erro
 		keyFiles = append(keyFiles, publicKeyDir+string(os.PathSeparator)+file.Name())
 	}
 	if len(keyFiles) == 0 {
-		return "", fmt.Errorf(
-			"No public key files found in '%s'. Files need to end in '.key'.",
+		return nil, fmt.Errorf(
+			"No public key files found in '%s'. Files need to end in '.key'",
 			publicKeyDir,
 		)
 	}
 
-	entityList, err := utils.GetEntityList(keyFiles, "")
+	publicEntityList, err := utils.GetEntityList(keyFiles, "")
+	if err != nil {
+		return nil, err
+	}
+
+	privateEntityList, err := utils.GetEntityList([]string{privateKey}, passphrase)
+	if err != nil {
+		return nil, err
+	}
+
+	return &paramConverter{
+		PublicEntityList:  publicEntityList,
+		PrivateEntityList: privateEntityList,
+		PreviousParams:    previousParams,
+	}, nil
+}
+
+func extractKeyValuePairs(input string, consumer func(key, val string) error, passthrough func(line string)) error {
+	text := strings.TrimSuffix(input, "\n")
+	lines := strings.Split(text, "\n")
+	for _, line := range lines {
+		line = strings.TrimSpace(line)
+		if len(line) == 0 {
+			passthrough(line)
+			continue
+		}
+		if strings.HasPrefix(line, "#") {
+			cli.DebugMsg("Skipping comment:", line)
+			passthrough(line)
+			continue
+		}
+		pair := strings.SplitN(line, "=", 2)
+		key := pair[0]
+		val := ""
+		if len(pair) > 1 {
+			val = pair[1]
+		}
+		if err := consumer(key, val); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func transformValues(input string, converters []converterFunc) (string, error) {
+	output := ""
+	err := extractKeyValuePairs(input, func(key, val string) error {
+		var err error
+		for _, converter := range converters {
+			key, val, err = converter(key, val)
+			if err != nil {
+				return err
+			}
+		}
+		output = output + key + "=" + val + "\n"
+		return nil
+	}, func(line string) {
+		output = output + line + "\n"
+	})
 	if err != nil {
 		return "", err
 	}
-
-	for _, param := range p {
-		rendered, err := param.Render(entityList, previousParams)
-		if err != nil {
-			return "", err
-		}
-		out = out + rendered + "\n"
-	}
-	return out, nil
-}
-
-func (p Params) Process(dropSuffix bool, decode bool) (string, error) {
-	out := ""
-	for _, param := range p {
-		processedParam, err := param.Process(dropSuffix, decode)
-		if err != nil {
-			return out, err
-		}
-		out = out + processedParam + "\n"
-	}
-	return out, nil
-}
-
-// Returns a string representation of the param.
-// .ENC params are encrypted.
-func (p *Param) Render(entityList openpgp.EntityList, previousParams Params) (string, error) {
-	if !p.IsSecret {
-		cli.DebugMsg("Rendering RAW param", p.Key)
-		return p.Key + "=" + p.Value, nil
-	}
-	var previous *Param
-	for _, prev := range previousParams {
-		if prev.IsSecret && prev.Key == p.Key {
-			previous = prev
-			break
-		}
-	}
-	var encrypted string
-	if previous != nil && previous.Decrypted == p.Decrypted {
-		cli.DebugMsg("Rendering unchanged ENC param", p.Key)
-		encrypted = previous.Value
-	} else {
-		cli.DebugMsg("Rendering changed ENC param", p.Key)
-		e, err := utils.Encrypt(p.Decrypted, entityList)
-		if err != nil {
-			return "", err
-		}
-		encrypted = e
-	}
-	return p.Key + ".ENC=" + encrypted, nil
-}
-
-// Returns a string representation in which all .ENC params are decrypted.
-func (p *Param) Process(dropSuffix bool, decode bool) (string, error) {
-	if !p.IsSecret {
-		return p.Key + "=" + p.Value, nil
-	}
-	decrypted := p.Decrypted
-	if decode {
-		sDec, err := base64.StdEncoding.DecodeString(decrypted)
-		if err != nil {
-			return "", err
-		}
-		decrypted = string(sDec)
-	}
-	if dropSuffix {
-		return p.Key + "=" + decrypted, nil
-	}
-	return p.Key + ".ENC=" + decrypted, nil
+	return output, nil
 }
