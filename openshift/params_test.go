@@ -54,8 +54,11 @@ func TestEncryptedParams(t *testing.T) {
 	if actualLines[0] != expectedLines[0] {
 		t.Errorf("Mismatch, got: %v, want: %v.", actualLines[0], expectedLines[0])
 	}
-	if strings.HasPrefix("BAZ=", actualLines[0]) {
-		t.Errorf("Mismatch, got: %v, want: %v.", actualLines[0], "BAZ=")
+	if actualLines[1] != expectedLines[1] {
+		t.Errorf("Mismatch, got: %v, want: %v.", actualLines[1], expectedLines[1])
+	}
+	if !strings.HasPrefix(actualLines[2], "BAZ=") {
+		t.Errorf("Mismatch, got: %v, want: %v.", actualLines[2], "BAZ=")
 	}
 }
 
