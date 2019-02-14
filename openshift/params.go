@@ -13,6 +13,33 @@ import (
 	"golang.org/x/crypto/openpgp"
 )
 
+// DecryptedParams is used to edit/reveal secrets
+func DecryptedParams(input, privateKey, passphrase string) (string, error) {
+	c, err := newReadConverter(privateKey, passphrase)
+	if err != nil {
+		return "", err
+	}
+	return transformValues(input, []converterFunc{c.decrypt})
+}
+
+// EncodedParams is used to pass params to oc
+func EncodedParams(input, privateKey, passphrase string) (string, error) {
+	c, err := newReadConverter(privateKey, passphrase)
+	if err != nil {
+		return "", err
+	}
+	return transformValues(input, []converterFunc{c.decrypt, c.encode})
+}
+
+// EncryptedParams is used to save cleartext params to file
+func EncryptedParams(input, previous, publicKeyDir, privateKey, passphrase string) (string, error) {
+	c, err := newWriteConverter(previous, publicKeyDir, privateKey, passphrase)
+	if err != nil {
+		return "", err
+	}
+	return transformValues(input, []converterFunc{c.encrypt})
+}
+
 type paramConverter struct {
 	PublicEntityList  openpgp.EntityList
 	PrivateEntityList openpgp.EntityList
@@ -64,33 +91,6 @@ func (c *paramConverter) encrypt(key, val string) (string, string, error) {
 }
 
 type converterFunc func(key, val string) (string, string, error)
-
-// DecryptedParams is used to edit/reveal secrets
-func DecryptedParams(input, privateKey, passphrase string) (string, error) {
-	c, err := newReadConverter(privateKey, passphrase)
-	if err != nil {
-		return "", err
-	}
-	return transformValues(input, []converterFunc{c.decrypt})
-}
-
-// EncodedParams is used to pass params to oc
-func EncodedParams(input, privateKey, passphrase string) (string, error) {
-	c, err := newReadConverter(privateKey, passphrase)
-	if err != nil {
-		return "", err
-	}
-	return transformValues(input, []converterFunc{c.decrypt, c.encode})
-}
-
-// EncryptedParams is used to save cleartext params to file
-func EncryptedParams(input, previous, publicKeyDir, privateKey, passphrase string) (string, error) {
-	c, err := newWriteConverter(previous, publicKeyDir, privateKey, passphrase)
-	if err != nil {
-		return "", err
-	}
-	return transformValues(input, []converterFunc{c.encrypt})
-}
 
 func newReadConverter(privateKey, passphrase string) (*paramConverter, error) {
 	el, err := utils.GetEntityList([]string{privateKey}, passphrase)
