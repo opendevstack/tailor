@@ -295,7 +295,7 @@ func main() {
 				if err != nil {
 					log.Fatal(err)
 				}
-				filePattern := ".*\\.env$"
+				filePattern := ".*\\.env.enc$"
 				for _, file := range files {
 					matched, _ := regexp.MatchString(filePattern, file.Name())
 					if !matched {
