@@ -267,18 +267,14 @@ func main() {
 			log.Fatalf("Could not edit file: %s", err)
 		}
 
-		updatedContent, err := openshift.EncryptedParams(
+		err = writeEncryptedContent(
+			*editFileArg,
 			editedContent,
 			encryptedContent,
-			globalOptions.PublicKeyDir,
 			globalOptions.PrivateKey,
 			globalOptions.Passphrase,
+			globalOptions.PublicKeyDir,
 		)
-		if err != nil {
-			log.Fatalf("Could not encrypt content: %s", err)
-		}
-
-		err = ioutil.WriteFile(*editFileArg, []byte(updatedContent), 0644)
 		if err != nil {
 			log.Fatalf("Could not write file: %s", err)
 		}
@@ -449,7 +445,7 @@ func main() {
 func reEncrypt(filename, privateKey, passphrase, publicKeyDir string) error {
 	encryptedContent, err := utils.ReadFile(filename)
 	if err != nil {
-		log.Fatalf("Could not read file: %s", err)
+		return fmt.Errorf("Could not read file: %s", err)
 	}
 
 	cleartextContent, err := openshift.DecryptedParams(
@@ -458,18 +454,29 @@ func reEncrypt(filename, privateKey, passphrase, publicKeyDir string) error {
 		passphrase,
 	)
 	if err != nil {
-		log.Fatalf("Could not decrypt file: %s", err)
+		return fmt.Errorf("Could not decrypt file: %s", err)
 	}
 
-	updatedContent, err := openshift.EncryptedParams(
+	return writeEncryptedContent(
+		filename,
 		cleartextContent,
-		"", // empty because all values need to be re-encrypted
+		"", // empty because all values should be re-encrypted
+		privateKey,
+		passphrase,
+		publicKeyDir,
+	)
+}
+
+func writeEncryptedContent(filename, newContent, previousContent, privateKey, passphrase, publicKeyDir string) error {
+	updatedContent, err := openshift.EncryptedParams(
+		newContent,
+		previousContent,
 		publicKeyDir,
 		privateKey,
 		passphrase,
 	)
 	if err != nil {
-		log.Fatalf("Could not encrypt content: %s", err)
+		return fmt.Errorf("Could not encrypt content: %s", err)
 	}
 
 	err = ioutil.WriteFile(filename, []byte(updatedContent), 0644)
