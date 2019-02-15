@@ -7,7 +7,7 @@ import (
 	"github.com/opendevstack/tailor/cli"
 )
 
-// IncludesPrefix checks if needle is in haystack
+// ReadFile reads the content of given filename and returns it as a string
 func ReadFile(filename string) (string, error) {
 	cli.DebugMsg("Reading file", filename)
 	if _, err := os.Stat(filename); err != nil {
