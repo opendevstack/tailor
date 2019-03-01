@@ -246,6 +246,10 @@ func (i *ResourceItem) parseConfig(m map[string]interface{}) error {
 	// Remove platform-managed simple fields
 	i.removePlatformManagedFields(m)
 
+	if m["kind"] == "ServiceAccount" {
+		i.cleanUpPlatformManagedSecrets(m)
+	}
+
 	i.Config = m
 
 	// Build list of JSON pointers
@@ -344,6 +348,37 @@ func (i *ResourceItem) removePlatformManagedFields(m map[string]interface{}) {
 		_, _ = deletePointer.Delete(m)
 
 	}
+}
+func (i *ResourceItem) cleanUpPlatformManagedSecrets(m map[string]interface{}) {
+	name := m["metadata"].(map[string]interface{})
+	secrets := []string{
+		"imagePullSecrets",
+		"secrets",
+	}
+
+	for _, i := range secrets {
+		deletePointerList := make([]gojsonpointer.JsonPointer, 0)
+		secretList := m[i].([]interface{})
+
+		for index, p := range secretList {
+			secret := p.(map[string]interface{})
+			if strings.HasPrefix(secret["name"].(string), name["name"].(string)+"-"+"dockercfg") ||
+				strings.HasPrefix(secret["name"].(string), name["name"].(string)+"-"+"token") {
+				deletePointer, _ := gojsonpointer.NewJsonPointer("/" + i + "/" + strconv.Itoa(index))
+				deletePointerList = append(deletePointerList, deletePointer)
+			}
+		}
+
+		for x := len(deletePointerList) - 1; x >= 0; x-- {
+			_, err := deletePointerList[x].Delete(m)
+
+			if err != nil {
+				cli.DebugMsg("WARN: Could not remove secrets")
+			}
+
+		}
+	}
+
 }
 
 func (i *ResourceItem) isImmutableField(field string) bool {
