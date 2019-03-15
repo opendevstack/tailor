@@ -250,7 +250,7 @@ func templateContainsTailorNamespaceParam(filename string) (bool, error) {
 		nameVal := v.(map[string]interface{})["name"]
 		paramName := strings.TrimSpace(nameVal.(string))
 		if paramName == "TAILOR_NAMESPACE" {
-			return false, nil
+			return true, nil
 		}
 	}
 	return false, nil
