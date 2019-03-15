@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+### Fixed
+
+- `TAILOR_NAMESPACE` detection was not working ([#100](hhttps://github.com/opendevstack/tailor/issues/100)).
+
 ## [0.9.2] - 2019-01-18
 
 ### Changed
