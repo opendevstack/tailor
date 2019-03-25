@@ -244,28 +244,39 @@ func main() {
 
 	switch command {
 	case editCommand.FullCommand():
-		readParams, err := openshift.NewParamsFromFile(*editFileArg, globalOptions.PrivateKey, globalOptions.Passphrase)
+		encryptedContent, err := utils.ReadFile(*editFileArg)
 		if err != nil {
-			log.Fatalf("Could not read file: %s.", err)
-		}
-		readContent, _ := readParams.Process(false, false)
-
-		editedContent, err := cli.EditEnvFile(readContent)
-		if err != nil {
-			log.Fatalf("Could not edit file: %s.", err)
-		}
-		editedParams, err := openshift.NewParamsFromInput(editedContent)
-		if err != nil {
-			log.Fatal(err)
+			if os.IsNotExist(err) {
+				cli.DebugMsg(*editFileArg, "does not exist, creating empty file")
+			} else {
+				log.Fatalf("Could not read file: %s", err)
+			}
 		}
 
-		renderedContent, err := editedParams.Render(globalOptions.PublicKeyDir, readParams)
+		cleartextContent, err := openshift.DecryptedParams(
+			encryptedContent,
+			globalOptions.PrivateKey,
+			globalOptions.Passphrase,
+		)
 		if err != nil {
-			log.Fatal(err)
+			log.Fatalf("Could not decrypt file: %s", err)
 		}
-		err = ioutil.WriteFile(*editFileArg, []byte(renderedContent), 0644)
+
+		editedContent, err := cli.EditEnvFile(cleartextContent)
 		if err != nil {
-			log.Fatalf("Could not write file: %s.", err)
+			log.Fatalf("Could not edit file: %s", err)
+		}
+
+		err = writeEncryptedContent(
+			*editFileArg,
+			editedContent,
+			encryptedContent,
+			globalOptions.PrivateKey,
+			globalOptions.Passphrase,
+			globalOptions.PublicKeyDir,
+		)
+		if err != nil {
+			log.Fatalf("Could not write file: %s", err)
 		}
 
 	case reEncryptCommand.FullCommand():
@@ -280,7 +291,7 @@ func main() {
 				if err != nil {
 					log.Fatal(err)
 				}
-				filePattern := ".*\\.env$"
+				filePattern := ".*\\.env.enc$"
 				for _, file := range files {
 					matched, _ := regexp.MatchString(filePattern, file.Name())
 					if !matched {
@@ -299,15 +310,19 @@ func main() {
 		if _, err := os.Stat(*revealFileArg); os.IsNotExist(err) {
 			log.Fatalf("'%s' does not exist.", *revealFileArg)
 		}
-		readParams, err := openshift.NewParamsFromFile(*revealFileArg, globalOptions.PrivateKey, globalOptions.Passphrase)
+		encryptedContent, err := utils.ReadFile(*revealFileArg)
 		if err != nil {
 			log.Fatalf("Could not read file: %s.", err)
 		}
-		readContent, err := readParams.Process(false, true)
+		decryptedContent, err := openshift.DecryptedParams(
+			encryptedContent,
+			globalOptions.PrivateKey,
+			globalOptions.Passphrase,
+		)
 		if err != nil {
-			log.Fatalf("Failed to process: %s.", err)
+			log.Fatalf("Could not decrypt file: %s.", err)
 		}
-		fmt.Println(readContent)
+		fmt.Println(decryptedContent)
 
 	case generateKeyCommand.FullCommand():
 		emailParts := strings.Split(*generateKeyEmailArg, "@")
@@ -428,22 +443,43 @@ func main() {
 }
 
 func reEncrypt(filename, privateKey, passphrase, publicKeyDir string) error {
-	readParams, err := openshift.NewParamsFromFile(filename, privateKey, passphrase)
+	encryptedContent, err := utils.ReadFile(filename)
 	if err != nil {
 		return fmt.Errorf("Could not read file: %s", err)
 	}
-	readContent, _ := readParams.Process(false, false)
 
-	editedParams, err := openshift.NewParamsFromInput(readContent)
+	cleartextContent, err := openshift.DecryptedParams(
+		encryptedContent,
+		privateKey,
+		passphrase,
+	)
 	if err != nil {
-		return err
+		return fmt.Errorf("Could not decrypt file: %s", err)
 	}
 
-	renderedContent, err := editedParams.Render(publicKeyDir, []*openshift.Param{})
+	return writeEncryptedContent(
+		filename,
+		cleartextContent,
+		"", // empty because all values should be re-encrypted
+		privateKey,
+		passphrase,
+		publicKeyDir,
+	)
+}
+
+func writeEncryptedContent(filename, newContent, previousContent, privateKey, passphrase, publicKeyDir string) error {
+	updatedContent, err := openshift.EncryptedParams(
+		newContent,
+		previousContent,
+		publicKeyDir,
+		privateKey,
+		passphrase,
+	)
 	if err != nil {
-		return err
+		return fmt.Errorf("Could not encrypt content: %s", err)
 	}
-	err = ioutil.WriteFile(filename, []byte(renderedContent), 0644)
+
+	err = ioutil.WriteFile(filename, []byte(updatedContent), 0644)
 	if err != nil {
 		return fmt.Errorf("Could not write file: %s", err)
 	}

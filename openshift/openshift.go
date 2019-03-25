@@ -165,6 +165,7 @@ func ProcessTemplate(templateDir string, name string, paramDir string, compareOp
 	}
 
 	actualParamFiles := compareOptions.ParamFiles
+	// If param-file is not given, we assume a param-dir
 	if len(actualParamFiles) == 0 {
 		// Prefer <namespace> folder over current directory
 		if paramDir == "." {
@@ -182,32 +183,36 @@ func ProcessTemplate(templateDir string, name string, paramDir string, compareOp
 			actualParamFiles = []string{f}
 		}
 	}
+	// Now turn the param files into arguments for the oc binary
 	if len(actualParamFiles) > 0 {
 		paramFileBytes := []byte{}
 		for _, f := range actualParamFiles {
-			cli.DebugMsg("Reading contents of param file", f)
+			cli.DebugMsg("Reading content of param file", f)
 			b, err := ioutil.ReadFile(f)
 			if err != nil {
 				return []byte{}, err
 			}
 			paramFileBytes = append(paramFileBytes, b...)
+			// Check if encrypted param file exists, and if so, decrypt and
+			// append its content
+			encFile := f + ".enc"
+			if _, err := os.Stat(encFile); err == nil {
+				cli.DebugMsg("Reading content of encrypted param file", encFile)
+				b, err := ioutil.ReadFile(encFile)
+				if err != nil {
+					return []byte{}, err
+				}
+				encoded, err := EncodedParams(string(b), compareOptions.PrivateKey, compareOptions.Passphrase)
+				if err != nil {
+					return []byte{}, err
+				}
+				paramFileBytes = append(paramFileBytes, []byte(encoded)...)
+			}
 		}
 		tempParamFile := ".combined.env"
 		defer os.Remove(tempParamFile)
 		cli.DebugMsg("Writing contents of param files into", tempParamFile)
 		ioutil.WriteFile(tempParamFile, paramFileBytes, 0644)
-		paramFileContent := string(paramFileBytes)
-		if strings.Contains(paramFileContent, ".ENC=") {
-			cli.DebugMsg(tempParamFile, "needs to be decrypted")
-			readParams, err := NewParams(paramFileContent, compareOptions.PrivateKey, compareOptions.Passphrase)
-			if err != nil {
-				return []byte{}, err
-			}
-			readContent, _ := readParams.Process(true, false)
-			tempDecFile := tempParamFile + ".dec"
-			defer os.Remove(tempDecFile)
-			ioutil.WriteFile(tempDecFile, []byte(readContent), 0644)
-		}
 		args = append(args, "--param-file="+tempParamFile)
 	}
 
