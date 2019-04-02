@@ -1,20 +1,14 @@
 package main
 
 import (
-	"errors"
 	"fmt"
-	"io/ioutil"
 	"log"
 	"os"
-	"regexp"
 	"runtime/debug"
-	"sort"
-	"strings"
 
 	"github.com/alecthomas/kingpin"
 	"github.com/opendevstack/tailor/cli"
-	"github.com/opendevstack/tailor/openshift"
-	"github.com/opendevstack/tailor/utils"
+	"github.com/opendevstack/tailor/commands"
 )
 
 var (
@@ -244,108 +238,28 @@ func main() {
 
 	switch command {
 	case editCommand.FullCommand():
-		encryptedContent, err := utils.ReadFile(*editFileArg)
+		err := commands.Edit(globalOptions, *editFileArg)
 		if err != nil {
-			if os.IsNotExist(err) {
-				cli.DebugMsg(*editFileArg, "does not exist, creating empty file")
-			} else {
-				log.Fatalf("Could not read file: %s", err)
-			}
-		}
-
-		cleartextContent, err := openshift.DecryptedParams(
-			encryptedContent,
-			globalOptions.PrivateKey,
-			globalOptions.Passphrase,
-		)
-		if err != nil {
-			log.Fatalf("Could not decrypt file: %s", err)
-		}
-
-		editedContent, err := cli.EditEnvFile(cleartextContent)
-		if err != nil {
-			log.Fatalf("Could not edit file: %s", err)
-		}
-
-		err = writeEncryptedContent(
-			*editFileArg,
-			editedContent,
-			encryptedContent,
-			globalOptions.PrivateKey,
-			globalOptions.Passphrase,
-			globalOptions.PublicKeyDir,
-		)
-		if err != nil {
-			log.Fatalf("Could not write file: %s", err)
+			log.Fatalf("Failed to edit file: %s.", err)
 		}
 
 	case reEncryptCommand.FullCommand():
-		if len(*reEncryptFileArg) > 0 {
-			err := reEncrypt(*reEncryptFileArg, globalOptions.PrivateKey, globalOptions.Passphrase, globalOptions.PublicKeyDir)
-			if err != nil {
-				log.Fatal(err)
-			}
-		} else {
-			for _, paramDir := range globalOptions.ParamDirs {
-				files, err := ioutil.ReadDir(paramDir)
-				if err != nil {
-					log.Fatal(err)
-				}
-				filePattern := ".*\\.env.enc$"
-				for _, file := range files {
-					matched, _ := regexp.MatchString(filePattern, file.Name())
-					if !matched {
-						continue
-					}
-					filename := paramDir + string(os.PathSeparator) + file.Name()
-					err := reEncrypt(filename, globalOptions.PrivateKey, globalOptions.Passphrase, globalOptions.PublicKeyDir)
-					if err != nil {
-						log.Fatal(err)
-					}
-				}
-			}
+		err := commands.ReEncrypt(globalOptions, *reEncryptFileArg)
+		if err != nil {
+			log.Fatalf("Failed to re-encrypt: %s.", err)
 		}
 
 	case revealCommand.FullCommand():
-		if _, err := os.Stat(*revealFileArg); os.IsNotExist(err) {
-			log.Fatalf("'%s' does not exist.", *revealFileArg)
-		}
-		encryptedContent, err := utils.ReadFile(*revealFileArg)
+		err := commands.Reveal(globalOptions, *revealFileArg)
 		if err != nil {
-			log.Fatalf("Could not read file: %s.", err)
+			log.Fatalf("Failed to reveal file: %s.", err)
 		}
-		decryptedContent, err := openshift.DecryptedParams(
-			encryptedContent,
-			globalOptions.PrivateKey,
-			globalOptions.Passphrase,
-		)
-		if err != nil {
-			log.Fatalf("Could not decrypt file: %s.", err)
-		}
-		fmt.Println(decryptedContent)
 
 	case generateKeyCommand.FullCommand():
-		emailParts := strings.Split(*generateKeyEmailArg, "@")
-		name := *generateKeyNameFlag
-		if len(name) == 0 {
-			name = emailParts[0]
-		}
-		entity, err := utils.CreateEntity(name, *generateKeyEmailArg)
+		err := commands.GenerateKey(globalOptions, *generateKeyEmailArg, *generateKeyNameFlag)
 		if err != nil {
 			log.Fatalf("Failed to generate keypair: %s.", err)
 		}
-		publicKeyFilename := strings.Replace(emailParts[0], ".", "-", -1) + ".key"
-		utils.PrintPublicKey(entity, publicKeyFilename)
-		if err != nil {
-			log.Fatalln(err)
-		}
-		fmt.Printf("Public Key written to %s. This file can be committed.\n", publicKeyFilename)
-		privateKeyFilename := globalOptions.PrivateKey
-		utils.PrintPrivateKey(entity, privateKeyFilename)
-		if err != nil {
-			log.Fatalln(err)
-		}
-		fmt.Printf("Private Key written to %s. This file MUST NOT be committed.\n", privateKeyFilename)
 
 	case statusCommand.FullCommand():
 		compareOptions := &cli.CompareOptions{
@@ -367,11 +281,10 @@ func main() {
 			log.Fatalln("Options could not be processed:", err)
 		}
 
-		updateRequired, _, err := calculateChangeset(compareOptions)
+		updateRequired, _, err := commands.Status(compareOptions)
 		if err != nil {
 			log.Fatalln(err)
 		}
-
 		if updateRequired {
 			os.Exit(3)
 		}
@@ -396,29 +309,9 @@ func main() {
 			log.Fatalln("Options could not be processed:", err)
 		}
 
-		updateRequired, changeset, err := calculateChangeset(compareOptions)
+		err = commands.Update(compareOptions)
 		if err != nil {
 			log.Fatalln(err)
-		}
-
-		if updateRequired {
-			if globalOptions.NonInteractive {
-				err = changeset.Apply(compareOptions)
-				if err != nil {
-					fmt.Println(err)
-					log.Fatalln("Update aborted")
-				}
-			} else {
-				c := cli.AskForConfirmation("Apply changes?")
-				if c {
-					fmt.Println("")
-					err = changeset.Apply(compareOptions)
-					if err != nil {
-						fmt.Println(err)
-						log.Fatalln("Update aborted")
-					}
-				}
-			}
 		}
 
 	case exportCommand.FullCommand():
@@ -433,306 +326,9 @@ func main() {
 		if err != nil {
 			log.Fatalln("Options could not be processed:", err)
 		}
-
-		filter, err := getFilter(exportOptions.Resource, exportOptions.Selector)
+		err = commands.Export(exportOptions)
 		if err != nil {
 			log.Fatalln(err)
 		}
-		export(filter, exportOptions)
 	}
-}
-
-func reEncrypt(filename, privateKey, passphrase, publicKeyDir string) error {
-	encryptedContent, err := utils.ReadFile(filename)
-	if err != nil {
-		return fmt.Errorf("Could not read file: %s", err)
-	}
-
-	cleartextContent, err := openshift.DecryptedParams(
-		encryptedContent,
-		privateKey,
-		passphrase,
-	)
-	if err != nil {
-		return fmt.Errorf("Could not decrypt file: %s", err)
-	}
-
-	return writeEncryptedContent(
-		filename,
-		cleartextContent,
-		"", // empty because all values should be re-encrypted
-		privateKey,
-		passphrase,
-		publicKeyDir,
-	)
-}
-
-func writeEncryptedContent(filename, newContent, previousContent, privateKey, passphrase, publicKeyDir string) error {
-	updatedContent, err := openshift.EncryptedParams(
-		newContent,
-		previousContent,
-		publicKeyDir,
-		privateKey,
-		passphrase,
-	)
-	if err != nil {
-		return fmt.Errorf("Could not encrypt content: %s", err)
-	}
-
-	err = ioutil.WriteFile(filename, []byte(updatedContent), 0644)
-	if err != nil {
-		return fmt.Errorf("Could not write file: %s", err)
-	}
-	return nil
-}
-
-func calculateChangeset(compareOptions *cli.CompareOptions) (bool, *openshift.Changeset, error) {
-	updateRequired := false
-
-	where := strings.Join(compareOptions.TemplateDirs, ", ")
-	if len(compareOptions.TemplateDirs) == 1 && compareOptions.TemplateDirs[0] == "." {
-		where, _ = os.Getwd()
-	}
-
-	fmt.Printf(
-		"Comparing templates in %s with OCP namespace %s.\n",
-		where,
-		compareOptions.Namespace,
-	)
-
-	if len(compareOptions.Resource) > 0 && len(compareOptions.Selector) > 0 {
-		fmt.Printf(
-			"Limiting resources to %s with selector %s.\n",
-			compareOptions.Resource,
-			compareOptions.Selector,
-		)
-	} else if len(compareOptions.Selector) > 0 {
-		fmt.Printf(
-			"Limiting to resources with selector %s.\n",
-			compareOptions.Selector,
-		)
-	} else if len(compareOptions.Resource) > 0 {
-		fmt.Printf(
-			"Limiting resources to %s.\n",
-			compareOptions.Resource,
-		)
-	}
-
-	resource := compareOptions.Resource
-	selectorFlag := compareOptions.Selector
-
-	filter, err := getFilter(resource, selectorFlag)
-	if err != nil {
-		return updateRequired, &openshift.Changeset{}, err
-	}
-
-	templateBasedList := assembleTemplateBasedList(
-		filter,
-		compareOptions,
-	)
-	platformBasedList := assemblePlatformBasedList(filter, compareOptions)
-	platformResourcesWord := "resources"
-	if platformBasedList.Length() == 1 {
-		platformResourcesWord = "resource"
-	}
-	templateResourcesWord := "resources"
-	if templateBasedList.Length() == 1 {
-		templateResourcesWord = "resource"
-	}
-	fmt.Printf(
-		"Found %d %s in OCP cluster (current state) and %d %s in processed templates (desired state).\n\n",
-		platformBasedList.Length(),
-		platformResourcesWord,
-		templateBasedList.Length(),
-		templateResourcesWord,
-	)
-
-	if templateBasedList.Length() == 0 && !compareOptions.Force {
-		fmt.Printf("No items where found in desired state. ")
-		if len(compareOptions.Resource) == 0 && len(compareOptions.Selector) == 0 {
-			fmt.Printf(
-				"Are there any templates in %s?\n",
-				where,
-			)
-		} else {
-			fmt.Printf(
-				"Possible reasons are:\n"+
-					"* No templates are located in %s\n",
-				where,
-			)
-			if len(compareOptions.Resource) > 0 {
-				fmt.Printf(
-					"* No templates contain resources of kinds: %s\n",
-					compareOptions.Resource,
-				)
-			}
-			if len(compareOptions.Selector) > 0 {
-				fmt.Printf(
-					"* No templates contain resources matching selector: %s\n",
-					compareOptions.Selector,
-				)
-			}
-		}
-		fmt.Println("\nRefusing to continue without --force")
-		return updateRequired, &openshift.Changeset{}, nil
-	}
-
-	changeset, err := compare(
-		platformBasedList,
-		templateBasedList,
-		compareOptions.UpsertOnly,
-		compareOptions.Diff,
-		compareOptions.IgnorePaths,
-	)
-	if err != nil {
-		return false, changeset, err
-	}
-	updateRequired = !changeset.Blank()
-	return updateRequired, changeset, nil
-}
-
-// kindArgs might be blank, or a list of kinds (e.g. 'pvc,dc') or
-// a kind/name combination (e.g. 'dc/foo').
-// selectorFlag might be blank or a key and a label, e.g. 'name=foo'.
-func getFilter(kindArg string, selectorFlag string) (*openshift.ResourceFilter, error) {
-	filter := &openshift.ResourceFilter{
-		Kinds: []string{},
-		Name:  "",
-		Label: selectorFlag,
-	}
-
-	if len(kindArg) == 0 {
-		return filter, nil
-	}
-
-	kindArg = strings.ToLower(kindArg)
-
-	if strings.Contains(kindArg, "/") {
-		if strings.Contains(kindArg, ",") {
-			return nil, errors.New(
-				"You cannot target more than one resource name",
-			)
-		}
-		nameParts := strings.Split(kindArg, "/")
-		filter.Name = openshift.KindMapping[nameParts[0]] + "/" + nameParts[1]
-		return filter, nil
-	}
-
-	targetedKinds := make(map[string]bool)
-	unknownKinds := []string{}
-	kinds := strings.Split(kindArg, ",")
-	for _, kind := range kinds {
-		if _, ok := openshift.KindMapping[kind]; !ok {
-			unknownKinds = append(unknownKinds, kind)
-		} else {
-			targetedKinds[openshift.KindMapping[kind]] = true
-		}
-	}
-
-	if len(unknownKinds) > 0 {
-		return nil, fmt.Errorf(
-			"Unknown resource kinds: %s",
-			strings.Join(unknownKinds, ","),
-		)
-	}
-
-	for kind := range targetedKinds {
-		filter.Kinds = append(filter.Kinds, kind)
-	}
-
-	sort.Strings(filter.Kinds)
-
-	return filter, nil
-}
-
-func assembleTemplateBasedList(filter *openshift.ResourceFilter, compareOptions *cli.CompareOptions) *openshift.ResourceList {
-	list := &openshift.ResourceList{Filter: filter}
-
-	// read files in folders and assemble lists for kinds
-	for i, templateDir := range compareOptions.TemplateDirs {
-		files, err := ioutil.ReadDir(templateDir)
-		if err != nil {
-			log.Fatal(err)
-		}
-		filePattern := ".*\\.ya?ml$"
-		for _, file := range files {
-			matched, _ := regexp.MatchString(filePattern, file.Name())
-			if !matched {
-				continue
-			}
-			cli.DebugMsg("Reading template", file.Name())
-			processedOut, err := openshift.ProcessTemplate(templateDir, file.Name(), compareOptions.ParamDirs[i], compareOptions)
-			if err != nil {
-				log.Fatalln("Could not process", file.Name(), "template:", err)
-			}
-			list.CollectItemsFromTemplateList(processedOut)
-		}
-	}
-
-	return list
-}
-
-func assemblePlatformBasedList(filter *openshift.ResourceFilter, compareOptions *cli.CompareOptions) *openshift.ResourceList {
-	list := &openshift.ResourceList{Filter: filter}
-
-	exportedOut, err := openshift.ExportResources(filter, compareOptions)
-	if err != nil {
-		log.Fatalln("Could not export", filter.String(), " resources.")
-	}
-	list.CollectItemsFromPlatformList(exportedOut)
-
-	return list
-}
-
-func export(filter *openshift.ResourceFilter, exportOptions *cli.ExportOptions) {
-	out, err := openshift.ExportAsTemplate(filter, exportOptions)
-	if err != nil {
-		log.Fatalln(
-			"Could not export",
-			filter.String(),
-			"resources as template:",
-			err,
-		)
-	}
-
-	fmt.Println(out)
-}
-
-func compare(remoteResourceList *openshift.ResourceList, localResourceList *openshift.ResourceList, upsertOnly bool, diff string, ignorePaths []string) (*openshift.Changeset, error) {
-	changeset, err := openshift.NewChangeset(remoteResourceList, localResourceList, upsertOnly, ignorePaths)
-	if err != nil {
-		return changeset, err
-	}
-
-	for _, change := range changeset.Noop {
-		fmt.Printf("* %s is in sync\n", change.ItemName())
-	}
-
-	for _, change := range changeset.Delete {
-		cli.PrintRedf("- %s to delete\n", change.ItemName())
-		fmt.Printf(change.Diff())
-	}
-
-	for _, change := range changeset.Create {
-		cli.PrintGreenf("+ %s to create\n", change.ItemName())
-		fmt.Printf(change.Diff())
-	}
-
-	for _, change := range changeset.Update {
-		cli.PrintYellowf("~ %s to update\n", change.ItemName())
-		if diff == "text" {
-			fmt.Printf(change.Diff())
-		} else {
-			fmt.Println(change.JsonPatches(true))
-		}
-	}
-
-	fmt.Printf("\nSummary: %d in sync, ", len(changeset.Noop))
-	cli.PrintGreenf("%d to create", len(changeset.Create))
-	fmt.Printf(", ")
-	cli.PrintYellowf("%d to update", len(changeset.Update))
-	fmt.Printf(", ")
-	cli.PrintRedf("%d to delete\n\n", len(changeset.Delete))
-
-	return changeset, nil
 }

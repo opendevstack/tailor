@@ -4,8 +4,6 @@ import (
 	"fmt"
 	"sort"
 	"strings"
-
-	"github.com/opendevstack/tailor/cli"
 )
 
 var (
@@ -43,7 +41,7 @@ func NewChangeset(platformBasedList, templateBasedList *ResourceList, upsertOnly
 	// items to delete
 	if !upsertOnly {
 		for _, item := range platformBasedList.Items {
-			if _, err := templateBasedList.GetItem(item.Kind, item.Name); err != nil {
+			if _, err := templateBasedList.getItem(item.Kind, item.Name); err != nil {
 				change := &Change{
 					Action:       "Delete",
 					Kind:         item.Kind,
@@ -58,7 +56,7 @@ func NewChangeset(platformBasedList, templateBasedList *ResourceList, upsertOnly
 
 	// items to create
 	for _, item := range templateBasedList.Items {
-		if _, err := platformBasedList.GetItem(item.Kind, item.Name); err != nil {
+		if _, err := platformBasedList.getItem(item.Kind, item.Name); err != nil {
 			change := &Change{
 				Action:       "Create",
 				Kind:         item.Kind,
@@ -72,7 +70,7 @@ func NewChangeset(platformBasedList, templateBasedList *ResourceList, upsertOnly
 
 	// items to update
 	for _, templateItem := range templateBasedList.Items {
-		platformItem, err := platformBasedList.GetItem(
+		platformItem, err := platformBasedList.getItem(
 			templateItem.Kind,
 			templateItem.Name,
 		)
@@ -86,12 +84,18 @@ func NewChangeset(platformBasedList, templateBasedList *ResourceList, upsertOnly
 						path,
 					)
 				}
+				// ignored paths can be either:
+				// - globally (e.g. /spec/name)
+				// - per-kind (e.g. bc:/spec/name)
+				// - per-resource (e.g. bc:foo:/spec/name)
 				if len(pathParts) == 1 ||
 					(len(pathParts) == 2 &&
 						templateItem.Kind == KindMapping[strings.ToLower(pathParts[0])]) ||
 					(len(pathParts) == 3 &&
 						templateItem.Kind == KindMapping[strings.ToLower(pathParts[0])] &&
 						templateItem.Name == strings.ToLower(pathParts[1])) {
+					// We only care about the last part (the JSON path) as we
+					// are already "inside" the item
 					externallyModifiedPaths = append(externallyModifiedPaths, pathParts[len(pathParts)-1])
 				}
 			}
@@ -133,29 +137,4 @@ func (c *Changeset) Add(changes ...*Change) {
 			c.Noop = append(c.Noop, change)
 		}
 	}
-}
-
-func (c *Changeset) Apply(compareOptions *cli.CompareOptions) error {
-	for _, change := range c.Create {
-		err := ocCreate(change, compareOptions)
-		if err != nil {
-			return err
-		}
-	}
-
-	for _, change := range c.Delete {
-		err := ocDelete(change, compareOptions)
-		if err != nil {
-			return err
-		}
-	}
-
-	for _, change := range c.Update {
-		err := ocPatch(change, compareOptions)
-		if err != nil {
-			return err
-		}
-	}
-
-	return nil
 }

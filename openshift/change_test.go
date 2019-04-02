@@ -14,7 +14,7 @@ func TestDiff(t *testing.T) {
 		desiredAnnotations []byte
 		desiredData        []byte
 		expectedDiff       string
-		expectedPatches    []*JsonPatch
+		expectedPatches    []*jsonPatch
 	}{
 		{ // Modifying a data field
 			[]byte("{}"),
@@ -32,8 +32,8 @@ func TestDiff(t *testing.T) {
  metadata:
    annotations: {}
 `,
-			[]*JsonPatch{
-				&JsonPatch{
+			[]*jsonPatch{
+				&jsonPatch{
 					Op:    "replace",
 					Path:  "/data/foo",
 					Value: "baz",
@@ -55,8 +55,8 @@ func TestDiff(t *testing.T) {
  kind: ConfigMap
  metadata:
 `,
-			[]*JsonPatch{
-				&JsonPatch{
+			[]*jsonPatch{
+				&jsonPatch{
 					Op:    "add",
 					Path:  "/data/baz",
 					Value: "qux",
@@ -79,8 +79,8 @@ func TestDiff(t *testing.T) {
  metadata:
    annotations: {}
 `,
-			[]*JsonPatch{
-				&JsonPatch{
+			[]*jsonPatch{
+				&jsonPatch{
 					Op:   "remove",
 					Path: "/data/foo",
 				},
@@ -105,13 +105,13 @@ func TestDiff(t *testing.T) {
      app: bar
    name: bar
 `,
-			[]*JsonPatch{
-				&JsonPatch{
+			[]*jsonPatch{
+				&jsonPatch{
 					Op:    "add",
 					Path:  "/metadata/annotations/foo",
 					Value: "bar",
 				},
-				&JsonPatch{
+				&jsonPatch{
 					Op:    "add",
 					Path:  "/metadata/annotations/managed-annotations.tailor.opendevstack.org",
 					Value: "foo",
@@ -137,12 +137,12 @@ func TestDiff(t *testing.T) {
      app: bar
    name: bar
 `,
-			[]*JsonPatch{
-				&JsonPatch{
+			[]*jsonPatch{
+				&jsonPatch{
 					Op:   "remove",
 					Path: "/metadata/annotations/foo",
 				},
-				&JsonPatch{
+				&jsonPatch{
 					Op:   "remove",
 					Path: "/metadata/annotations/managed-annotations.tailor.opendevstack.org",
 				},
@@ -165,8 +165,8 @@ func TestDiff(t *testing.T) {
    labels:
      app: bar
 `,
-			[]*JsonPatch{
-				&JsonPatch{
+			[]*jsonPatch{
+				&jsonPatch{
 					Op:    "replace",
 					Path:  "/metadata/annotations/foo",
 					Value: "baz",
@@ -193,13 +193,13 @@ func TestDiff(t *testing.T) {
      app: bar
    name: bar
 `,
-			[]*JsonPatch{
-				&JsonPatch{
+			[]*jsonPatch{
+				&jsonPatch{
 					Op:    "replace",
 					Path:  "/metadata/annotations/baz",
 					Value: "zab",
 				},
-				&JsonPatch{
+				&jsonPatch{
 					Op:    "replace",
 					Path:  "/metadata/annotations/managed-annotations.tailor.opendevstack.org",
 					Value: "baz,foo",
@@ -223,8 +223,8 @@ func TestDiff(t *testing.T) {
      app: bar
    name: bar
 `,
-			[]*JsonPatch{
-				&JsonPatch{
+			[]*jsonPatch{
+				&jsonPatch{
 					Op:    "replace",
 					Path:  "/metadata/annotations/managed-annotations.tailor.opendevstack.org",
 					Value: "baz,foo",

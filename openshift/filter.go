@@ -1,7 +1,9 @@
 package openshift
 
 import (
+	"errors"
 	"fmt"
+	"sort"
 	"strings"
 
 	"github.com/opendevstack/tailor/utils"
@@ -25,6 +27,61 @@ type ResourceFilter struct {
 	Kinds []string
 	Name  string
 	Label string
+}
+
+// NewResourceFilter returns a filter based on kinds and flags.
+// kindArg might be blank, or a list of kinds (e.g. 'pvc,dc') or
+// a kind/name combination (e.g. 'dc/foo').
+// selectorFlag might be blank or a key and a label, e.g. 'name=foo'.
+func NewResourceFilter(kindArg string, selectorFlag string) (*ResourceFilter, error) {
+	filter := &ResourceFilter{
+		Kinds: []string{},
+		Name:  "",
+		Label: selectorFlag,
+	}
+
+	if len(kindArg) == 0 {
+		return filter, nil
+	}
+
+	kindArg = strings.ToLower(kindArg)
+
+	if strings.Contains(kindArg, "/") {
+		if strings.Contains(kindArg, ",") {
+			return nil, errors.New(
+				"You cannot target more than one resource name",
+			)
+		}
+		nameParts := strings.Split(kindArg, "/")
+		filter.Name = KindMapping[nameParts[0]] + "/" + nameParts[1]
+		return filter, nil
+	}
+
+	targetedKinds := make(map[string]bool)
+	unknownKinds := []string{}
+	kinds := strings.Split(kindArg, ",")
+	for _, kind := range kinds {
+		if _, ok := KindMapping[kind]; !ok {
+			unknownKinds = append(unknownKinds, kind)
+		} else {
+			targetedKinds[KindMapping[kind]] = true
+		}
+	}
+
+	if len(unknownKinds) > 0 {
+		return nil, fmt.Errorf(
+			"Unknown resource kinds: %s",
+			strings.Join(unknownKinds, ","),
+		)
+	}
+
+	for kind := range targetedKinds {
+		filter.Kinds = append(filter.Kinds, kind)
+	}
+
+	sort.Strings(filter.Kinds)
+
+	return filter, nil
 }
 
 func (f *ResourceFilter) String() string {

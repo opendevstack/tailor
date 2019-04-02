@@ -36,8 +36,7 @@ metadata: {}
 		Label: "",
 	}
 
-	list := &ResourceList{Filter: filter}
-	list.CollectItemsFromTemplateList(byteList)
+	list, _ := NewTemplateBasedResourceList(filter, byteList)
 
 	if len(list.Items) != 1 {
 		t.Errorf("One item should have been extracted, got %v items.", len(list.Items))
@@ -88,8 +87,7 @@ metadata: {}
 		Label: "",
 	}
 
-	list := &ResourceList{Filter: filter}
-	list.CollectItemsFromTemplateList(byteList)
+	list, _ := NewTemplateBasedResourceList(filter, byteList)
 
 	if len(list.Items) != 1 {
 		t.Errorf("One item should have been extracted, got %v items.", len(list.Items))
@@ -179,32 +177,29 @@ metadata: {}
 		Label: "app=foo",
 	}
 
-	pvcList := &ResourceList{Filter: pvcFilter}
-	pvcList.CollectItemsFromTemplateList(byteList)
+	pvcList, _ := NewTemplateBasedResourceList(pvcFilter, byteList)
 
 	if len(pvcList.Items) != 1 {
 		t.Errorf("One item should have been extracted, got %v items.", len(pvcList.Items))
 	}
 
-	_, err := pvcList.GetItem("PersistentVolumeClaim", "foo")
+	_, err := pvcList.getItem("PersistentVolumeClaim", "foo")
 	if err != nil {
 		t.Errorf("Item foo should have been present.")
 	}
 
-	cmList := &ResourceList{Filter: cmFilter}
-	cmList.CollectItemsFromTemplateList(byteList)
+	cmList, _ := NewTemplateBasedResourceList(cmFilter, byteList)
 
 	if len(cmList.Items) != 1 {
 		t.Errorf("One item should have been extracted, got %v items.", len(cmList.Items))
 	}
 
-	_, err = cmList.GetItem("ConfigMap", "foo")
+	_, err = cmList.getItem("ConfigMap", "foo")
 	if err != nil {
 		t.Errorf("Item should have been present.")
 	}
 
-	secretList := &ResourceList{Filter: secretFilter}
-	secretList.CollectItemsFromTemplateList(byteList)
+	secretList, _ := NewTemplateBasedResourceList(secretFilter, byteList)
 
 	if len(secretList.Items) != 0 {
 		t.Errorf("No item should have been extracted, got %v items.", len(secretList.Items))

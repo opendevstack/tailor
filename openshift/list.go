@@ -4,6 +4,8 @@ import (
 	"errors"
 
 	"github.com/ghodss/yaml"
+	"github.com/opendevstack/tailor/cli"
+	"github.com/opendevstack/tailor/utils"
 	"github.com/xeipuuv/gojsonpointer"
 )
 
@@ -12,11 +14,24 @@ type ResourceList struct {
 	Items  []*ResourceItem
 }
 
+func NewTemplateBasedResourceList(filter *ResourceFilter, inputs ...[]byte) (*ResourceList, error) {
+	list := &ResourceList{Filter: filter}
+	err := list.appendItems("template", "/items", inputs...)
+	return list, err
+}
+
+func NewPlatformBasedResourceList(filter *ResourceFilter, inputs ...[]byte) (*ResourceList, error) {
+	list := &ResourceList{Filter: filter}
+	err := list.appendItems("platform", "/objects", inputs...)
+	return list, err
+}
+
+// Length returns the number of items in the resource list
 func (l *ResourceList) Length() int {
 	return len(l.Items)
 }
 
-func (l *ResourceList) GetItem(kind string, name string) (*ResourceItem, error) {
+func (l *ResourceList) getItem(kind string, name string) (*ResourceItem, error) {
 	for _, item := range l.Items {
 		if item.Kind == kind && item.Name == name {
 			return item, nil
@@ -25,35 +40,34 @@ func (l *ResourceList) GetItem(kind string, name string) (*ResourceItem, error) 
 	return nil, errors.New("No such item")
 }
 
-func (l *ResourceList) CollectItemsFromTemplateList(input []byte) error {
-	return l.appendItemsFromConfig(input, "template")
-}
+func (l *ResourceList) appendItems(source, itemsField string, inputs ...[]byte) error {
+	for _, input := range inputs {
+		if len(input) == 0 {
+			cli.DebugMsg("Input config empty")
+			continue
+		}
 
-func (l *ResourceList) CollectItemsFromPlatformList(input []byte) error {
-	return l.appendItemsFromConfig(input, "platform")
-}
+		var f interface{}
+		err := yaml.Unmarshal(input, &f)
+		if err != nil {
+			err = utils.DisplaySyntaxError(input, err)
+			return err
+		}
+		m := f.(map[string]interface{})
 
-func (l *ResourceList) appendItemsFromConfig(input []byte, source string) error {
-	if len(input) == 0 {
-		return errors.New("Input config empty")
-	}
-
-	var f interface{}
-	yaml.Unmarshal(input, &f)
-	m := f.(map[string]interface{})
-
-	p, _ := gojsonpointer.NewJsonPointer("/items")
-	items, _, err := p.Get(m)
-	if err != nil {
-		return err
-	}
-	for _, v := range items.([]interface{}) {
-		item, err := NewResourceItem(v.(map[string]interface{}), source)
+		p, _ := gojsonpointer.NewJsonPointer(itemsField)
+		items, _, err := p.Get(m)
 		if err != nil {
 			return err
 		}
-		if l.Filter.SatisfiedBy(item) {
-			l.Items = append(l.Items, item)
+		for _, v := range items.([]interface{}) {
+			item, err := NewResourceItem(v.(map[string]interface{}), source)
+			if err != nil {
+				return err
+			}
+			if l.Filter.SatisfiedBy(item) {
+				l.Items = append(l.Items, item)
+			}
 		}
 	}
 
