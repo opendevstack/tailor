@@ -1,15 +1,13 @@
-package main
+package openshift
 
 import (
 	"reflect"
 	"testing"
-
-	"github.com/opendevstack/tailor/openshift"
 )
 
-func TestGetFilter(t *testing.T) {
-	actual, err := getFilter("pvc", "")
-	expected := &openshift.ResourceFilter{
+func TestNewResourceFilter(t *testing.T) {
+	actual, err := NewResourceFilter("pvc", "")
+	expected := &ResourceFilter{
 		Kinds: []string{"PersistentVolumeClaim"},
 		Name:  "",
 		Label: "",
@@ -18,8 +16,8 @@ func TestGetFilter(t *testing.T) {
 		t.Errorf("Kinds incorrect, got: %v, want: %v.", actual, expected)
 	}
 
-	actual, err = getFilter("pvc,dc", "")
-	expected = &openshift.ResourceFilter{
+	actual, err = NewResourceFilter("pvc,dc", "")
+	expected = &ResourceFilter{
 		Kinds: []string{"DeploymentConfig", "PersistentVolumeClaim"},
 		Name:  "",
 		Label: "",
@@ -28,8 +26,8 @@ func TestGetFilter(t *testing.T) {
 		t.Errorf("Kinds incorrect, got: %v, want: %v.", actual, expected)
 	}
 
-	actual, err = getFilter("pvc,persistentvolumeclaim,PersistentVolumeClaim", "")
-	expected = &openshift.ResourceFilter{
+	actual, err = NewResourceFilter("pvc,persistentvolumeclaim,PersistentVolumeClaim", "")
+	expected = &ResourceFilter{
 		Kinds: []string{"PersistentVolumeClaim"},
 		Name:  "",
 		Label: "",
@@ -38,14 +36,14 @@ func TestGetFilter(t *testing.T) {
 		t.Errorf("Kinds incorrect, got: %v, want: %v.", actual, expected)
 	}
 
-	actual, err = getFilter("pvb", "")
+	actual, err = NewResourceFilter("pvb", "")
 	expected = nil
 	if err == nil {
 		t.Errorf("Expected to detect unknown kind pvb.")
 	}
 
-	actual, err = getFilter("dc/foo", "")
-	expected = &openshift.ResourceFilter{
+	actual, err = NewResourceFilter("dc/foo", "")
+	expected = &ResourceFilter{
 		Kinds: []string{},
 		Name:  "DeploymentConfig/foo",
 		Label: "",
@@ -54,8 +52,8 @@ func TestGetFilter(t *testing.T) {
 		t.Errorf("Kinds incorrect, got: %v, want: %v.", actual, expected)
 	}
 
-	actual, err = getFilter("pvc", "name=foo")
-	expected = &openshift.ResourceFilter{
+	actual, err = NewResourceFilter("pvc", "name=foo")
+	expected = &ResourceFilter{
 		Kinds: []string{"PersistentVolumeClaim"},
 		Name:  "",
 		Label: "name=foo",
@@ -64,8 +62,8 @@ func TestGetFilter(t *testing.T) {
 		t.Errorf("Kinds incorrect, got: %v, want: %v.", actual, expected)
 	}
 
-	actual, err = getFilter("pvc,dc", "name=foo")
-	expected = &openshift.ResourceFilter{
+	actual, err = NewResourceFilter("pvc,dc", "name=foo")
+	expected = &ResourceFilter{
 		Kinds: []string{"DeploymentConfig", "PersistentVolumeClaim"},
 		Name:  "",
 		Label: "name=foo",
