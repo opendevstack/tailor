@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+### Fixed 
+- Do not issue removal patches when a path with an array value is ignored
+- Item is not found when both name and selector is given (oc returns a single item then instead of a list).
+
 ## [0.9.3] - 2019-03-15
 
 ### Fixed
