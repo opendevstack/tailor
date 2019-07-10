@@ -43,11 +43,12 @@ func NewChangeset(platformBasedList, templateBasedList *ResourceList, upsertOnly
 		for _, item := range platformBasedList.Items {
 			if _, err := templateBasedList.getItem(item.Kind, item.Name); err != nil {
 				change := &Change{
-					Action:       "Delete",
-					Kind:         item.Kind,
-					Name:         item.Name,
-					CurrentState: item.YamlConfig(),
-					DesiredState: "",
+					Action:             "Delete",
+					Kind:               item.Kind,
+					Name:               item.Name,
+					CurrentState:       item.YamlConfig(),
+					DesiredState:       "",
+					MaskedDesiredState: "",
 				}
 				changeset.Add(change)
 			}
@@ -58,11 +59,12 @@ func NewChangeset(platformBasedList, templateBasedList *ResourceList, upsertOnly
 	for _, item := range templateBasedList.Items {
 		if _, err := platformBasedList.getItem(item.Kind, item.Name); err != nil {
 			change := &Change{
-				Action:       "Create",
-				Kind:         item.Kind,
-				Name:         item.Name,
-				CurrentState: "",
-				DesiredState: item.YamlConfig(),
+				Action:             "Create",
+				Kind:               item.Kind,
+				Name:               item.Name,
+				CurrentState:       "",
+				DesiredState:       item.YamlConfig(),
+				MaskedDesiredState: item.MaskedYamlConfig(),
 			}
 			changeset.Add(change)
 		}

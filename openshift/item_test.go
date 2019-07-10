@@ -2,6 +2,7 @@ package openshift
 
 import (
 	"bytes"
+	"io/ioutil"
 	"reflect"
 	"testing"
 
@@ -229,6 +230,43 @@ func TestChangesFromAnnotationFields(t *testing.T) {
 	}
 	if !reflect.DeepEqual(actualPatch, expectedPatch) {
 		t.Errorf("Got %v instead of %v", actualPatch, expectedPatch)
+	}
+}
+
+func TestMaskedYamlConfig(t *testing.T) {
+	examples := []struct {
+		name    string
+		fixture string
+		golden  string
+	}{
+		{
+			"Config Map",
+			"../test/fixtures/config-map.yml",
+			"../test/golden/config-map.yml",
+		},
+		{
+			"Secret",
+			"../test/fixtures/secret.yml",
+			"../test/golden/secret.yml",
+		},
+	}
+
+	for _, example := range examples {
+		t.Run(example.name, func(t *testing.T) {
+			input, err := ioutil.ReadFile(example.fixture)
+			if err != nil {
+				t.Fatal(err)
+			}
+			item := getItem(t, input, "template")
+			expected, err := ioutil.ReadFile(example.golden)
+			if err != nil {
+				t.Fatal(err)
+			}
+			actual := item.MaskedYamlConfig()
+			if actual != string(expected) {
+				t.Fatalf("Got YAML config:\n%s, want:\n%s", actual, expected)
+			}
+		})
 	}
 }
 

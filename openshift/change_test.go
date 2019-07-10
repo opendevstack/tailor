@@ -249,7 +249,7 @@ func TestDiff(t *testing.T) {
 			t.Errorf(err.Error())
 		}
 		change := changes[0]
-		actualDiff := change.Diff()
+		actualDiff := change.Diff(false)
 		if actualDiff != tt.expectedDiff {
 			t.Errorf(
 				"Diff()\n===== expected =====\n%s\n===== actual =====\n%s",
@@ -260,7 +260,7 @@ func TestDiff(t *testing.T) {
 		actualPatches := change.Patches
 		if !reflect.DeepEqual(actualPatches, tt.expectedPatches) {
 			t.Errorf(
-				"Diff()\n===== expected =====\n%s\n===== actual =====\n%s",
+				"Diff()\n===== expected =====\n%v\n===== actual =====\n%v",
 				tt.expectedPatches,
 				actualPatches,
 			)

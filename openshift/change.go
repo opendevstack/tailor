@@ -24,12 +24,13 @@ var (
 )
 
 type Change struct {
-	Action       string
-	Kind         string
-	Name         string
-	Patches      []*jsonPatch
-	CurrentState string
-	DesiredState string
+	Action             string
+	Kind               string
+	Name               string
+	Patches            []*jsonPatch
+	CurrentState       string
+	DesiredState       string
+	MaskedDesiredState string
 }
 
 type jsonPatch struct {
@@ -52,10 +53,16 @@ func (c *Change) JsonPatches(pretty bool) string {
 	return string(b)
 }
 
-func (c *Change) Diff() string {
+func (c *Change) Diff(revealSecrets bool) string {
+	var desired string
+	if revealSecrets {
+		desired = c.DesiredState
+	} else {
+		desired = c.MaskedDesiredState
+	}
 	diff := difflib.UnifiedDiff{
 		A:        difflib.SplitLines(c.CurrentState),
-		B:        difflib.SplitLines(c.DesiredState),
+		B:        difflib.SplitLines(desired),
 		FromFile: "Current State (OpenShift cluster)",
 		ToFile:   "Desired State (Processed template)",
 		Context:  3,

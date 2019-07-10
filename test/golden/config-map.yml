@@ -1,0 +1,9 @@
+apiVersion: v1
+data:
+  bar: baz
+kind: ConfigMap
+metadata:
+  annotations: {}
+  labels:
+    app: bar
+  name: bar

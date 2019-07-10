@@ -162,11 +162,12 @@ func (templateItem *ResourceItem) ChangesFrom(platformItem *ResourceItem, extern
 	}
 
 	c := &Change{
-		Kind:         templateItem.Kind,
-		Name:         templateItem.Name,
-		Patches:      []*jsonPatch{},
-		CurrentState: platformItem.YamlConfig(),
-		DesiredState: templateItem.YamlConfig(),
+		Kind:               templateItem.Kind,
+		Name:               templateItem.Name,
+		Patches:            []*jsonPatch{},
+		CurrentState:       platformItem.YamlConfig(),
+		DesiredState:       templateItem.YamlConfig(),
+		MaskedDesiredState: templateItem.MaskedYamlConfig(),
 	}
 
 	for path, patch := range comparison {
@@ -188,6 +189,25 @@ func (templateItem *ResourceItem) ChangesFrom(platformItem *ResourceItem, extern
 
 func (i *ResourceItem) YamlConfig() string {
 	y, _ := yaml.Marshal(i.Config)
+	return string(y)
+}
+
+func (i *ResourceItem) MaskedYamlConfig() string {
+	var y []byte
+	m := i.Config
+	if i.Kind == "Secret" {
+		dataPointer, _ := gojsonpointer.NewJsonPointer("/data")
+		data, _, err := dataPointer.Get(m)
+		if err == nil {
+			maskedMap := map[string]string{}
+			dataMap := data.(map[string]interface{})
+			for k := range dataMap {
+				maskedMap[k] = "*****"
+			}
+			dataPointer.Set(m, maskedMap)
+		}
+	}
+	y, _ = yaml.Marshal(m)
 	return string(y)
 }
 
@@ -403,18 +423,20 @@ func (i *ResourceItem) handleKeyValue(k interface{}, v interface{}, pointer stri
 
 func recreateChanges(templateItem, platformItem *ResourceItem) []*Change {
 	deleteChange := &Change{
-		Action:       "Delete",
-		Kind:         templateItem.Kind,
-		Name:         templateItem.Name,
-		CurrentState: platformItem.YamlConfig(),
-		DesiredState: "",
+		Action:             "Delete",
+		Kind:               templateItem.Kind,
+		Name:               templateItem.Name,
+		CurrentState:       platformItem.YamlConfig(),
+		DesiredState:       "",
+		MaskedDesiredState: "",
 	}
 	createChange := &Change{
-		Action:       "Create",
-		Kind:         templateItem.Kind,
-		Name:         templateItem.Name,
-		CurrentState: "",
-		DesiredState: templateItem.YamlConfig(),
+		Action:             "Create",
+		Kind:               templateItem.Kind,
+		Name:               templateItem.Name,
+		CurrentState:       "",
+		DesiredState:       templateItem.YamlConfig(),
+		MaskedDesiredState: templateItem.MaskedYamlConfig(),
 	}
 	return []*Change{deleteChange, createChange}
 }

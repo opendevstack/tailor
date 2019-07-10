@@ -107,6 +107,10 @@ var (
 		"upsert-only",
 		"Don't delete resource, only create / update.",
 	).Short('u').Bool()
+	statusRevealSecretsFlag = statusCommand.Flag(
+		"reveal-secrets",
+		"Reveal secrets instead of masking them.",
+	).Bool()
 	statusResourceArg = statusCommand.Arg(
 		"resource", "Remote resource (defaults to all)",
 	).String()
@@ -143,6 +147,10 @@ var (
 		"upsert-only",
 		"Don't delete resource, only create / update.",
 	).Short('u').Bool()
+	updateRevealSecretsFlag = updateCommand.Flag(
+		"reveal-secrets",
+		"Reveal secrets instead of masking them.",
+	).Bool()
 	updateResourceArg = updateCommand.Arg(
 		"resource", "Remote resource (defaults to all)",
 	).String()
@@ -274,6 +282,7 @@ func main() {
 			*statusIgnorePathFlag,
 			*statusIgnoreUnknownParametersFlag,
 			*statusUpsertOnlyFlag,
+			*statusRevealSecretsFlag,
 			*statusResourceArg,
 		)
 		err := compareOptions.Process()
@@ -302,6 +311,7 @@ func main() {
 			*updateIgnorePathFlag,
 			*updateIgnoreUnknownParametersFlag,
 			*updateUpsertOnlyFlag,
+			*updateRevealSecretsFlag,
 			*updateResourceArg,
 		)
 		err := compareOptions.Process()

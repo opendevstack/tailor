@@ -35,6 +35,7 @@ type CompareOptions struct {
 	IgnorePaths             []string
 	IgnoreUnknownParameters bool
 	UpsertOnly              bool
+	RevealSecrets           bool
 	Resource                string
 }
 
@@ -251,6 +252,9 @@ func (o *CompareOptions) UpdateWithFile(fileFlags map[string]string) {
 	if fileFlags["upsert-only"] == "true" {
 		o.UpsertOnly = true
 	}
+	if fileFlags["reveal-secrets"] == "true" {
+		o.RevealSecrets = true
+	}
 	if val, ok := fileFlags["ignore-path"]; ok {
 		o.IgnorePaths = strings.Split(val, ",")
 	}
@@ -259,7 +263,7 @@ func (o *CompareOptions) UpdateWithFile(fileFlags map[string]string) {
 	}
 }
 
-func (o *CompareOptions) UpdateWithFlags(labelsFlag string, paramFlag []string, paramFileFlag []string, diffFlag string, ignorePathFlag []string, ignoreUnknownParametersFlag bool, upsertOnlyFlag bool, resourceArg string) {
+func (o *CompareOptions) UpdateWithFlags(labelsFlag string, paramFlag []string, paramFileFlag []string, diffFlag string, ignorePathFlag []string, ignoreUnknownParametersFlag bool, upsertOnlyFlag bool, revealSecretsFlag bool, resourceArg string) {
 	if len(labelsFlag) > 0 {
 		o.Labels = labelsFlag
 	}
@@ -300,6 +304,9 @@ func (o *CompareOptions) UpdateWithFlags(labelsFlag string, paramFlag []string, 
 	}
 	if upsertOnlyFlag {
 		o.UpsertOnly = true
+	}
+	if revealSecretsFlag {
+		o.RevealSecrets = true
 	}
 	if len(ignorePathFlag) > 0 {
 		o.IgnorePaths = ignorePathFlag
