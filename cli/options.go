@@ -17,6 +17,7 @@ type GlobalOptions struct {
 	File           string
 	Namespace      string
 	Selector       string
+	Exclude        string
 	TemplateDirs   []string
 	ParamDirs      []string
 	PublicKeyDir   string
@@ -102,6 +103,9 @@ func (o *GlobalOptions) UpdateWithFile(fileFlags map[string]string) {
 	if val, ok := fileFlags["selector"]; ok {
 		o.Selector = val
 	}
+	if val, ok := fileFlags["exclude"]; ok {
+		o.Exclude = val
+	}
 	if val, ok := fileFlags["template-dir"]; ok {
 		o.TemplateDirs = strings.Split(val, ",")
 	}
@@ -122,7 +126,7 @@ func (o *GlobalOptions) UpdateWithFile(fileFlags map[string]string) {
 	}
 }
 
-func (o *GlobalOptions) UpdateWithFlags(verboseFlag bool, debugFlag bool, nonInteractiveFlag bool, ocBinaryFlag string, namespaceFlag string, selectorFlag string, templateDirFlag []string, paramDirFlag []string, publicKeyDirFlag string, privateKeyFlag string, passphraseFlag string, forceFlag bool) {
+func (o *GlobalOptions) UpdateWithFlags(verboseFlag bool, debugFlag bool, nonInteractiveFlag bool, ocBinaryFlag string, namespaceFlag string, selectorFlag string, excludeFlag string, templateDirFlag []string, paramDirFlag []string, publicKeyDirFlag string, privateKeyFlag string, passphraseFlag string, forceFlag bool) {
 	if verboseFlag {
 		o.Verbose = true
 	}
@@ -145,6 +149,10 @@ func (o *GlobalOptions) UpdateWithFlags(verboseFlag bool, debugFlag bool, nonInt
 
 	if len(selectorFlag) > 0 {
 		o.Selector = selectorFlag
+	}
+
+	if len(excludeFlag) > 0 {
+		o.Exclude = excludeFlag
 	}
 
 	if len(o.TemplateDirs) == 0 {

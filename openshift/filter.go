@@ -24,68 +24,88 @@ var availableKinds = []string{
 }
 
 type ResourceFilter struct {
-	Kinds []string
-	Name  string
-	Label string
+	Kinds          []string
+	Name           string
+	Label          string
+	ExcludedKinds  []string
+	ExcludedNames  []string
+	ExcludedLabels []string
 }
 
 // NewResourceFilter returns a filter based on kinds and flags.
 // kindArg might be blank, or a list of kinds (e.g. 'pvc,dc') or
 // a kind/name combination (e.g. 'dc/foo').
 // selectorFlag might be blank or a key and a label, e.g. 'name=foo'.
-func NewResourceFilter(kindArg string, selectorFlag string) (*ResourceFilter, error) {
+func NewResourceFilter(kindArg string, selectorFlag string, excludeFlag string) (*ResourceFilter, error) {
 	filter := &ResourceFilter{
 		Kinds: []string{},
 		Name:  "",
 		Label: selectorFlag,
 	}
 
-	if len(kindArg) == 0 {
-		return filter, nil
-	}
+	if len(kindArg) > 0 {
+		kindArg = strings.ToLower(kindArg)
 
-	kindArg = strings.ToLower(kindArg)
+		if strings.Contains(kindArg, "/") {
+			if strings.Contains(kindArg, ",") {
+				return nil, errors.New(
+					"You cannot target more than one resource name",
+				)
+			}
+			nameParts := strings.Split(kindArg, "/")
+			filter.Name = KindMapping[nameParts[0]] + "/" + nameParts[1]
+			return filter, nil
+		}
 
-	if strings.Contains(kindArg, "/") {
-		if strings.Contains(kindArg, ",") {
-			return nil, errors.New(
-				"You cannot target more than one resource name",
+		targetedKinds := make(map[string]bool)
+		unknownKinds := []string{}
+		kinds := strings.Split(kindArg, ",")
+		for _, kind := range kinds {
+			if _, ok := KindMapping[kind]; !ok {
+				unknownKinds = append(unknownKinds, kind)
+			} else {
+				targetedKinds[KindMapping[kind]] = true
+			}
+		}
+
+		if len(unknownKinds) > 0 {
+			return nil, fmt.Errorf(
+				"Unknown resource kinds: %s",
+				strings.Join(unknownKinds, ","),
 			)
 		}
-		nameParts := strings.Split(kindArg, "/")
-		filter.Name = KindMapping[nameParts[0]] + "/" + nameParts[1]
-		return filter, nil
+
+		for kind := range targetedKinds {
+			filter.Kinds = append(filter.Kinds, kind)
+		}
+
+		sort.Strings(filter.Kinds)
 	}
 
-	targetedKinds := make(map[string]bool)
-	unknownKinds := []string{}
-	kinds := strings.Split(kindArg, ",")
-	for _, kind := range kinds {
-		if _, ok := KindMapping[kind]; !ok {
-			unknownKinds = append(unknownKinds, kind)
-		} else {
-			targetedKinds[KindMapping[kind]] = true
+	if len(excludeFlag) > 0 {
+		unknownKinds := []string{}
+		excludes := strings.Split(excludeFlag, ",")
+		for _, v := range excludes {
+			if strings.Contains(v, "/") { // Name
+				nameParts := strings.Split(v, "/")
+				filter.ExcludedNames = append(filter.ExcludedNames, KindMapping[nameParts[0]]+"/"+nameParts[1])
+			} else if strings.Contains(v, "=") { // Label
+				filter.ExcludedLabels = append(filter.ExcludedLabels, v)
+			} else { // Kind
+				if _, ok := KindMapping[v]; !ok {
+					unknownKinds = append(unknownKinds, v)
+				} else {
+					filter.ExcludedKinds = append(filter.ExcludedKinds, KindMapping[v])
+				}
+			}
 		}
 	}
-
-	if len(unknownKinds) > 0 {
-		return nil, fmt.Errorf(
-			"Unknown resource kinds: %s",
-			strings.Join(unknownKinds, ","),
-		)
-	}
-
-	for kind := range targetedKinds {
-		filter.Kinds = append(filter.Kinds, kind)
-	}
-
-	sort.Strings(filter.Kinds)
 
 	return filter, nil
 }
 
 func (f *ResourceFilter) String() string {
-	return fmt.Sprintf("Kind: %s, Name: %s, Label: %s", f.Kinds, f.Name, f.Label)
+	return fmt.Sprintf("Kinds: %s, Name: %s, Label: %s, ExcludedKinds: %s, ExcludedNames: %s, ExcludedLabels: %s", f.Kinds, f.Name, f.Label, f.ExcludedKinds, f.ExcludedNames, f.ExcludedLabels)
 }
 
 func (f *ResourceFilter) SatisfiedBy(item *ResourceItem) bool {
@@ -100,10 +120,27 @@ func (f *ResourceFilter) SatisfiedBy(item *ResourceItem) bool {
 	if len(f.Label) > 0 {
 		labels := strings.Split(f.Label, ",")
 		for _, label := range labels {
-			labelParts := strings.Split(label, "=")
-			if _, ok := item.Labels[labelParts[0]]; !ok {
+			if !item.HasLabel(label) {
 				return false
-			} else if item.Labels[labelParts[0]].(string) != labelParts[1] {
+			}
+		}
+	}
+
+	if len(f.ExcludedNames) > 0 {
+		if utils.Includes(f.ExcludedNames, item.FullName()) {
+			return false
+		}
+	}
+
+	if len(f.ExcludedKinds) > 0 {
+		if utils.Includes(f.ExcludedKinds, item.Kind) {
+			return false
+		}
+	}
+
+	if len(f.ExcludedLabels) > 0 {
+		for _, el := range f.ExcludedLabels {
+			if item.HasLabel(el) {
 				return false
 			}
 		}
