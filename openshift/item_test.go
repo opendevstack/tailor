@@ -234,37 +234,28 @@ func TestChangesFromAnnotationFields(t *testing.T) {
 }
 
 func TestMaskedYamlConfig(t *testing.T) {
-	examples := []struct {
-		name    string
+	tests := map[string]struct {
 		fixture string
 		golden  string
 	}{
-		{
-			"Config Map",
-			"../test/fixtures/config-map.yml",
-			"../test/golden/config-map.yml",
-		},
-		{
-			"Secret",
-			"../test/fixtures/secret.yml",
-			"../test/golden/secret.yml",
-		},
+		"Config Map": {fixture: "config-map.yml", golden: "config-map.yml"},
+		"Secret":     {fixture: "secret.yml", golden: "secret.yml"},
 	}
 
-	for _, example := range examples {
-		t.Run(example.name, func(t *testing.T) {
-			input, err := ioutil.ReadFile(example.fixture)
+	for name, tc := range tests {
+		t.Run(name, func(t *testing.T) {
+			input, err := ioutil.ReadFile("../test/fixtures/" + tc.fixture)
 			if err != nil {
 				t.Fatal(err)
 			}
 			item := getItem(t, input, "template")
-			expected, err := ioutil.ReadFile(example.golden)
+			want, err := ioutil.ReadFile("../test/golden/" + tc.golden)
 			if err != nil {
 				t.Fatal(err)
 			}
-			actual := item.MaskedYamlConfig()
-			if actual != string(expected) {
-				t.Fatalf("Got YAML config:\n%s, want:\n%s", actual, expected)
+			got := item.MaskedYamlConfig()
+			if got != string(want) {
+				t.Fatalf("want:\n%s, got:\n%s", want, got)
 			}
 		})
 	}
