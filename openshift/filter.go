@@ -99,6 +99,13 @@ func NewResourceFilter(kindArg string, selectorFlag string, excludeFlag string) 
 				}
 			}
 		}
+
+		if len(unknownKinds) > 0 {
+			return nil, fmt.Errorf(
+				"Unknown excluded resource kinds: %s",
+				strings.Join(unknownKinds, ","),
+			)
+		}
 	}
 
 	return filter, nil
