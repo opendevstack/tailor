@@ -82,82 +82,94 @@ metadata:
   labels:
     app: foo
   name: foo`)
-	examples := []struct {
-		name         string
+	tests := map[string]struct {
 		kindArg      string
 		selectorFlag string
 		excludeFlag  string
 		config       []byte
 		expected     bool
 	}{
-		{
-			"item is included when no constraints are specified",
-			"",
-			"",
-			"",
-			bc,
-			true,
+		"item is included when no constraints are specified": {
+			kindArg:      "",
+			selectorFlag: "",
+			excludeFlag:  "",
+			config:       bc,
+			expected:     true,
 		},
-		{
-			"item is included when kind is specified",
-			"bc",
-			"",
-			"",
-			bc,
-			true,
+		"item is included when kind is specified": {
+			kindArg:      "bc",
+			selectorFlag: "",
+			excludeFlag:  "",
+			config:       bc,
+			expected:     true,
 		},
-		{
-			"item is included when name is specified",
-			"bc/foo",
-			"",
-			"",
-			bc,
-			true,
+		"item is included when name is specified": {
+			kindArg:      "bc/foo",
+			selectorFlag: "",
+			excludeFlag:  "",
+			config:       bc,
+			expected:     true,
 		},
-		{
-			"item is included when label is specified",
-			"",
-			"app=foo",
-			"",
-			bc,
-			true,
+		"item is included when label is specified": {
+			kindArg:      "",
+			selectorFlag: "app=foo",
+			excludeFlag:  "",
+			config:       bc,
+			expected:     true,
 		},
-		{
-			"item is excluded when only some other kind is specified",
-			"is",
-			"",
-			"",
-			bc,
-			false,
+		"item is excluded when only some other kind is specified": {
+			kindArg:      "is",
+			selectorFlag: "",
+			excludeFlag:  "",
+			config:       bc,
+			expected:     false,
 		},
-		{
-			"item is excluded when kind is excluded",
-			"",
-			"",
-			"bc",
-			bc,
-			false,
+		"item is excluded when kind is excluded": {
+			kindArg:      "",
+			selectorFlag: "",
+			excludeFlag:  "bc",
+			config:       bc,
+			expected:     false,
 		},
-		{
-			"item is excluded when name is excluded",
-			"",
-			"",
-			"bc/foo",
-			bc,
-			false,
+		"item is excluded when name is excluded": {
+			kindArg:      "",
+			selectorFlag: "",
+			excludeFlag:  "bc/foo",
+			config:       bc,
+			expected:     false,
 		},
-		{
-			"item is excluded when label is excluded",
-			"",
-			"",
-			"app=foo",
-			bc,
-			false,
+		"item is excluded when label is excluded": {
+			kindArg:      "",
+			selectorFlag: "",
+			excludeFlag:  "app=foo",
+			config:       bc,
+			expected:     false,
+		},
+		"item is excluded when multiple excludes are given that match": {
+			kindArg:      "",
+			selectorFlag: "",
+			excludeFlag:  "app=foo,bc/foo",
+			config:       bc,
+			expected:     false,
+		},
+		"item is excluded when multiple excludes are given that partially match": {
+			kindArg:      "",
+			selectorFlag: "",
+			excludeFlag:  "app=foobar,bc/foo",
+			config:       bc,
+			expected:     false,
+		},
+		"item is not excluded when multiple excludes are given that do not match": {
+			kindArg:      "",
+			selectorFlag: "",
+			excludeFlag:  "app=foobar,dc/foo",
+			config:       bc,
+			expected:     true,
 		},
 	}
 
-	for _, tc := range examples {
-		t.Run(tc.name, func(t *testing.T) {
+	for name, tc := range tests {
+		t.Run(name, func(t *testing.T) {
 			item, err := makeItem(tc.config)
 			if err != nil {
 				t.Fatal(err)
