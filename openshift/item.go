@@ -90,6 +90,16 @@ func (i *ResourceItem) FullName() string {
 	return i.Kind + "/" + i.Name
 }
 
+func (i *ResourceItem) HasLabel(label string) bool {
+	labelParts := strings.Split(label, "=")
+	if _, ok := i.Labels[labelParts[0]]; !ok {
+		return false
+	} else if i.Labels[labelParts[0]].(string) != labelParts[1] {
+		return false
+	}
+	return true
+}
+
 func (templateItem *ResourceItem) ChangesFrom(platformItem *ResourceItem, externallyModifiedPaths []string) ([]*Change, error) {
 	err := templateItem.prepareForComparisonWithPlatformItem(platformItem, externallyModifiedPaths)
 	if err != nil {

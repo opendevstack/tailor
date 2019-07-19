@@ -45,6 +45,10 @@ var (
 		"selector",
 		"Selector (label query) to filter on",
 	).Short('l').String()
+	excludeFlag = app.Flag(
+		"exclude",
+		"Exclude kinds, names and labels (comma separated)",
+	).Short('e').String()
 	templateDirFlag = app.Flag(
 		"template-dir",
 		"Path to local templates",
@@ -224,6 +228,7 @@ func main() {
 		*ocBinaryFlag,
 		*namespaceFlag,
 		*selectorFlag,
+		*excludeFlag,
 		*templateDirFlag,
 		*paramDirFlag,
 		*publicKeyDirFlag,
