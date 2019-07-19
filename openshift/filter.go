@@ -89,7 +89,12 @@ func NewResourceFilter(kindArg string, selectorFlag string, excludeFlag string) 
 			v = strings.ToLower(v)
 			if strings.Contains(v, "/") { // Name
 				nameParts := strings.Split(v, "/")
-				filter.ExcludedNames = append(filter.ExcludedNames, KindMapping[nameParts[0]]+"/"+nameParts[1])
+				k := nameParts[0]
+				if _, ok := KindMapping[k]; !ok {
+					unknownKinds = append(unknownKinds, k)
+				} else {
+					filter.ExcludedNames = append(filter.ExcludedNames, KindMapping[k]+"/"+nameParts[1])
+				}
 			} else if strings.Contains(v, "=") { // Label
 				filter.ExcludedLabels = append(filter.ExcludedLabels, v)
 			} else { // Kind
