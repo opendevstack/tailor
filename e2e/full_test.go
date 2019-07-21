@@ -102,7 +102,7 @@ objects:
 
 	// Simulate manual change in cluster
 	cmd = exec.Command("oc", []string{"patch", "cm/foo", "-p", "{\"data\": {\"bar\": \"baz\"}}"}...)
-	out, err = cmd.CombinedOutput()
+	_, err = cmd.CombinedOutput()
 	if err != nil {
 		t.Fatalf("Could not patch content of ConfigMap")
 	}

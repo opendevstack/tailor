@@ -15,7 +15,9 @@ import (
 
 func ExportAsTemplateFile(filter *ResourceFilter, exportOptions *cli.ExportOptions) (string, error) {
 	outBytes, err := ExportResources(filter, exportOptions.Namespace)
-
+	if err != nil {
+		return "", err
+	}
 	if len(outBytes) == 0 {
 		return "", nil
 	}
