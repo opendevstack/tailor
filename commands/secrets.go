@@ -73,8 +73,9 @@ func ReEncrypt(globalOptions *cli.GlobalOptions, filename string) error {
 				return err
 			}
 			filePattern := ".*\\.env.enc$"
+			re := regexp.MustCompile(filePattern)
 			for _, file := range files {
-				matched, _ := regexp.MatchString(filePattern, file.Name())
+				matched := re.MatchString(file.Name())
 				if !matched {
 					continue
 				}

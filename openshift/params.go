@@ -117,12 +117,13 @@ func newWriteConverter(previous, publicKeyDir, privateKey, passphrase string) (*
 		return nil, err
 	}
 	filePattern := ".*\\.key$"
+	re := regexp.MustCompile(filePattern)
 	keyFiles := []string{}
 	for _, file := range files {
 		if strings.HasSuffix(file.Name(), "private.key") {
 			continue
 		}
-		matched, _ := regexp.MatchString(filePattern, file.Name())
+		matched := re.MatchString(file.Name())
 		if !matched {
 			continue
 		}

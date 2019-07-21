@@ -177,8 +177,9 @@ func assembleTemplateBasedResourceList(filter *openshift.ResourceFilter, compare
 			return nil, err
 		}
 		filePattern := ".*\\.ya?ml$"
+		re := regexp.MustCompile(filePattern)
 		for _, file := range files {
-			matched, _ := regexp.MatchString(filePattern, file.Name())
+			matched := re.MatchString(file.Name())
 			if !matched {
 				continue
 			}
