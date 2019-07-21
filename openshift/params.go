@@ -54,14 +54,6 @@ func (c *paramConverter) encode(key, val string) (string, string, error) {
 	return key, base64.StdEncoding.EncodeToString([]byte(val)), nil
 }
 
-func (c *paramConverter) decode(key, val string) (string, string, error) {
-	decoded, err := base64.StdEncoding.DecodeString(val)
-	if err != nil {
-		return key, "", err
-	}
-	return key, string(decoded), nil
-}
-
 // Decrypt given string
 func (c *paramConverter) decrypt(key, val string) (string, string, error) {
 	newVal, err := utils.Decrypt(val, c.PrivateEntityList)
