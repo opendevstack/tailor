@@ -99,13 +99,16 @@ func AskForConfirmation(s string) bool {
 }
 
 func EditEnvFile(content string) (string, error) {
-	ioutil.WriteFile(".ENV.DEC", []byte(content), 0644)
+	err := ioutil.WriteFile(".ENV.DEC", []byte(content), 0644)
+	if err != nil {
+		return "", err
+	}
 	editor := os.Getenv("EDITOR")
 	if len(editor) == 0 {
 		editor = "vim"
 	}
 
-	_, err := exec.LookPath(editor)
+	_, err = exec.LookPath(editor)
 	if err != nil {
 		return "", fmt.Errorf(
 			"Please install '%s' or set/change $EDITOR",

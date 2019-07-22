@@ -51,7 +51,10 @@ objects:
     sessionAffinity: None
     type: ClusterIP
 `)
-	ioutil.WriteFile("foo-template.yml", fooBytes, 0644)
+	err := ioutil.WriteFile("foo-template.yml", fooBytes, 0644)
+	if err != nil {
+		t.Fatalf("Fail to write file foo-template.yml: %s", err)
+	}
 
 	fmt.Println("Create new template with label app=bar")
 	barBytes := []byte(
@@ -85,7 +88,10 @@ objects:
     sessionAffinity: None
     type: ClusterIP
 `)
-	ioutil.WriteFile("bar-template.yml", barBytes, 0644)
+	err = ioutil.WriteFile("bar-template.yml", barBytes, 0644)
+	if err != nil {
+		t.Fatalf("Fail to write file bar-template.yml: %s", err)
+	}
 
 	update(t, tailorBinary)
 	statusWithNoExpectedDrift(t, tailorBinary)
@@ -96,7 +102,10 @@ objects:
 	// Change content of local template
 	fmt.Println("Change content of ConfigMap template")
 	changedFooBytes := bytes.Replace(fooBytes, []byte("bar: baz"), []byte("bar: qux"), -1)
-	ioutil.WriteFile("foo-template.yml", changedFooBytes, 0644)
+	err = ioutil.WriteFile("foo-template.yml", changedFooBytes, 0644)
+	if err != nil {
+		t.Fatalf("Fail to write file foo-template.yml: %s", err)
+	}
 
 	// Status for app=foo -> expected to have drift (updated resource)
 	cmd := exec.Command(tailorBinary, []string{"status", "--force", "-l", "app=foo"}...)

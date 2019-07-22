@@ -38,8 +38,7 @@ func TestNewResourceFilter(t *testing.T) {
 		t.Errorf("Kinds incorrect, got: %v, want: %v.", actual, expected)
 	}
 
-	actual, err = NewResourceFilter("pvb", "", "")
-	expected = nil
+	_, err = NewResourceFilter("pvb", "", "")
 	if err == nil {
 		t.Errorf("Expected to detect unknown kind pvb.")
 	}
@@ -188,7 +187,10 @@ metadata:
 
 func makeItem(config []byte) (*ResourceItem, error) {
 	var f interface{}
-	yaml.Unmarshal(config, &f)
+	err := yaml.Unmarshal(config, &f)
+	if err != nil {
+		return nil, err
+	}
 	m := f.(map[string]interface{})
 	return NewResourceItem(m, "template")
 }

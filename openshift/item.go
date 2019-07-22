@@ -233,7 +233,7 @@ func (i *ResourceItem) parseConfig(m map[string]interface{}) error {
 		initPointer, _ := gojsonpointer.NewJsonPointer(p)
 		_, _, err := initPointer.Get(m)
 		if err != nil {
-			initPointer.Set(m, make(map[string]interface{}))
+			_, _ = initPointer.Set(m, make(map[string]interface{}))
 		}
 	}
 
@@ -258,14 +258,14 @@ func (i *ResourceItem) parseConfig(m map[string]interface{}) error {
 		}
 	} else { // source = template
 		// For template items, all annotations are managed
-		for k, _ := range i.Annotations {
+		for k := range i.Annotations {
 			i.TailorManagedAnnotations = append(i.TailorManagedAnnotations, k)
 		}
 		// If there are any managed annotations, we need to set tailorManagedAnnotation
 		if len(i.TailorManagedAnnotations) > 0 {
 			p, _ := gojsonpointer.NewJsonPointer("/metadata/annotations/" + tailorManagedAnnotation)
 			sort.Strings(i.TailorManagedAnnotations)
-			p.Set(m, strings.Join(i.TailorManagedAnnotations, ","))
+			_, _ = p.Set(m, strings.Join(i.TailorManagedAnnotations, ","))
 		}
 	}
 
@@ -318,7 +318,7 @@ func (i *ResourceItem) parseConfig(m map[string]interface{}) error {
 					anP, _ := gojsonpointer.NewJsonPointer("/metadata/annotations")
 					_, _, err := anP.Get(i.Config)
 					if err != nil {
-						anP.Set(i.Config, map[string]interface{}{})
+						_, _ = anP.Set(i.Config, map[string]interface{}{})
 						newPaths = append(newPaths, "/metadata/annotations")
 					}
 					cli.DebugMsg("Template: Setting", annotationPath, "to", specValue.(string))
@@ -469,7 +469,7 @@ func (templateItem *ResourceItem) prepareForComparisonWithPlatformItem(platformI
 // - remove all annotations which are not managed
 func (platformItem *ResourceItem) prepareForComparisonWithTemplateItem(templateItem *ResourceItem) error {
 	unmanagedAnnotations := []string{}
-	for a, _ := range platformItem.Annotations {
+	for a := range platformItem.Annotations {
 		if a == tailorManagedAnnotation {
 			continue
 		}

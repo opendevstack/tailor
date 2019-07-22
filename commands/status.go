@@ -140,18 +140,18 @@ func compare(remoteResourceList *openshift.ResourceList, localResourceList *open
 
 	for _, change := range changeset.Delete {
 		cli.PrintRedf("- %s to delete\n", change.ItemName())
-		fmt.Printf(change.Diff())
+		fmt.Print(change.Diff())
 	}
 
 	for _, change := range changeset.Create {
 		cli.PrintGreenf("+ %s to create\n", change.ItemName())
-		fmt.Printf(change.Diff())
+		fmt.Print(change.Diff())
 	}
 
 	for _, change := range changeset.Update {
 		cli.PrintYellowf("~ %s to update\n", change.ItemName())
 		if diff == "text" {
-			fmt.Printf(change.Diff())
+			fmt.Print(change.Diff())
 		} else {
 			fmt.Println(change.JsonPatches(true))
 		}
@@ -177,8 +177,9 @@ func assembleTemplateBasedResourceList(filter *openshift.ResourceFilter, compare
 			return nil, err
 		}
 		filePattern := ".*\\.ya?ml$"
+		re := regexp.MustCompile(filePattern)
 		for _, file := range files {
-			matched, _ := regexp.MatchString(filePattern, file.Name())
+			matched := re.MatchString(file.Name())
 			if !matched {
 				continue
 			}

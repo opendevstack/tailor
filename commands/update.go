@@ -100,7 +100,7 @@ func ocCreate(change *openshift.Change, compareOptions *cli.CompareOptions) erro
 	}
 	go func() {
 		defer stdin.Close()
-		io.WriteString(stdin, config)
+		_, _ = io.WriteString(stdin, config)
 	}()
 	_, errBytes, err := cli.RunCmd(cmd)
 	if err == nil {
