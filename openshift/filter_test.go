@@ -39,7 +39,6 @@ func TestNewResourceFilter(t *testing.T) {
 	}
 
 	_, err = NewResourceFilter("pvb", "", "")
-	expected = nil
 	if err == nil {
 		t.Errorf("Expected to detect unknown kind pvb.")
 	}
