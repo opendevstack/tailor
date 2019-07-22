@@ -15,7 +15,7 @@ fmt:
 	@(gofmt -w .)
 
 lint:
-	@(golangci-lint run)
+	@(go mod download && golangci-lint run)
 
 install: imports
 	@(go install)
