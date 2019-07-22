@@ -258,7 +258,7 @@ func (i *ResourceItem) parseConfig(m map[string]interface{}) error {
 		}
 	} else { // source = template
 		// For template items, all annotations are managed
-		for k, _ := range i.Annotations {
+		for k := range i.Annotations {
 			i.TailorManagedAnnotations = append(i.TailorManagedAnnotations, k)
 		}
 		// If there are any managed annotations, we need to set tailorManagedAnnotation
@@ -469,7 +469,7 @@ func (templateItem *ResourceItem) prepareForComparisonWithPlatformItem(platformI
 // - remove all annotations which are not managed
 func (platformItem *ResourceItem) prepareForComparisonWithTemplateItem(templateItem *ResourceItem) error {
 	unmanagedAnnotations := []string{}
-	for a, _ := range platformItem.Annotations {
+	for a := range platformItem.Annotations {
 		if a == tailorManagedAnnotation {
 			continue
 		}
