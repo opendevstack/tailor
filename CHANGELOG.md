@@ -4,6 +4,12 @@
 
 ## [0.9.5] - 2019-07-22
 
+### Added
+- Exclusion of kinds/resources/labels via the `--exclude` flag ([#115](hhttps://github.com/opendevstack/tailor/issues/115)).
+
+### Changed
+- Addressed issues reported by golangci-lint ([#119](hhttps://github.com/opendevstack/tailor/issues/119), thanks @u5surf).
+
 ## [0.9.4] - 2019-04-23
 
 ### Fixed 
