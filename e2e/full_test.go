@@ -35,7 +35,10 @@ objects:
   metadata:
     name: foo
 `)
-	ioutil.WriteFile("cm-template.yml", cmBytes, 0644)
+	err := ioutil.WriteFile("cm-template.yml", cmBytes, 0644)
+	if err != nil {
+		t.Fatalf("Fail to write file cm-template.yml: %s", err)
+	}
 
 	// Status -> expected to have one created resource
 	cmd := exec.Command(tailorBinary, []string{"status", "--force"}...)
@@ -75,7 +78,10 @@ objects:
 	// Change content of local template
 	fmt.Println("Change content of ConfigMap template")
 	changedCmBytes := bytes.Replace(cmBytes, []byte("bar: baz"), []byte("bar: qux"), -1)
-	ioutil.WriteFile("cm-template.yml", changedCmBytes, 0644)
+	err = ioutil.WriteFile("cm-template.yml", changedCmBytes, 0644)
+	if err != nil {
+		t.Fatalf("Fail to write file cm-template.yml: %s", err)
+	}
 
 	// Status -> expected to have drift (updated resource)
 	cmd = exec.Command(tailorBinary, []string{"status", "--force"}...)
@@ -195,7 +201,10 @@ func export(t *testing.T, tailorBinary string) {
 	if err != nil {
 		t.Fatalf("Could not export resources in test project: %s", out)
 	}
-	ioutil.WriteFile("test-template.yml", out, 0644)
+	err = ioutil.WriteFile("test-template.yml", out, 0644)
+	if err != nil {
+		t.Fatalf("Fail to write file cm-template.yml: %s", err)
+	}
 	fmt.Println("Resources in test project exported")
 }
 
@@ -215,8 +224,14 @@ func setup(t *testing.T) {
 	}
 	fmt.Println("Test project created")
 
-	os.MkdirAll("templates", os.ModePerm)
-	os.Chdir("templates")
+	err = os.MkdirAll("templates", os.ModePerm)
+	if err != nil {
+		t.Fatalf("Fail to mkdir templates: %s", err)
+	}
+	err = os.Chdir("templates")
+	if err != nil {
+		t.Fatalf("Fail to chdir templates: %s", err)
+	}
 	fmt.Println("templates folder created")
 }
 
@@ -236,7 +251,10 @@ func teardown(t *testing.T) {
 	fmt.Println("Local cluster shut down")
 
 	dir, _ := os.Getwd()
-	os.Chdir(strings.TrimSuffix(dir, "/templates"))
+	err = os.Chdir(strings.TrimSuffix(dir, "/templates"))
+	if err != nil {
+		t.Fatalf("Fail to chdir templates: %s", err)
+	}
 	err = os.RemoveAll(dir)
 	if err != nil {
 		t.Fatalf("Could not remove templates folder: %s", err)

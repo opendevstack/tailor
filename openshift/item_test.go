@@ -24,7 +24,10 @@ func TestNewResourceItem(t *testing.T) {
 func TestChangesFromEqual(t *testing.T) {
 	currentItem := getItem(t, getBuildConfig(), "platform")
 	desiredItem := getItem(t, getBuildConfig(), "template")
-	desiredItem.ChangesFrom(currentItem, []string{})
+	_, err := desiredItem.ChangesFrom(currentItem, []string{})
+	if err != nil {
+		t.Errorf(err.Error())
+	}
 }
 
 func TestChangesFromDifferent(t *testing.T) {
@@ -234,7 +237,10 @@ func TestChangesFromAnnotationFields(t *testing.T) {
 
 func getItem(t *testing.T, input []byte, source string) *ResourceItem {
 	var f interface{}
-	yaml.Unmarshal(input, &f)
+	err := yaml.Unmarshal(input, &f)
+	if err != nil {
+		t.Fatalf("Could not umarshal yaml: %v", err)
+	}
 	m := f.(map[string]interface{})
 	item, err := NewResourceItem(m, source)
 	if err != nil {

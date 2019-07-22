@@ -233,7 +233,7 @@ func (i *ResourceItem) parseConfig(m map[string]interface{}) error {
 		initPointer, _ := gojsonpointer.NewJsonPointer(p)
 		_, _, err := initPointer.Get(m)
 		if err != nil {
-			initPointer.Set(m, make(map[string]interface{}))
+			_, _ = initPointer.Set(m, make(map[string]interface{}))
 		}
 	}
 
@@ -265,7 +265,7 @@ func (i *ResourceItem) parseConfig(m map[string]interface{}) error {
 		if len(i.TailorManagedAnnotations) > 0 {
 			p, _ := gojsonpointer.NewJsonPointer("/metadata/annotations/" + tailorManagedAnnotation)
 			sort.Strings(i.TailorManagedAnnotations)
-			p.Set(m, strings.Join(i.TailorManagedAnnotations, ","))
+			_, _ = p.Set(m, strings.Join(i.TailorManagedAnnotations, ","))
 		}
 	}
 
@@ -318,7 +318,7 @@ func (i *ResourceItem) parseConfig(m map[string]interface{}) error {
 					anP, _ := gojsonpointer.NewJsonPointer("/metadata/annotations")
 					_, _, err := anP.Get(i.Config)
 					if err != nil {
-						anP.Set(i.Config, map[string]interface{}{})
+						_, _ = anP.Set(i.Config, map[string]interface{}{})
 						newPaths = append(newPaths, "/metadata/annotations")
 					}
 					cli.DebugMsg("Template: Setting", annotationPath, "to", specValue.(string))

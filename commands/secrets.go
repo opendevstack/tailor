@@ -23,13 +23,13 @@ func GenerateKey(globalOptions *cli.GlobalOptions, email, name string) error {
 		return fmt.Errorf("Failed to generate keypair: %s", err)
 	}
 	publicKeyFilename := strings.Replace(emailParts[0], ".", "-", -1) + ".key"
-	utils.PrintPublicKey(entity, publicKeyFilename)
+	err = utils.PrintPublicKey(entity, publicKeyFilename)
 	if err != nil {
 		return err
 	}
 	fmt.Printf("Public Key written to %s. This file can be committed.\n", publicKeyFilename)
 	privateKeyFilename := globalOptions.PrivateKey
-	utils.PrintPrivateKey(entity, privateKeyFilename)
+	err = utils.PrintPrivateKey(entity, privateKeyFilename)
 	if err != nil {
 		return err
 	}

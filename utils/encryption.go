@@ -47,9 +47,15 @@ func PrintPublicKey(entity *openpgp.Entity, filename string) error {
 	if err != nil {
 		return err
 	}
-	entity.Serialize(w)
-	w.Close()
-	io.WriteString(f, "\n")
+	defer w.Close()
+	err = entity.Serialize(w)
+	if err != nil {
+		return err
+	}
+	_, err = io.WriteString(f, "\n")
+	if err != nil {
+		return err
+	}
 	return nil
 }
 
@@ -62,9 +68,15 @@ func PrintPrivateKey(entity *openpgp.Entity, filename string) error {
 	if err != nil {
 		return err
 	}
-	entity.SerializePrivate(w, nil)
+	err = entity.SerializePrivate(w, nil)
+	if err != nil {
+		return err
+	}
 	w.Close()
-	io.WriteString(f, "\n")
+	_, err = io.WriteString(f, "\n")
+	if err != nil {
+		return err
+	}
 	return nil
 }
 

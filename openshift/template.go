@@ -46,7 +46,7 @@ func ExportAsTemplateFile(filter *ResourceFilter, exportOptions *cli.ExportOptio
 		}
 		item.RemoveUnmanagedAnnotations()
 		itemPointer, _ := gojsonpointer.NewJsonPointer("/objects/" + strconv.Itoa(k))
-		itemPointer.Set(m, item.Config)
+		_, _ = itemPointer.Set(m, item.Config)
 	}
 
 	cli.DebugMsg("Remove metadata from template")
@@ -164,7 +164,10 @@ func ProcessTemplate(templateDir string, name string, paramDir string, compareOp
 		tempParamFile := ".combined.env"
 		defer os.Remove(tempParamFile)
 		cli.DebugMsg("Writing contents of param files into", tempParamFile)
-		ioutil.WriteFile(tempParamFile, paramFileBytes, 0644)
+		err = ioutil.WriteFile(tempParamFile, paramFileBytes, 0644)
+		if err != nil {
+			return []byte{}, err
+		}
 		args = append(args, "--param-file="+tempParamFile)
 	}
 
