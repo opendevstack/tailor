@@ -7,8 +7,8 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/opendevstack/tailor/cli"
-	"github.com/opendevstack/tailor/openshift"
+	"github.com/opendevstack/tailor/pkg/cli"
+	"github.com/opendevstack/tailor/pkg/openshift"
 )
 
 // Status prints the drift between desired and current state to STDOUT.

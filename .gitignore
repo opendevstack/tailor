@@ -1,10 +1,10 @@
-e2e/templates
-e2e/tailor-test
+internal/test/e2e/templates
+internal/test/e2e/tailor-test
 templates-*
 params-*
 TODO.md
-tailor_linux_amd64
-tailor_darwin_amd64
-tailor_windows_amd64.exe
+tailor-linux-amd64
+tailor-darwin-amd64
+tailor-windows-amd64.exe
 openshift.local.clusterup/
 .vscode

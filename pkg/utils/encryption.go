@@ -10,7 +10,7 @@ import (
 	"os"
 	"strings"
 
-	"github.com/opendevstack/tailor/cli"
+	"github.com/opendevstack/tailor/pkg/cli"
 	"golang.org/x/crypto/openpgp"
 	"golang.org/x/crypto/openpgp/armor"
 	"golang.org/x/crypto/openpgp/packet"

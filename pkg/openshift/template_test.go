@@ -5,7 +5,7 @@ import (
 )
 
 func TestTemplateContainsTailorNamespaceParam(t *testing.T) {
-	contains, err := templateContainsTailorNamespaceParam("../testdata/template-with-tailor-namespace-param.yml")
+	contains, err := templateContainsTailorNamespaceParam("../../internal/test/fixtures/template-with-tailor-namespace-param.yml")
 	if err != nil {
 		t.Errorf("Could not determine if the template contains the param: %s", err)
 	}

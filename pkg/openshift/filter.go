@@ -6,7 +6,7 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/opendevstack/tailor/utils"
+	"github.com/opendevstack/tailor/pkg/utils"
 )
 
 var availableKinds = []string{
