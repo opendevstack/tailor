@@ -9,7 +9,9 @@ require (
 	github.com/mattn/go-colorable v0.0.9 // indirect
 	github.com/mattn/go-isatty v0.0.3 // indirect
 	github.com/pmezard/go-difflib v1.0.0
+	github.com/stretchr/testify v1.3.0 // indirect
 	github.com/xeipuuv/gojsonpointer v0.0.0-20180127040702-4e3ac2762d5f
 	golang.org/x/crypto v0.0.0-20180820150726-614d502a4dac
+	golang.org/x/sys v0.0.0-20190801041406-cbf593c0f2f3 // indirect
 	gopkg.in/yaml.v2 v2.2.1 // indirect
 )

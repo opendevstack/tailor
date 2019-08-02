@@ -7,8 +7,8 @@ import (
 	"runtime/debug"
 
 	"github.com/alecthomas/kingpin"
-	"github.com/opendevstack/tailor/cli"
-	"github.com/opendevstack/tailor/commands"
+	"github.com/opendevstack/tailor/pkg/cli"
+	"github.com/opendevstack/tailor/pkg/commands"
 )
 
 var (

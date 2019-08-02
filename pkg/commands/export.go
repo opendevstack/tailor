@@ -3,8 +3,8 @@ package commands
 import (
 	"fmt"
 
-	"github.com/opendevstack/tailor/cli"
-	"github.com/opendevstack/tailor/openshift"
+	"github.com/opendevstack/tailor/pkg/cli"
+	"github.com/opendevstack/tailor/pkg/openshift"
 )
 
 // Export prints an export of targeted resources to STDOUT.

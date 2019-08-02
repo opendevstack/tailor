@@ -4,7 +4,7 @@ import (
 	"io/ioutil"
 	"os"
 
-	"github.com/opendevstack/tailor/cli"
+	"github.com/opendevstack/tailor/pkg/cli"
 )
 
 // ReadFile reads the content of given filename and returns it as a string

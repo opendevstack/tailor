@@ -8,8 +8,8 @@ import (
 	"strings"
 
 	"github.com/ghodss/yaml"
-	"github.com/opendevstack/tailor/cli"
-	"github.com/opendevstack/tailor/utils"
+	"github.com/opendevstack/tailor/pkg/cli"
+	"github.com/opendevstack/tailor/pkg/utils"
 	"github.com/xeipuuv/gojsonpointer"
 )
 

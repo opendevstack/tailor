@@ -7,9 +7,9 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/opendevstack/tailor/cli"
-	"github.com/opendevstack/tailor/openshift"
-	"github.com/opendevstack/tailor/utils"
+	"github.com/opendevstack/tailor/pkg/cli"
+	"github.com/opendevstack/tailor/pkg/openshift"
+	"github.com/opendevstack/tailor/pkg/utils"
 )
 
 // GenerateKey generates a GPG key using specified email (and optionally name).
