@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"sort"
 
+	"github.com/opendevstack/tailor/pkg/cli"
 	"github.com/pmezard/go-difflib/difflib"
 )
 
@@ -36,6 +37,32 @@ type jsonPatch struct {
 	Op    string      `json:"op"`
 	Path  string      `json:"path"`
 	Value interface{} `json:"value,omitempty"`
+}
+
+func NewChange(templateItem *ResourceItem, platformItem *ResourceItem, comparison map[string]*jsonPatch) *Change {
+	c := &Change{
+		Kind:         templateItem.Kind,
+		Name:         templateItem.Name,
+		Patches:      []*jsonPatch{},
+		CurrentState: platformItem.YamlConfig(),
+		DesiredState: templateItem.YamlConfig(),
+	}
+
+	for path, patch := range comparison {
+		if patch.Op != "noop" {
+			cli.DebugMsg("add path", path)
+			patch.Path = path
+			c.addPatch(patch)
+		}
+	}
+
+	if len(c.Patches) > 0 {
+		c.Action = "Update"
+	} else {
+		c.Action = "Noop"
+	}
+
+	return c
 }
 
 func (c *Change) ItemName() string {
