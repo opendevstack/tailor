@@ -16,6 +16,7 @@ var (
 		"tailor",
 		"Tailor - Infrastructure as Code for OpenShift",
 	).DefaultEnvars()
+	// App-wide flags that cannot be changed in each context
 	verboseFlag = app.Flag(
 		"verbose",
 		"Enable verbose output.",
@@ -36,7 +37,16 @@ var (
 		"file",
 		"Tailorfile with flags.",
 	).Short('f').Default("Tailorfile").String()
+	contextDirFlag = app.Flag(
+		"context-dir",
+		"Path to local context directories in which Tailor will execute",
+	).Short('c').Default(".").Strings()
+	forceFlag = app.Flag(
+		"force",
+		"Force to continue despite warning (e.g. deleting all resources).",
+	).Bool()
 
+	// Context-wide flags which might differ between contexts
 	namespaceFlag = app.Flag(
 		"namespace",
 		"Namespace (omit to use current)",
@@ -52,11 +62,11 @@ var (
 	templateDirFlag = app.Flag(
 		"template-dir",
 		"Path to local templates",
-	).Short('t').Default(".").Strings()
+	).Short('t').Default(".").String()
 	paramDirFlag = app.Flag(
 		"param-dir",
-		"Path to param files for local templates",
-	).Short('p').Default(".").Strings()
+		"Path to parameter files for local templates",
+	).Short('p').Default(".").String()
 	publicKeyDirFlag = app.Flag(
 		"public-key-dir",
 		"Path to public key files",
@@ -69,10 +79,6 @@ var (
 		"passphrase",
 		"Passphrase to unlock key",
 	).String()
-	forceFlag = app.Flag(
-		"force",
-		"Force to continue despite warning (e.g. deleting all resources).",
-	).Bool()
 
 	versionCommand = app.Command(
 		"version",
@@ -215,78 +221,114 @@ func main() {
 		return
 	}
 
-	fileFlags, err := cli.GetFileFlags(*fileFlag, (*verboseFlag || *debugFlag))
-	if err != nil {
-		log.Fatalln("Could not read Tailorfile:", err)
-	}
-	globalOptions := &cli.GlobalOptions{}
-	globalOptions.UpdateWithFile(fileFlags)
-	globalOptions.UpdateWithFlags(
+	globalOptions, err := cli.NewGlobalOptions(
+		*fileFlag,
 		*verboseFlag,
 		*debugFlag,
 		*nonInteractiveFlag,
 		*ocBinaryFlag,
-		*namespaceFlag,
-		*selectorFlag,
-		*excludeFlag,
-		*templateDirFlag,
-		*paramDirFlag,
-		*publicKeyDirFlag,
-		*privateKeyFlag,
-		*passphraseFlag,
+		*contextDirFlag,
 		*forceFlag,
 	)
-	err = globalOptions.Process()
 	if err != nil {
 		log.Fatalln("Options could not be processed:", err)
 	}
 
 	switch command {
 	case editCommand.FullCommand():
-		err := commands.Edit(globalOptions, *editFileArg)
+		secretsOptions, err := cli.NewSecretsOptions(
+			globalOptions,
+			*paramDirFlag,
+			*publicKeyDirFlag,
+			*privateKeyFlag,
+			*passphraseFlag,
+		)
+		if err != nil {
+			log.Fatalln("Options could not be processed:", err)
+		}
+		err = commands.Edit(secretsOptions, *editFileArg)
 		if err != nil {
 			log.Fatalf("Failed to edit file: %s.", err)
 		}
 
 	case reEncryptCommand.FullCommand():
-		err := commands.ReEncrypt(globalOptions, *reEncryptFileArg)
+		secretsOptions, err := cli.NewSecretsOptions(
+			globalOptions,
+			*paramDirFlag,
+			*publicKeyDirFlag,
+			*privateKeyFlag,
+			*passphraseFlag,
+		)
+		if err != nil {
+			log.Fatalln("Options could not be processed:", err)
+		}
+		err = commands.ReEncrypt(secretsOptions, *reEncryptFileArg)
 		if err != nil {
 			log.Fatalf("Failed to re-encrypt: %s.", err)
 		}
 
 	case revealCommand.FullCommand():
-		err := commands.Reveal(globalOptions, *revealFileArg)
+		secretsOptions, err := cli.NewSecretsOptions(
+			globalOptions,
+			*paramDirFlag,
+			*publicKeyDirFlag,
+			*privateKeyFlag,
+			*passphraseFlag,
+		)
+		if err != nil {
+			log.Fatalln("Options could not be processed:", err)
+		}
+		err = commands.Reveal(secretsOptions, *revealFileArg)
 		if err != nil {
 			log.Fatalf("Failed to reveal file: %s.", err)
 		}
 
 	case generateKeyCommand.FullCommand():
-		err := commands.GenerateKey(globalOptions, *generateKeyEmailArg, *generateKeyNameFlag)
+		secretsOptions, err := cli.NewSecretsOptions(
+			globalOptions,
+			*paramDirFlag,
+			*publicKeyDirFlag,
+			*privateKeyFlag,
+			*passphraseFlag,
+		)
+		if err != nil {
+			log.Fatalln("Options could not be processed:", err)
+		}
+		err = commands.GenerateKey(secretsOptions, *generateKeyEmailArg, *generateKeyNameFlag)
 		if err != nil {
 			log.Fatalf("Failed to generate keypair: %s.", err)
 		}
 
 	case statusCommand.FullCommand():
-		compareOptions := &cli.CompareOptions{
-			GlobalOptions: globalOptions,
-		}
-		compareOptions.UpdateWithFile(fileFlags)
-		compareOptions.UpdateWithFlags(
-			*statusLabelsFlag,
-			*statusParamFlag,
-			*statusParamFileFlag,
-			*statusDiffFlag,
-			*statusIgnorePathFlag,
-			*statusIgnoreUnknownParametersFlag,
-			*statusUpsertOnlyFlag,
-			*statusResourceArg,
-		)
-		err := compareOptions.Process()
-		if err != nil {
-			log.Fatalln("Options could not be processed:", err)
+		optionSets := map[string]*cli.CompareOptions{}
+		for _, contextDir := range globalOptions.ContextDirs {
+			opt, err := cli.NewCompareOptions(
+				globalOptions,
+				contextDir,
+				*namespaceFlag,
+				*selectorFlag,
+				*excludeFlag,
+				*templateDirFlag,
+				*paramDirFlag,
+				*publicKeyDirFlag,
+				*privateKeyFlag,
+				*passphraseFlag,
+				*statusLabelsFlag,
+				*statusParamFlag,
+				*statusParamFileFlag,
+				*statusDiffFlag,
+				*statusIgnorePathFlag,
+				*statusIgnoreUnknownParametersFlag,
+				*statusUpsertOnlyFlag,
+				*statusResourceArg,
+			)
+			if err != nil {
+				log.Fatalln("Options could not be processed:", err)
+			}
+			optionSets[contextDir] = opt
 		}
 
-		updateRequired, _, err := commands.Status(compareOptions)
+		updateRequired, err := commands.Status(optionSets)
 		if err != nil {
 			log.Fatalln(err)
 		}
@@ -295,43 +337,58 @@ func main() {
 		}
 
 	case updateCommand.FullCommand():
-		compareOptions := &cli.CompareOptions{
-			GlobalOptions: globalOptions,
-		}
-		compareOptions.UpdateWithFile(fileFlags)
-		compareOptions.UpdateWithFlags(
-			*updateLabelsFlag,
-			*updateParamFlag,
-			*updateParamFileFlag,
-			*updateDiffFlag,
-			*updateIgnorePathFlag,
-			*updateIgnoreUnknownParametersFlag,
-			*updateUpsertOnlyFlag,
-			*updateResourceArg,
-		)
-		err := compareOptions.Process()
-		if err != nil {
-			log.Fatalln("Options could not be processed:", err)
+		optionSets := map[string]*cli.CompareOptions{}
+		for _, contextDir := range globalOptions.ContextDirs {
+			opt, err := cli.NewCompareOptions(
+				globalOptions,
+				contextDir,
+				*namespaceFlag,
+				*selectorFlag,
+				*excludeFlag,
+				*templateDirFlag,
+				*paramDirFlag,
+				*publicKeyDirFlag,
+				*privateKeyFlag,
+				*passphraseFlag,
+				*updateLabelsFlag,
+				*updateParamFlag,
+				*updateParamFileFlag,
+				*updateDiffFlag,
+				*updateIgnorePathFlag,
+				*updateIgnoreUnknownParametersFlag,
+				*updateUpsertOnlyFlag,
+				*updateResourceArg,
+			)
+			if err != nil {
+				log.Fatalln("Options could not be processed:", err)
+			}
+			optionSets[contextDir] = opt
 		}
 
-		err = commands.Update(compareOptions)
+		err = commands.Update(globalOptions.NonInteractive, optionSets)
 		if err != nil {
 			log.Fatalln(err)
 		}
 
 	case exportCommand.FullCommand():
-		exportOptions := &cli.ExportOptions{
-			GlobalOptions: globalOptions,
+		optionSets := map[string]*cli.ExportOptions{}
+		for _, contextDir := range globalOptions.ContextDirs {
+			opt, err := cli.NewExportOptions(
+				globalOptions,
+				contextDir,
+				*namespaceFlag,
+				*selectorFlag,
+				*excludeFlag,
+				*templateDirFlag,
+				*paramDirFlag,
+				*exportResourceArg,
+			)
+			if err != nil {
+				log.Fatalln("Options could not be processed:", err)
+			}
+			optionSets[contextDir] = opt
 		}
-		exportOptions.UpdateWithFile(fileFlags)
-		exportOptions.UpdateWithFlags(
-			*exportResourceArg,
-		)
-		err := exportOptions.Process()
-		if err != nil {
-			log.Fatalln("Options could not be processed:", err)
-		}
-		err = commands.Export(exportOptions)
+		err = commands.Export(optionSets)
 		if err != nil {
 			log.Fatalln(err)
 		}

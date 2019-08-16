@@ -17,9 +17,16 @@ var verbose bool
 var debug bool
 var ocBinary string
 
+// PrintGreenf prints in green.
 var PrintGreenf func(format string, a ...interface{})
+
+// PrintBluef prints in blue.
 var PrintBluef func(format string, a ...interface{})
+
+// PrintYellowf prints in yellow.
 var PrintYellowf func(format string, a ...interface{})
+
+// PrintRedf prints in red.
 var PrintRedf func(format string, a ...interface{})
 
 func init() {
@@ -31,18 +38,22 @@ func init() {
 	verbose = false
 }
 
+// VerboseMsg prints given message when verbose mode is on.
+// Verbose mode is implicitly turned on when debug mode is on.
 func VerboseMsg(messages ...string) {
 	if verbose {
 		PrintBluef("--> %s\n", strings.Join(messages, " "))
 	}
 }
 
+// DebugMsg prints given message when debug mode is on.
 func DebugMsg(messages ...string) {
 	if debug {
 		PrintBluef("--> %s\n", strings.Join(messages, " "))
 	}
 }
 
+// ExecOcCmd executes "oc" with given namespace and selector applied.
 func ExecOcCmd(args []string, namespace string, selector string) *exec.Cmd {
 	if len(namespace) > 0 {
 		args = append(args, "--namespace="+namespace)
@@ -53,6 +64,7 @@ func ExecOcCmd(args []string, namespace string, selector string) *exec.Cmd {
 	return ExecPlainOcCmd(args)
 }
 
+// ExecPlainOcCmd executes "oc" with given arguments applied.
 func ExecPlainOcCmd(args []string) *exec.Cmd {
 	return execCmd(ocBinary, args)
 }
@@ -73,7 +85,7 @@ func execCmd(executable string, args []string) *exec.Cmd {
 	return exec.Command(executable, args...)
 }
 
-// askForConfirmation asks the user for confirmation. A user must type in "yes" or "no" and
+// AskForConfirmation asks the user for confirmation. A user must type in "yes" or "no" and
 // then press enter. It has fuzzy matching, so "y", "Y", "yes", "YES", and "Yes" all count as
 // confirmations. If the input is not recognized, it will ask again. The function does not return
 // until it gets a valid response from the user.
@@ -98,6 +110,7 @@ func AskForConfirmation(s string) bool {
 	}
 }
 
+// EditEnvFile opens content in EDITOR, and returns saved content.
 func EditEnvFile(content string) (string, error) {
 	err := ioutil.WriteFile(".ENV.DEC", []byte(content), 0644)
 	if err != nil {

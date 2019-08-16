@@ -11,25 +11,29 @@ import (
 
 // Update prints the drift between desired and current state to STDOUT.
 // If there is any, it asks for confirmation and applies the changeset.
-func Update(compareOptions *cli.CompareOptions) error {
-	updateRequired, changeset, err := calculateChangeset(compareOptions)
+func Update(nonInteractive bool, compareOptionSets map[string]*cli.CompareOptions) error {
+	updateRequired, changesets, err := calculateChangesets(compareOptionSets)
 	if err != nil {
 		return err
 	}
 
 	if updateRequired {
-		if compareOptions.NonInteractive {
-			err = apply(compareOptions, changeset)
-			if err != nil {
-				return fmt.Errorf("Update aborted: %s", err)
+		if nonInteractive {
+			for contextDir, compareOptions := range compareOptionSets {
+				err = apply(compareOptions, changesets[contextDir])
+				if err != nil {
+					return fmt.Errorf("Update aborted: %s", err)
+				}
 			}
 		} else {
 			c := cli.AskForConfirmation("Apply changes?")
 			if c {
 				fmt.Println("")
-				err = apply(compareOptions, changeset)
-				if err != nil {
-					return fmt.Errorf("Update aborted: %s", err)
+				for contextDir, compareOptions := range compareOptionSets {
+					err = apply(compareOptions, changesets[contextDir])
+					if err != nil {
+						return fmt.Errorf("Update aborted: %s", err)
+					}
 				}
 			}
 		}
@@ -39,6 +43,11 @@ func Update(compareOptions *cli.CompareOptions) error {
 }
 
 func apply(compareOptions *cli.CompareOptions, c *openshift.Changeset) error {
+	fmt.Printf(
+		"===== Applying changes related to context directory %s =====\n",
+		compareOptions.ContextDir,
+	)
+
 	for _, change := range c.Create {
 		err := ocCreate(change, compareOptions)
 		if err != nil {

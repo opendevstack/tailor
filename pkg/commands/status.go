@@ -3,26 +3,64 @@ package commands
 import (
 	"fmt"
 	"io/ioutil"
-	"os"
 	"regexp"
-	"strings"
 
 	"github.com/opendevstack/tailor/pkg/cli"
 	"github.com/opendevstack/tailor/pkg/openshift"
 )
 
 // Status prints the drift between desired and current state to STDOUT.
-func Status(compareOptions *cli.CompareOptions) (bool, *openshift.Changeset, error) {
-	return calculateChangeset(compareOptions)
+func Status(compareOptionSets map[string]*cli.CompareOptions) (bool, error) {
+	updateRequired, _, err := calculateChangesets(compareOptionSets)
+	return updateRequired, err
+}
+
+func calculateChangesets(compareOptionSets map[string]*cli.CompareOptions) (bool, map[string]*openshift.Changeset, error) {
+	anyUpdateRequired := false
+	changesets := map[string]*openshift.Changeset{}
+	for contextDir, compareOptions := range compareOptionSets {
+		updateRequired, changeset, err := calculateChangeset(compareOptions)
+		if updateRequired {
+			anyUpdateRequired = true
+		}
+		if err != nil {
+			return anyUpdateRequired, changesets, err
+		}
+		changesets[contextDir] = changeset
+	}
+
+	if len(changesets) > 1 {
+		inSync := 0
+		toCreate := 0
+		toUpdate := 0
+		toDelete := 0
+		for _, c := range changesets {
+			inSync = inSync + len(c.Noop)
+			toCreate = toCreate + len(c.Create)
+			toUpdate = toUpdate + len(c.Update)
+			toDelete = toDelete + len(c.Delete)
+		}
+
+		fmt.Printf("\n===== Combined Summary =====\n%d in sync, ", inSync)
+		cli.PrintGreenf("%d to create", toCreate)
+		fmt.Printf(", ")
+		cli.PrintYellowf("%d to update", toUpdate)
+		fmt.Printf(", ")
+		cli.PrintRedf("%d to delete\n\n", toDelete)
+	}
+
+	return anyUpdateRequired, changesets, nil
 }
 
 func calculateChangeset(compareOptions *cli.CompareOptions) (bool, *openshift.Changeset, error) {
 	updateRequired := false
 
-	where := strings.Join(compareOptions.TemplateDirs, ", ")
-	if len(compareOptions.TemplateDirs) == 1 && compareOptions.TemplateDirs[0] == "." {
-		where, _ = os.Getwd()
-	}
+	fmt.Printf(
+		"===== Working in context directory %s =====\n",
+		compareOptions.ContextDir,
+	)
+
+	where := compareOptions.ResolvedTemplateDir()
 
 	fmt.Printf(
 		"Comparing templates in %s with OCP namespace %s.\n",
@@ -170,26 +208,28 @@ func compare(remoteResourceList *openshift.ResourceList, localResourceList *open
 func assembleTemplateBasedResourceList(filter *openshift.ResourceFilter, compareOptions *cli.CompareOptions) (*openshift.ResourceList, error) {
 	var inputs [][]byte
 
-	// read files in folders and assemble lists for kinds
-	for i, templateDir := range compareOptions.TemplateDirs {
-		files, err := ioutil.ReadDir(templateDir)
+	files, err := ioutil.ReadDir(compareOptions.ResolvedTemplateDir())
+	if err != nil {
+		return nil, err
+	}
+	filePattern := ".*\\.ya?ml$"
+	re := regexp.MustCompile(filePattern)
+	for _, file := range files {
+		matched := re.MatchString(file.Name())
+		if !matched {
+			continue
+		}
+		cli.DebugMsg("Reading template", file.Name())
+		processedOut, err := openshift.ProcessTemplate(
+			compareOptions.ResolvedTemplateDir(),
+			file.Name(),
+			compareOptions.ResolvedParamDir(),
+			compareOptions,
+		)
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("Could not process %s template: %s", file.Name(), err)
 		}
-		filePattern := ".*\\.ya?ml$"
-		re := regexp.MustCompile(filePattern)
-		for _, file := range files {
-			matched := re.MatchString(file.Name())
-			if !matched {
-				continue
-			}
-			cli.DebugMsg("Reading template", file.Name())
-			processedOut, err := openshift.ProcessTemplate(templateDir, file.Name(), compareOptions.ParamDirs[i], compareOptions)
-			if err != nil {
-				return nil, fmt.Errorf("Could not process %s template: %s", file.Name(), err)
-			}
-			inputs = append(inputs, processedOut)
-		}
+		inputs = append(inputs, processedOut)
 	}
 
 	return openshift.NewTemplateBasedResourceList(filter, inputs...)
