@@ -32,6 +32,6 @@ build-darwin: imports
 build-windows: imports
 	cd cmd/tailor && GOOS=windows GOARCH=amd64 CGO_ENABLED=0 go build -o tailor-windows-amd64.exe
 
-internal/test/e2e/tailor-test: cmd/tailor/main.go go.mod go.sum pkg/*
-	@(echo "Generating E2E test binary")
+internal/test/e2e/tailor-test: cmd/tailor/main.go go.mod go.sum pkg/cli/* pkg/commands/* pkg/openshift/* pkg/utils/*
+	@(echo "Generating E2E test binary ...")
 	@(cd cmd/tailor && go build -o ../../internal/test/e2e/tailor-test)

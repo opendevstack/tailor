@@ -13,7 +13,7 @@ import (
 )
 
 // GenerateKey generates a GPG key using specified email (and optionally name).
-func GenerateKey(globalOptions *cli.GlobalOptions, email, name string) error {
+func GenerateKey(secretsOptions *cli.SecretsOptions, email, name string) error {
 	emailParts := strings.Split(email, "@")
 	if len(name) == 0 {
 		name = emailParts[0]
@@ -28,7 +28,7 @@ func GenerateKey(globalOptions *cli.GlobalOptions, email, name string) error {
 		return err
 	}
 	fmt.Printf("Public Key written to %s. This file can be committed.\n", publicKeyFilename)
-	privateKeyFilename := globalOptions.PrivateKey
+	privateKeyFilename := secretsOptions.PrivateKey
 	err = utils.PrintPrivateKey(entity, privateKeyFilename)
 	if err != nil {
 		return err
@@ -38,7 +38,7 @@ func GenerateKey(globalOptions *cli.GlobalOptions, email, name string) error {
 }
 
 // Reveal prints the clear-text of an encrypted file to STDOUT.
-func Reveal(globalOptions *cli.GlobalOptions, filename string) error {
+func Reveal(secretsOptions *cli.SecretsOptions, filename string) error {
 	if _, err := os.Stat(filename); os.IsNotExist(err) {
 		return fmt.Errorf("'%s' does not exist", filename)
 	}
@@ -48,8 +48,8 @@ func Reveal(globalOptions *cli.GlobalOptions, filename string) error {
 	}
 	decryptedContent, err := openshift.DecryptedParams(
 		encryptedContent,
-		globalOptions.PrivateKey,
-		globalOptions.Passphrase,
+		secretsOptions.PrivateKey,
+		secretsOptions.Passphrase,
 	)
 	if err != nil {
 		return fmt.Errorf("Could not decrypt file: %s", err)
@@ -60,30 +60,29 @@ func Reveal(globalOptions *cli.GlobalOptions, filename string) error {
 
 // ReEncrypt decrypts given file(s) and encrypts all params again.
 // This allows to share the secrets with a new keypair.
-func ReEncrypt(globalOptions *cli.GlobalOptions, filename string) error {
+func ReEncrypt(secretsOptions *cli.SecretsOptions, filename string) error {
 	if len(filename) > 0 {
-		err := reEncrypt(filename, globalOptions.PrivateKey, globalOptions.Passphrase, globalOptions.PublicKeyDir)
+		err := reEncrypt(filename, secretsOptions.PrivateKey, secretsOptions.Passphrase, secretsOptions.PublicKeyDir)
 		if err != nil {
 			return err
 		}
 	} else {
-		for _, paramDir := range globalOptions.ParamDirs {
-			files, err := ioutil.ReadDir(paramDir)
+		paramDir := secretsOptions.ResolvedParamDir()
+		files, err := ioutil.ReadDir(paramDir)
+		if err != nil {
+			return err
+		}
+		filePattern := ".*\\.env.enc$"
+		re := regexp.MustCompile(filePattern)
+		for _, file := range files {
+			matched := re.MatchString(file.Name())
+			if !matched {
+				continue
+			}
+			filename := paramDir + string(os.PathSeparator) + file.Name()
+			err := reEncrypt(filename, secretsOptions.PrivateKey, secretsOptions.Passphrase, secretsOptions.PublicKeyDir)
 			if err != nil {
 				return err
-			}
-			filePattern := ".*\\.env.enc$"
-			re := regexp.MustCompile(filePattern)
-			for _, file := range files {
-				matched := re.MatchString(file.Name())
-				if !matched {
-					continue
-				}
-				filename := paramDir + string(os.PathSeparator) + file.Name()
-				err := reEncrypt(filename, globalOptions.PrivateKey, globalOptions.Passphrase, globalOptions.PublicKeyDir)
-				if err != nil {
-					return err
-				}
 			}
 		}
 	}
@@ -91,7 +90,7 @@ func ReEncrypt(globalOptions *cli.GlobalOptions, filename string) error {
 }
 
 // Edit opens given filen in cleartext in $EDITOR, then encrypts the content on save.
-func Edit(globalOptions *cli.GlobalOptions, filename string) error {
+func Edit(secretsOptions *cli.SecretsOptions, filename string) error {
 	encryptedContent, err := utils.ReadFile(filename)
 	if err != nil {
 		if os.IsNotExist(err) {
@@ -103,8 +102,8 @@ func Edit(globalOptions *cli.GlobalOptions, filename string) error {
 
 	cleartextContent, err := openshift.DecryptedParams(
 		encryptedContent,
-		globalOptions.PrivateKey,
-		globalOptions.Passphrase,
+		secretsOptions.PrivateKey,
+		secretsOptions.Passphrase,
 	)
 	if err != nil {
 		return fmt.Errorf("Could not decrypt file: %s", err)
@@ -119,9 +118,9 @@ func Edit(globalOptions *cli.GlobalOptions, filename string) error {
 		filename,
 		editedContent,
 		encryptedContent,
-		globalOptions.PrivateKey,
-		globalOptions.Passphrase,
-		globalOptions.PublicKeyDir,
+		secretsOptions.PrivateKey,
+		secretsOptions.Passphrase,
+		secretsOptions.PublicKeyDir,
 	)
 	if err != nil {
 		return fmt.Errorf("Could not write file: %s", err)

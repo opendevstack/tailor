@@ -3,13 +3,11 @@ package utils
 import (
 	"io/ioutil"
 	"os"
-
-	"github.com/opendevstack/tailor/pkg/cli"
+	"path"
 )
 
 // ReadFile reads the content of given filename and returns it as a string
 func ReadFile(filename string) (string, error) {
-	cli.DebugMsg("Reading file", filename)
 	if _, err := os.Stat(filename); err != nil {
 		return "", err
 	}
@@ -18,4 +16,16 @@ func ReadFile(filename string) (string, error) {
 		return "", err
 	}
 	return string(bytes), nil
+}
+
+// AbsoluteOrRelativePath returns p if it is absolute,
+// otherwise returns p relative to contextDir.
+func AbsoluteOrRelativePath(p string, contextDir string) string {
+	if path.IsAbs(p) {
+		return p
+	}
+	if contextDir == "." {
+		return p
+	}
+	return contextDir + "/" + p
 }
