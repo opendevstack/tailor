@@ -19,7 +19,8 @@ func calculateChangesets(compareOptionSets map[string]*cli.CompareOptions) (bool
 	anyUpdateRequired := false
 	changesets := map[string]*openshift.Changeset{}
 	for contextDir, compareOptions := range compareOptionSets {
-		updateRequired, changeset, err := calculateChangeset(compareOptions)
+		ocClient := cli.NewOcClient(compareOptions.Namespace)
+		updateRequired, changeset, err := calculateChangeset(compareOptions, ocClient)
 		if updateRequired {
 			anyUpdateRequired = true
 		}
@@ -52,13 +53,15 @@ func calculateChangesets(compareOptionSets map[string]*cli.CompareOptions) (bool
 	return anyUpdateRequired, changesets, nil
 }
 
-func calculateChangeset(compareOptions *cli.CompareOptions) (bool, *openshift.Changeset, error) {
+func calculateChangeset(compareOptions *cli.CompareOptions, ocClient cli.ClientProcessorExporter) (bool, *openshift.Changeset, error) {
 	updateRequired := false
 
-	fmt.Printf(
-		"===== Working in context directory %s =====\n",
-		compareOptions.ContextDir,
-	)
+	if len(compareOptions.ContextDirs) > 1 {
+		fmt.Printf(
+			"===== Working in context directory %s =====\n",
+			compareOptions.ContextDir,
+		)
+	}
 
 	where := compareOptions.ResolvedTemplateDir()
 
@@ -96,12 +99,13 @@ func calculateChangeset(compareOptions *cli.CompareOptions) (bool, *openshift.Ch
 	templateBasedList, err := assembleTemplateBasedResourceList(
 		filter,
 		compareOptions,
+		ocClient,
 	)
 	if err != nil {
 		return updateRequired, &openshift.Changeset{}, err
 	}
 
-	platformBasedList, err := assemblePlatformBasedResourceList(filter, compareOptions)
+	platformBasedList, err := assemblePlatformBasedResourceList(filter, compareOptions, ocClient)
 	if err != nil {
 		return updateRequired, &openshift.Changeset{}, err
 	}
@@ -191,7 +195,7 @@ func compare(remoteResourceList *openshift.ResourceList, localResourceList *open
 		if diff == "text" {
 			fmt.Print(change.Diff())
 		} else {
-			fmt.Println(change.JsonPatches(true))
+			fmt.Println(change.PrettyJSONPatches())
 		}
 	}
 
@@ -205,7 +209,7 @@ func compare(remoteResourceList *openshift.ResourceList, localResourceList *open
 	return changeset, nil
 }
 
-func assembleTemplateBasedResourceList(filter *openshift.ResourceFilter, compareOptions *cli.CompareOptions) (*openshift.ResourceList, error) {
+func assembleTemplateBasedResourceList(filter *openshift.ResourceFilter, compareOptions *cli.CompareOptions, ocClient cli.OcClientProcessor) (*openshift.ResourceList, error) {
 	var inputs [][]byte
 
 	files, err := ioutil.ReadDir(compareOptions.ResolvedTemplateDir())
@@ -225,6 +229,7 @@ func assembleTemplateBasedResourceList(filter *openshift.ResourceFilter, compare
 			file.Name(),
 			compareOptions.ResolvedParamDir(),
 			compareOptions,
+			ocClient,
 		)
 		if err != nil {
 			return nil, fmt.Errorf("Could not process %s template: %s", file.Name(), err)
@@ -235,8 +240,8 @@ func assembleTemplateBasedResourceList(filter *openshift.ResourceFilter, compare
 	return openshift.NewTemplateBasedResourceList(filter, inputs...)
 }
 
-func assemblePlatformBasedResourceList(filter *openshift.ResourceFilter, compareOptions *cli.CompareOptions) (*openshift.ResourceList, error) {
-	exportedOut, err := openshift.ExportResources(filter, compareOptions.Namespace)
+func assemblePlatformBasedResourceList(filter *openshift.ResourceFilter, compareOptions *cli.CompareOptions, ocClient cli.OcClientExporter) (*openshift.ResourceList, error) {
+	exportedOut, err := ocClient.Export(filter.ConvertToKinds(), filter.Label)
 	if err != nil {
 		return nil, fmt.Errorf("Could not export %s resources", filter.String())
 	}

@@ -2,13 +2,14 @@ package openshift
 
 import (
 	"bytes"
+	"encoding/json"
 	"reflect"
 	"testing"
 )
 
 func TestDiff(t *testing.T) {
 
-	diffs := []struct {
+	diffs := map[string]struct {
 		currentAnnotations []byte
 		currentData        []byte
 		desiredAnnotations []byte
@@ -16,7 +17,7 @@ func TestDiff(t *testing.T) {
 		expectedDiff       string
 		expectedPatches    []*jsonPatch
 	}{
-		{ // Modifying a data field
+		"Modifying a data field": {
 			[]byte("{}"),
 			[]byte("{foo: bar}"),
 			[]byte("{}"),
@@ -40,7 +41,7 @@ func TestDiff(t *testing.T) {
 				},
 			},
 		},
-		{ // Adding a data field
+		"Adding a data field": {
 			[]byte("{}"),
 			[]byte("{foo: bar}"),
 			[]byte("{}"),
@@ -63,7 +64,7 @@ func TestDiff(t *testing.T) {
 				},
 			},
 		},
-		{ // Removing a data field
+		"Removing a data field": {
 			[]byte("{}"),
 			[]byte("{foo: bar}"),
 			[]byte("{}"),
@@ -86,21 +87,20 @@ func TestDiff(t *testing.T) {
 				},
 			},
 		},
-		{ // Adding an annotation
+		"Adding an annotation": {
 			[]byte("{}"),
 			[]byte("{}"),
 			[]byte("{foo: bar}"),
 			[]byte("{}"),
 			`--- Current State (OpenShift cluster)
 +++ Desired State (Processed template)
-@@ -2,7 +2,9 @@
+@@ -2,7 +2,8 @@
  data: {}
  kind: ConfigMap
  metadata:
 -  annotations: {}
 +  annotations:
 +    foo: bar
-+    managed-annotations.tailor.opendevstack.org: foo
    labels:
      app: bar
    name: bar
@@ -113,25 +113,24 @@ func TestDiff(t *testing.T) {
 				},
 				&jsonPatch{
 					Op:    "add",
-					Path:  "/metadata/annotations/managed-annotations.tailor.opendevstack.org",
+					Path:  "/metadata/annotations/tailor.opendevstack.org~1managed-annotations",
 					Value: "foo",
 				},
 			},
 		},
-		{ // Removing an annotation
-			[]byte("{foo: bar, managed-annotations.tailor.opendevstack.org: foo}"),
+		"Removing an annotation": {
+			[]byte("{foo: bar, tailor.opendevstack.org/managed-annotations: foo}"),
 			[]byte("{}"),
 			[]byte("{}"),
 			[]byte("{}"),
 			`--- Current State (OpenShift cluster)
 +++ Desired State (Processed template)
-@@ -2,9 +2,7 @@
+@@ -2,8 +2,7 @@
  data: {}
  kind: ConfigMap
  metadata:
 -  annotations:
 -    foo: bar
--    managed-annotations.tailor.opendevstack.org: foo
 +  annotations: {}
    labels:
      app: bar
@@ -144,12 +143,12 @@ func TestDiff(t *testing.T) {
 				},
 				&jsonPatch{
 					Op:   "remove",
-					Path: "/metadata/annotations/managed-annotations.tailor.opendevstack.org",
+					Path: "/metadata/annotations/tailor.opendevstack.org~1managed-annotations",
 				},
 			},
 		},
-		{ // Modifying an annotation
-			[]byte("{foo: bar, managed-annotations.tailor.opendevstack.org: foo}"),
+		"Modifying an annotation": {
+			[]byte("{foo: bar, tailor.opendevstack.org/managed-annotations: foo}"),
 			[]byte("{}"),
 			[]byte("{foo: baz}"),
 			[]byte("{}"),
@@ -161,9 +160,9 @@ func TestDiff(t *testing.T) {
    annotations:
 -    foo: bar
 +    foo: baz
-     managed-annotations.tailor.opendevstack.org: foo
    labels:
      app: bar
+   name: bar
 `,
 			[]*jsonPatch{
 				&jsonPatch{
@@ -173,25 +172,22 @@ func TestDiff(t *testing.T) {
 				},
 			},
 		},
-		{ // Modifying a non-managed annotation
-			[]byte("{foo: bar, baz: qux, managed-annotations.tailor.opendevstack.org: foo}"),
+		"Modifying a non-managed annotation": {
+			[]byte("{foo: bar, baz: qux, tailor.opendevstack.org/managed-annotations: foo}"),
 			[]byte("{}"),
 			[]byte("{foo: bar, baz: zab}"),
 			[]byte("{}"),
 			`--- Current State (OpenShift cluster)
 +++ Desired State (Processed template)
-@@ -3,9 +3,9 @@
+@@ -3,7 +3,7 @@
  kind: ConfigMap
  metadata:
    annotations:
 -    baz: qux
 +    baz: zab
      foo: bar
--    managed-annotations.tailor.opendevstack.org: foo
-+    managed-annotations.tailor.opendevstack.org: baz,foo
    labels:
      app: bar
-   name: bar
 `,
 			[]*jsonPatch{
 				&jsonPatch{
@@ -201,71 +197,69 @@ func TestDiff(t *testing.T) {
 				},
 				&jsonPatch{
 					Op:    "replace",
-					Path:  "/metadata/annotations/managed-annotations.tailor.opendevstack.org",
+					Path:  "/metadata/annotations/tailor.opendevstack.org~1managed-annotations",
 					Value: "baz,foo",
 				},
 			},
 		},
-		{ // Managing a non-managed annotation
-			[]byte("{foo: bar, baz: qux, managed-annotations.tailor.opendevstack.org: foo}"),
+		"Managing a non-managed annotation": {
+			[]byte("{foo: bar, baz: qux, tailor.opendevstack.org/managed-annotations: foo}"),
 			[]byte("{}"),
 			[]byte("{foo: bar, baz: qux}"),
 			[]byte("{}"),
-			`--- Current State (OpenShift cluster)
-+++ Desired State (Processed template)
-@@ -5,7 +5,7 @@
-   annotations:
-     baz: qux
-     foo: bar
--    managed-annotations.tailor.opendevstack.org: foo
-+    managed-annotations.tailor.opendevstack.org: baz,foo
-   labels:
-     app: bar
-   name: bar
+			`Only annotations used by Tailor internally differ. Use --diff=json to see details.
 `,
 			[]*jsonPatch{
 				&jsonPatch{
 					Op:    "replace",
-					Path:  "/metadata/annotations/managed-annotations.tailor.opendevstack.org",
+					Path:  "/metadata/annotations/tailor.opendevstack.org~1managed-annotations",
 					Value: "baz,foo",
 				},
 			},
 		},
 	}
 
-	for _, tt := range diffs {
-		currentItem := getItem(
-			t,
-			getConfigMapForDiff(tt.currentAnnotations, tt.currentData),
-			"platform",
-		)
-		desiredItem := getItem(
-			t,
-			getConfigMapForDiff(tt.desiredAnnotations, tt.desiredData),
-			"template",
-		)
-		changes, err := calculateChanges(desiredItem, currentItem, []string{})
-		if err != nil {
-			t.Errorf(err.Error())
-		}
-		change := changes[0]
-		actualDiff := change.Diff()
-		if actualDiff != tt.expectedDiff {
-			t.Errorf(
-				"Diff()\n===== expected =====\n%s\n===== actual =====\n%s",
-				tt.expectedDiff,
-				actualDiff,
+	for name, tt := range diffs {
+		t.Run(name, func(t *testing.T) {
+			currentItem := getItem(
+				t,
+				getConfigMapForDiff(tt.currentAnnotations, tt.currentData),
+				"platform",
 			)
-		}
-		actualPatches := change.Patches
-		if !reflect.DeepEqual(actualPatches, tt.expectedPatches) {
-			t.Errorf(
-				"Diff()\n===== expected =====\n%v\n===== actual =====\n%v",
-				tt.expectedPatches,
-				actualPatches,
+			desiredItem := getItem(
+				t,
+				getConfigMapForDiff(tt.desiredAnnotations, tt.desiredData),
+				"template",
 			)
-		}
+			changes, err := calculateChanges(desiredItem, currentItem, []string{})
+			if err != nil {
+				t.Fatal(err)
+			}
+			change := changes[0]
+			actualDiff := change.Diff()
+			if actualDiff != tt.expectedDiff {
+				t.Fatalf(
+					"Diff()\n===== expected =====\n%s\n===== actual =====\n%s",
+					tt.expectedDiff,
+					actualDiff,
+				)
+			}
+			actualPatches := change.Patches
+			if !reflect.DeepEqual(actualPatches, tt.expectedPatches) {
+				t.Fatalf(
+					"Patches()\n===== expected =====\n%s\n===== actual =====\n%s",
+					pretty(tt.expectedPatches),
+					pretty(actualPatches),
+				)
+			}
+		})
 	}
+}
+
+func pretty(jp []*jsonPatch) string {
+	var b []byte
+	b, _ = json.MarshalIndent(jp, "", "  ")
+	return string(b)
 }
 
 func getConfigMapForDiff(annotations, data []byte) []byte {

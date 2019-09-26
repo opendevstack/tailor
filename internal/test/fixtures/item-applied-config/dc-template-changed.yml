@@ -1,0 +1,29 @@
+apiVersion: v1
+kind: DeploymentConfig
+metadata:
+  name: foo
+spec:
+  replicas: 1
+  selector:
+    name: foo
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      annotations: {}
+      labels:
+        name: foo
+    spec:
+      containers:
+      - image: bar/foo:experiment
+        imagePullPolicy: IfNotPresent
+        name: foo
+      dnsPolicy: ClusterFirst
+      restartPolicy: Always
+      schedulerName: default-scheduler
+      securityContext: {}
+      serviceAccount: foo
+      serviceAccountName: foo
+      volumes: []
+  test: false
+  triggers: []

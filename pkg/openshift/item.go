@@ -1,6 +1,7 @@
 package openshift
 
 import (
+	"encoding/json"
 	"fmt"
 	"regexp"
 	"sort"
@@ -14,8 +15,14 @@ import (
 )
 
 var (
-	tailorOriginalValuesAnnotationPrefix = "original-values.tailor.io"
-	tailorManagedAnnotation              = "managed-annotations.tailor.opendevstack.org"
+	annotationsPath                      = "/metadata/annotations"
+	tailorAnnotationPrefix               = "tailor.opendevstack.org"
+	tailorAppliedConfigAnnotation        = tailorAnnotationPrefix + "/applied-config"
+	escapedTailorAppliedConfigAnnotation = strings.Replace(tailorAppliedConfigAnnotation, "/", "~1", -1)
+	tailorAppliedConfigAnnotationPath    = annotationsPath + "/" + escapedTailorAppliedConfigAnnotation
+	tailorManagedAnnotation              = tailorAnnotationPrefix + "/managed-annotations"
+	escapedTailorManagedAnnotation       = strings.Replace(tailorManagedAnnotation, "/", "~1", -1)
+	tailorManagedAnnotationPath          = annotationsPath + "/" + escapedTailorManagedAnnotation
 	platformManagedSimpleFields          = []string{
 		"/metadata/generation",
 		"/metadata/creationTimestamp",
@@ -26,10 +33,6 @@ var (
 	}
 	platformManagedRegexFields = []string{
 		"^/spec/triggers/[0-9]*/imageChangeParams/lastTriggeredImage",
-	}
-	emptyMapFields = []string{
-		"/metadata/annotations",
-		"/spec/template/metadata/annotations",
 	}
 	immutableFields = map[string][]string{
 		"PersistentVolumeClaim": []string{
@@ -70,14 +73,16 @@ var (
 )
 
 type ResourceItem struct {
-	Source                   string
-	Kind                     string
-	Name                     string
-	Labels                   map[string]interface{}
-	Annotations              map[string]interface{}
-	Paths                    []string
-	Config                   map[string]interface{}
-	TailorManagedAnnotations []string
+	Source                    string
+	Kind                      string
+	Name                      string
+	Labels                    map[string]interface{}
+	Annotations               map[string]interface{}
+	Paths                     []string
+	Config                    map[string]interface{}
+	TailorManagedAnnotations  []string
+	TailorAppliedConfigFields map[string]string
+	AnnotationsPresent        bool
 }
 
 func NewResourceItem(m map[string]interface{}, source string) (*ResourceItem, error) {
@@ -132,20 +137,13 @@ func (i *ResourceItem) parseConfig(m map[string]interface{}) error {
 		i.Labels = labels.(map[string]interface{})
 	}
 
-	// Add empty maps
-	for _, p := range emptyMapFields {
-		initPointer, _ := gojsonpointer.NewJsonPointer(p)
-		_, _, err := initPointer.Get(m)
-		if err != nil {
-			_, _ = initPointer.Set(m, make(map[string]interface{}))
-		}
-	}
-
 	// Extract annotations
 	annotationsPointer, _ := gojsonpointer.NewJsonPointer("/metadata/annotations")
 	annotations, _, err := annotationsPointer.Get(m)
 	i.Annotations = make(map[string]interface{})
+	i.AnnotationsPresent = false
 	if err == nil {
+		i.AnnotationsPresent = true
 		for k, v := range annotations.(map[string]interface{}) {
 			i.Annotations[k] = v
 		}
@@ -155,22 +153,64 @@ func (i *ResourceItem) parseConfig(m map[string]interface{}) error {
 	i.TailorManagedAnnotations = []string{}
 	if i.Source == "platform" {
 		// For platform items, only annotation listed in tailorManagedAnnotation are managed
-		p, _ := gojsonpointer.NewJsonPointer("/metadata/annotations/" + tailorManagedAnnotation)
+		p, err := gojsonpointer.NewJsonPointer(tailorManagedAnnotationPath)
+		if err != nil {
+			return fmt.Errorf("Could not create JSON pointer %s: %s", tailorManagedAnnotationPath, err)
+		}
 		managedAnnotations, _, err := p.Get(m)
 		if err == nil {
 			i.TailorManagedAnnotations = strings.Split(managedAnnotations.(string), ",")
+			_, err = p.Delete(m)
+			if err != nil {
+				return fmt.Errorf("Could not delete %s: %s", tailorManagedAnnotationPath, err)
+			}
+			delete(i.Annotations, tailorManagedAnnotation)
 		}
 	} else { // source = template
 		// For template items, all annotations are managed
 		for k := range i.Annotations {
 			i.TailorManagedAnnotations = append(i.TailorManagedAnnotations, k)
 		}
-		// If there are any managed annotations, we need to set tailorManagedAnnotation
-		if len(i.TailorManagedAnnotations) > 0 {
-			p, _ := gojsonpointer.NewJsonPointer("/metadata/annotations/" + tailorManagedAnnotation)
-			sort.Strings(i.TailorManagedAnnotations)
-			_, _ = p.Set(m, strings.Join(i.TailorManagedAnnotations, ","))
+		sort.Strings(i.TailorManagedAnnotations)
+	}
+
+	// Applied configuration
+	// Unfortunately the configuration we apply is sometimes overwritten with
+	// actual values. To be still able to compare, we need to store the applied
+	// configuration as an annotation.
+	i.TailorAppliedConfigFields = map[string]string{}
+	// If source is platform, we copy the values in the annotation into the
+	// corresponding spec locations.
+	if i.Source == "platform" {
+		annotationPointer, err := gojsonpointer.NewJsonPointer(tailorAppliedConfigAnnotationPath)
+		if err != nil {
+			return fmt.Errorf("Could not create JSON pointer %s: %s", tailorAppliedConfigAnnotationPath, err)
 		}
+		val, _, err := annotationPointer.Get(m)
+		if err == nil {
+			valBytes := []byte(val.(string))
+			v := map[string]string{}
+			err = json.Unmarshal(valBytes, &v)
+			i.TailorAppliedConfigFields = v
+			if err != nil {
+				return fmt.Errorf("Could not unmarshal JSON %s: %s", tailorAppliedConfigAnnotationPath, val)
+			}
+			for k, v := range i.TailorAppliedConfigFields {
+				specPointer, err := gojsonpointer.NewJsonPointer(k)
+				if err != nil {
+					return fmt.Errorf("Could not create JSON pointer %s: %s", k, err)
+				}
+				_, err = specPointer.Set(m, v)
+				if err != nil {
+					return fmt.Errorf("Could not set %s: %s", k, err)
+				}
+			}
+			_, err = annotationPointer.Delete(m)
+			if err != nil {
+				return fmt.Errorf("Could not delete %s: %s", tailorAppliedConfigAnnotationPath, err)
+			}
+		}
+		delete(i.Annotations, tailorAppliedConfigAnnotation)
 	}
 
 	// Remove platform-managed simple fields
@@ -199,38 +239,23 @@ func (i *ResourceItem) parseConfig(m map[string]interface{}) error {
 			}
 		}
 
-		// Deal with platform-modified fields
-		// If there is an annotation, copy its value into the spec, otherwise
-		// copy the spec value into the annotation.
-		for _, platformModifiedField := range platformModifiedFields {
-			matched, _ := regexp.MatchString(platformModifiedField, path)
-			if matched {
-				annotationKey := strings.Replace(strings.TrimLeft(path, "/"), "/", ".", -1)
-				annotationPath := "/metadata/annotations/" + tailorOriginalValuesAnnotationPrefix + "~1" + annotationKey
-				annotationPointer, _ := gojsonpointer.NewJsonPointer(annotationPath)
-				specPointer, _ := gojsonpointer.NewJsonPointer(path)
-				specValue, _, _ := specPointer.Get(i.Config)
-				annotationValue, _, err := annotationPointer.Get(i.Config)
-				if err == nil {
-					cli.DebugMsg("Platform: Setting", path, "to", annotationValue.(string))
-					_, err := specPointer.Set(i.Config, annotationValue)
+		// Applied configuration
+		// If source is template, we need to check if the current path
+		// needs to be stored in the applied-config annotation.
+		if i.Source == "template" {
+			for _, platformModifiedField := range platformModifiedFields {
+				matched, _ := regexp.MatchString(platformModifiedField, path)
+				if matched {
+					specPointer, err := gojsonpointer.NewJsonPointer(path)
 					if err != nil {
-						return err
+						return fmt.Errorf("Could not create JSON pointer %s: %s", path, err)
 					}
-				} else {
-					// Ensure there is an annotation map before setting values in it
-					anP, _ := gojsonpointer.NewJsonPointer("/metadata/annotations")
-					_, _, err := anP.Get(i.Config)
+					specValue, _, err := specPointer.Get(i.Config)
 					if err != nil {
-						_, _ = anP.Set(i.Config, map[string]interface{}{})
-						newPaths = append(newPaths, "/metadata/annotations")
+						return fmt.Errorf("Could not get value of %s: %s", path, err)
 					}
-					cli.DebugMsg("Template: Setting", annotationPath, "to", specValue.(string))
-					_, err = annotationPointer.Set(i.Config, specValue)
-					if err != nil {
-						return err
-					}
-					newPaths = append(newPaths, annotationPath)
+					i.TailorAppliedConfigFields[path] = specValue.(string)
+
 				}
 			}
 		}
@@ -250,26 +275,6 @@ func (i *ResourceItem) parseConfig(m map[string]interface{}) error {
 	}
 
 	return nil
-}
-func (i *ResourceItem) RemoveUnmanagedAnnotations() {
-	for a := range i.Annotations {
-		managed := false
-		for _, m := range i.TailorManagedAnnotations {
-			if a == m {
-				managed = true
-			}
-		}
-		if !managed {
-			cli.DebugMsg("Removing unmanaged annotation", a)
-			path := "/metadata/annotations/" + utils.JSONPointerPath(a)
-			deletePointer, _ := gojsonpointer.NewJsonPointer(path)
-			_, err := deletePointer.Delete(i.Config)
-			if err != nil {
-				cli.DebugMsg("WARN: Could not remove unmanaged annotation", a)
-				fmt.Printf("%v", i.Config)
-			}
-		}
-	}
 }
 
 func (i *ResourceItem) isImmutableField(field string) bool {
@@ -374,12 +379,6 @@ func (templateItem *ResourceItem) prepareForComparisonWithPlatformItem(platformI
 func (platformItem *ResourceItem) prepareForComparisonWithTemplateItem(templateItem *ResourceItem) error {
 	unmanagedAnnotations := []string{}
 	for a := range platformItem.Annotations {
-		if a == tailorManagedAnnotation {
-			continue
-		}
-		if strings.HasPrefix(a, tailorOriginalValuesAnnotationPrefix) {
-			continue
-		}
 		if utils.Includes(templateItem.TailorManagedAnnotations, a) {
 			continue
 		}
@@ -390,7 +389,6 @@ func (platformItem *ResourceItem) prepareForComparisonWithTemplateItem(templateI
 	}
 	for _, a := range unmanagedAnnotations {
 		path := "/metadata/annotations/" + utils.JSONPointerPath(a)
-		cli.DebugMsg("Deleting unmanaged annotation", path)
 		deletePointer, _ := gojsonpointer.NewJsonPointer(path)
 		_, err := deletePointer.Delete(platformItem.Config)
 		if err != nil {

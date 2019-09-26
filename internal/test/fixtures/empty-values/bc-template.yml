@@ -1,0 +1,24 @@
+apiVersion: v1
+kind: BuildConfig
+metadata:
+  labels:
+    app: foo
+  name: foo
+spec:
+  failedBuildsHistoryLimit: 5
+  output:
+    to:
+      kind: ImageStreamTag
+      name: foo:latest
+  runPolicy: Serial
+  source:
+    type: Binary
+  strategy:
+    type: Docker
+  successfulBuildsHistoryLimit: 5
+  triggers:
+  - generic:
+      secret: password
+    type: Generic
+  - type: ImageChange
+  - type: ConfigChange

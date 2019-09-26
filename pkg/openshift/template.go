@@ -13,8 +13,9 @@ import (
 	"github.com/xeipuuv/gojsonpointer"
 )
 
-func ExportAsTemplateFile(filter *ResourceFilter, exportOptions *cli.ExportOptions) (string, error) {
-	outBytes, err := ExportResources(filter, exportOptions.Namespace)
+// ExportAsTemplateFile exports resources in template format.
+func ExportAsTemplateFile(filter *ResourceFilter, withAnnotations bool, ocClient cli.OcClientExporter) (string, error) {
+	outBytes, err := ocClient.Export(filter.ConvertToKinds(), filter.Label)
 	if err != nil {
 		return "", err
 	}
@@ -44,7 +45,16 @@ func ExportAsTemplateFile(filter *ResourceFilter, exportOptions *cli.ExportOptio
 				"Could not parse object of exported template: %s", err,
 			)
 		}
-		item.RemoveUnmanagedAnnotations()
+
+		if !withAnnotations {
+			cli.DebugMsg("Remove annotations from item")
+			annotationsPointer, _ := gojsonpointer.NewJsonPointer("/metadata/annotations")
+			_, err = annotationsPointer.Delete(item.Config)
+			if err != nil {
+				cli.DebugMsg("Could not delete annotations from item")
+			}
+		}
+
 		itemPointer, _ := gojsonpointer.NewJsonPointer("/objects/" + strconv.Itoa(k))
 		_, _ = itemPointer.Set(m, item.Config)
 	}
@@ -66,40 +76,11 @@ func ExportAsTemplateFile(filter *ResourceFilter, exportOptions *cli.ExportOptio
 	return string(b), err
 }
 
-func ExportResources(filter *ResourceFilter, namespace string) ([]byte, error) {
-	target := filter.ConvertToKinds()
-	args := []string{"export", target, "--output=yaml", "--as-template=tailor"}
-	cmd := cli.ExecOcCmd(
-		args,
-		namespace,
-		filter.Label,
-	)
-	outBytes, errBytes, err := cli.RunCmd(cmd)
-
-	if err != nil {
-		ret := string(errBytes)
-
-		if strings.Contains(ret, "no resources found") {
-			cli.DebugMsg("No", target, "resources found.")
-			return []byte{}, nil
-		}
-
-		return []byte{}, fmt.Errorf(
-			"Failed to export %s resources.\n"+
-				"%s\n",
-			target,
-			ret,
-		)
-	}
-
-	cli.DebugMsg("Exported", target, "resources")
-	return outBytes, nil
-}
-
-func ProcessTemplate(templateDir string, name string, paramDir string, compareOptions *cli.CompareOptions) ([]byte, error) {
+// ProcessTemplate processes template "name" in "templateDir".
+func ProcessTemplate(templateDir string, name string, paramDir string, compareOptions *cli.CompareOptions, ocClient cli.OcClientProcessor) ([]byte, error) {
 	filename := templateDir + string(os.PathSeparator) + name
 
-	args := []string{"process", "--filename=" + filename, "--output=yaml"}
+	args := []string{"--filename=" + filename, "--output=yaml"}
 
 	if len(compareOptions.Labels) > 0 {
 		args = append(args, "--labels="+compareOptions.Labels)
@@ -174,8 +155,7 @@ func ProcessTemplate(templateDir string, name string, paramDir string, compareOp
 	if compareOptions.IgnoreUnknownParameters {
 		args = append(args, "--ignore-unknown-parameters=true")
 	}
-	cmd := cli.ExecPlainOcCmd(args)
-	outBytes, errBytes, err := cli.RunCmd(cmd)
+	outBytes, errBytes, err := ocClient.Process(args)
 
 	if len(errBytes) > 0 {
 		fmt.Println(string(errBytes))

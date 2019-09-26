@@ -54,12 +54,13 @@ type CompareOptions struct {
 type ExportOptions struct {
 	*GlobalOptions
 	*NamespaceOptions
-	ContextDir  string
-	Selector    string
-	Exclude     string
-	TemplateDir string
-	ParamDir    string
-	Resource    string
+	ContextDir      string
+	Selector        string
+	Exclude         string
+	TemplateDir     string
+	ParamDir        string
+	WithAnnotations bool
+	Resource        string
 }
 
 // SecretsOptions are context-wide.
@@ -301,6 +302,7 @@ func NewExportOptions(
 	excludeFlag string,
 	templateDirFlag string,
 	paramDirFlag string,
+	withAnnotationsFlag bool,
 	resourceArg string) (*ExportOptions, error) {
 	o := &ExportOptions{
 		GlobalOptions:    globalOptions,
@@ -344,6 +346,12 @@ func NewExportOptions(
 		o.ParamDir = paramDirFlag
 	} else if val, ok := fileFlags["param-dir"]; ok {
 		o.ParamDir = val
+	}
+
+	if withAnnotationsFlag {
+		o.WithAnnotations = true
+	} else if fileFlags["with-annotations"] == "true" {
+		o.WithAnnotations = true
 	}
 
 	if len(resourceArg) > 0 {
@@ -409,10 +417,10 @@ func (o *GlobalOptions) check() error {
 	if !o.checkLoggedIn() {
 		return errors.New("You need to login with 'oc login' first")
 	}
-	if clientVersion, serverVersion, matches := checkOcVersionMatches(); !matches {
+	if openshiftVersion := checkOcVersionMatches(); !openshiftVersion.Matches() {
 		errorMsg := fmt.Sprintf("Version mismatch between client (%s) and server (%s) detected. "+
 			"This can lead to incorrect behaviour. "+
-			"Update your oc binary or point to an alternative binary with --oc-binary.", clientVersion, serverVersion)
+			"Update your oc binary or point to an alternative binary with --oc-binary.", openshiftVersion.Client, openshiftVersion.Server)
 		if !o.Force {
 			return fmt.Errorf("%s\n\nRefusing to continue without --force", errorMsg)
 		}
@@ -423,9 +431,12 @@ func (o *GlobalOptions) check() error {
 
 func (o *GlobalOptions) checkLoggedIn() bool {
 	if !o.IsLoggedIn {
-		cmd := exec.Command(o.OcBinary, "whoami")
-		_, err := cmd.CombinedOutput()
-		o.IsLoggedIn = (err == nil)
+		c := NewOcClient("")
+		loggedIn, err := c.CheckLoggedIn()
+		if err != nil {
+			VerboseMsg(err.Error())
+		}
+		o.IsLoggedIn = loggedIn
 	}
 	return o.IsLoggedIn
 }
@@ -522,9 +533,9 @@ func (o *NamespaceOptions) checkOcNamespace(n string) error {
 	if utils.Includes(o.CheckedNamespaces, n) {
 		return nil
 	}
-	cmd := ExecPlainOcCmd([]string{"project", n, "--short"})
-	_, err := cmd.CombinedOutput()
-	if err == nil {
+	c := NewOcClient("")
+	exists, err := c.CheckProjectExists(n)
+	if exists {
 		o.CheckedNamespaces = append(o.CheckedNamespaces, n)
 	}
 	return err
@@ -538,54 +549,18 @@ func (o *NamespaceOptions) checkOcNamespace(n string) error {
 //   Server https://api.domain.com:443
 //   openshift v3.11.43
 //   kubernetes v1.11.0+d4cacc0
-func checkOcVersionMatches() (string, string, bool) {
-	cmd := ExecPlainOcCmd([]string{"version"})
-	outBytes, errBytes, err := RunCmd(cmd)
+func checkOcVersionMatches() OpenshiftVersion {
+	c := NewOcClient("")
+	v, err := c.Version()
 	if err != nil {
-		VerboseMsg("Failed to query client and server version, got:\n%s\n", string(errBytes))
-		return "?", "?", false
+		VerboseMsg(err.Error())
 	}
-	output := string(outBytes)
-
-	ocClientVersion := ""
-	ocServerVersion := ""
-	extractVersion := func(versionPart string) string {
-		ocVersionParts := strings.SplitN(versionPart, ".", 3)
-		return strings.Join(ocVersionParts[:len(ocVersionParts)-1], ".")
-	}
-
-	lines := strings.Split(strings.TrimSuffix(output, "\n"), "\n")
-	for _, line := range lines {
-		if len(line) > 0 {
-			parts := strings.SplitN(line, " ", 2)
-			if parts[0] == "oc" {
-				ocClientVersion = extractVersion(parts[1])
-			}
-			if parts[0] == "openshift" {
-				ocServerVersion = extractVersion(parts[1])
-			}
-		}
-	}
-
-	if len(ocClientVersion) == 0 || !strings.Contains(ocClientVersion, ".") {
-		ocClientVersion = "?"
-	}
-	if len(ocServerVersion) == 0 || !strings.Contains(ocServerVersion, ".") {
-		ocServerVersion = "?"
-	}
-
-	if ocClientVersion == "?" || ocServerVersion == "?" {
-		VerboseMsg("Client and server version could not be detected properly, got:\n", output)
-		return ocClientVersion, ocServerVersion, false
-	}
-
-	return ocClientVersion, ocServerVersion, ocClientVersion == ocServerVersion
+	return v
 }
 
 func getOcNamespace() (string, error) {
-	cmd := ExecPlainOcCmd([]string{"project", "--short"})
-	n, err := cmd.CombinedOutput()
-	return strings.TrimSpace(string(n)), err
+	c := NewOcClient("")
+	return c.CurrentProject()
 }
 
 func getFileFlags(filename string, verbose bool) (map[string]string, error) {

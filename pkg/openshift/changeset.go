@@ -1,7 +1,9 @@
 package openshift
 
 import (
+	"encoding/json"
 	"fmt"
+	"reflect"
 	"sort"
 	"strings"
 
@@ -142,10 +144,9 @@ func calculateChanges(templateItem *ResourceItem, platformItem *ResourceItem, ex
 			// Pointer does not exist in platformItem
 			if templateItem.isImmutableField(path) {
 				return recreateChanges(templateItem, platformItem), nil
-			} else {
-				comparison[path] = &jsonPatch{Op: "add", Value: templateItemVal}
-				addedPaths = append(addedPaths, path)
 			}
+			comparison[path] = &jsonPatch{Op: "add", Value: templateItemVal}
+			addedPaths = append(addedPaths, path)
 		} else {
 			// Pointer exists in both items
 			switch templateItemVal.(type) {
@@ -164,9 +165,8 @@ func calculateChanges(templateItem *ResourceItem, platformItem *ResourceItem, ex
 				} else {
 					if templateItem.isImmutableField(path) {
 						return recreateChanges(templateItem, platformItem), nil
-					} else {
-						comparison[path] = &jsonPatch{Op: "replace", Value: templateItemVal}
 					}
+					comparison[path] = &jsonPatch{Op: "replace", Value: templateItemVal}
 				}
 			}
 		}
@@ -180,10 +180,139 @@ func calculateChanges(templateItem *ResourceItem, platformItem *ResourceItem, ex
 			if utils.IncludesPrefix(deletedPaths, path) {
 				continue
 			}
+
+			// Skip annotations
+			if path == annotationsPath {
+				continue
+			}
+
+			// If the value is an "empty value", there is no need to detect
+			// drift for it. This allows template authors to reduce boilerplate
+			// by omitting fields that have an "empty value".
+			pp, _ := gojsonpointer.NewJsonPointer(path)
+			val, _, err := pp.Get(platformItem.Config)
+			if err != nil {
+				return nil, err
+			}
+			if val == nil {
+				continue
+			}
+			if x, ok := val.(map[string]interface{}); ok {
+				if len(x) == 0 {
+					continue
+				}
+			}
+			if x, ok := val.([]interface{}); ok {
+				if len(x) == 0 {
+					continue
+				}
+			}
+			if x, ok := val.([]string); ok {
+				if len(x) == 0 {
+					continue
+				}
+			}
+
 			// Pointer exist only in platformItem
 			comparison[path] = &jsonPatch{Op: "remove"}
 			deletedPaths = append(deletedPaths, path)
 		}
+	}
+
+	// /metadata/annotations can be in 3 states: "add" (complex object),
+	// "remove" or "noop". "replace" is NOT possible.
+
+	// If it is "add", we might need to merge the hidden annotations into it.
+	// If it is "remove", we might need to NOT remove it, but just add/replace
+	// the hidden annotations.
+	// If it is "noop", we do not need to care and just add/replace/remove the
+	// hidden annotations.
+	annotationsOp := "noop"
+	annotationsMap := map[string]string{}
+	if v, ok := comparison[annotationsPath]; ok {
+		annotationsOp = v.Op
+		if m, ok := v.Value.(map[string]interface{}); ok {
+			for k, v := range m {
+				annotationsMap[k] = v.(string)
+			}
+		}
+	}
+
+	// Add hidden JSON patches - we do not want to show those in the textual
+	// diff to avoid unnecessary confusion for the enduser.
+	// Managed annotations
+	platformManagedAnnotations := strings.Join(platformItem.TailorManagedAnnotations, ",")
+	templateManagedAnnotations := strings.Join(templateItem.TailorManagedAnnotations, ",")
+	managedAnnotationsPatch := &jsonPatch{Op: "noop"}
+	if platformManagedAnnotations != templateManagedAnnotations {
+		if len(templateItem.TailorManagedAnnotations) == 0 {
+			managedAnnotationsPatch = &jsonPatch{Op: "remove"}
+		} else {
+			managedAnnotationOp := "add"
+			if len(platformItem.TailorManagedAnnotations) > 0 {
+				managedAnnotationOp = "replace"
+			}
+			managedAnnotationsPatch = &jsonPatch{
+				Op:    managedAnnotationOp,
+				Value: templateManagedAnnotations,
+			}
+		}
+	}
+	if managedAnnotationsPatch.Op != "noop" {
+		if annotationsOp == "add" {
+			annotationsMap[escapedTailorManagedAnnotation] = managedAnnotationsPatch.Value.(string)
+		} else {
+			if annotationsOp == "remove" {
+				comparison[annotationsPath].Op = "noop"
+			}
+			if platformItem.AnnotationsPresent {
+				comparison[tailorManagedAnnotationPath] = managedAnnotationsPatch
+			} else {
+				comparison[annotationsPath] = &jsonPatch{Op: "add"}
+				annotationsMap[escapedTailorManagedAnnotation] = managedAnnotationsPatch.Value.(string)
+			}
+		}
+	}
+
+	// Applied configuration
+	appliedConfigAnnotationsPatch := &jsonPatch{Op: "noop"}
+	if !reflect.DeepEqual(platformItem.TailorAppliedConfigFields, templateItem.TailorAppliedConfigFields) {
+		if len(templateItem.TailorAppliedConfigFields) == 0 {
+			appliedConfigAnnotationsPatch = &jsonPatch{Op: "remove"}
+		} else {
+			templateAppliedConfigAnnotation, err := json.Marshal(templateItem.TailorAppliedConfigFields)
+			if err != nil {
+				return nil, err
+			}
+			appliedConfigAnnotationOp := "add"
+			if len(platformItem.TailorAppliedConfigFields) > 0 {
+				appliedConfigAnnotationOp = "replace"
+			}
+			appliedConfigAnnotationsPatch = &jsonPatch{
+				Op:    appliedConfigAnnotationOp,
+				Value: string(templateAppliedConfigAnnotation),
+			}
+		}
+	}
+	if appliedConfigAnnotationsPatch.Op != "noop" {
+		if annotationsOp == "add" {
+			annotationsMap[escapedTailorAppliedConfigAnnotation] = appliedConfigAnnotationsPatch.Value.(string)
+		} else {
+			if annotationsOp == "remove" {
+				comparison[annotationsPath].Op = "noop"
+			}
+			if platformItem.AnnotationsPresent {
+				comparison[tailorAppliedConfigAnnotationPath] = appliedConfigAnnotationsPatch
+			} else {
+				comparison[annotationsPath] = &jsonPatch{Op: "add"}
+				annotationsMap[escapedTailorAppliedConfigAnnotation] = appliedConfigAnnotationsPatch.Value.(string)
+			}
+		}
+	}
+
+	// Check if we need to set annotations as a complex key
+	if v, ok := comparison[annotationsPath]; ok {
+		v.Value = annotationsMap
 	}
 
 	c := NewChange(templateItem, platformItem, comparison)
