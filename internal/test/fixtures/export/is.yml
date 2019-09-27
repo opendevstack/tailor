@@ -1,0 +1,34 @@
+apiVersion: template.openshift.io/v1
+kind: Template
+metadata:
+  creationTimestamp: null
+  name: tailor
+objects:
+- apiVersion: image.openshift.io/v1
+  kind: ImageStream
+  metadata:
+    annotations:
+      description: Keeps track of changes in the application image
+      openshift.io/image.dockerRepositoryCheck: 2018-08-07T12:32:24Z
+      tailor.opendevstack.org/managed-annotations: description
+    creationTimestamp: null
+    generation: 560
+    labels:
+      app: foo-bar
+    name: bar
+  spec:
+    dockerImageRepository: bar
+    lookupPolicy:
+      local: false
+    tags:
+    - annotations: null
+      from:
+        kind: ImageStreamImage
+        name: bar@sha256:4e418dd975063c99f52d0d17076b54e38186a90deb34cd5c502ed045e9c385da
+      generation: 560
+      importPolicy: {}
+      name: latest
+      referencePolicy:
+        type: Source
+  status:
+    dockerImageRepository: ""

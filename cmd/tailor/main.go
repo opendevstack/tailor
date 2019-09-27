@@ -161,6 +161,10 @@ var (
 		"export",
 		"Export remote state as template",
 	)
+	exportWithAnnotationsFlag = exportCommand.Flag(
+		"with-annotations",
+		"Export annotations as well.",
+	).Bool()
 	exportResourceArg = exportCommand.Arg(
 		"resource", "Remote resource (defaults to all)",
 	).String()
@@ -381,6 +385,7 @@ func main() {
 				*excludeFlag,
 				*templateDirFlag,
 				*paramDirFlag,
+				*exportWithAnnotationsFlag,
 				*exportResourceArg,
 			)
 			if err != nil {

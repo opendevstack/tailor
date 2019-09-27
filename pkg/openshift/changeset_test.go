@@ -2,8 +2,231 @@ package openshift
 
 import (
 	"reflect"
+	"strings"
 	"testing"
 )
+
+func TestCalculateChangesManagedAnnotations(t *testing.T) {
+
+	tests := map[string]struct {
+		platformFixture string
+		templateFixture string
+		expectedAction  string
+		expectedPatches jsonPatches
+	}{
+		"Without annotations": {
+			platformFixture: "is-platform",
+			templateFixture: "is-template",
+			expectedAction:  "Noop",
+			expectedPatches: jsonPatches{},
+		},
+		"Present in template, not in platform": {
+			platformFixture: "is-platform",
+			templateFixture: "is-template-annotation",
+			expectedAction:  "Update",
+			expectedPatches: jsonPatches{
+				&jsonPatch{
+					Op:   "add",
+					Path: "/metadata/annotations",
+					Value: map[string]string{
+						"bar": "baz",
+						"tailor.opendevstack.org~1managed-annotations": "bar",
+					},
+				},
+			},
+		},
+		"Present in platform, not in template": {
+			platformFixture: "is-platform-annotation",
+			templateFixture: "is-template",
+			expectedAction:  "Update",
+			expectedPatches: jsonPatches{
+				&jsonPatch{
+					Op:   "remove",
+					Path: "/metadata/annotations/bar",
+				},
+				&jsonPatch{
+					Op:   "remove",
+					Path: "/metadata/annotations/tailor.opendevstack.org~1managed-annotations",
+				},
+			},
+		},
+		"Present in both": {
+			platformFixture: "is-platform-annotation",
+			templateFixture: "is-template-annotation",
+			expectedAction:  "Noop",
+			expectedPatches: jsonPatches{},
+		},
+		"Present in platform, changed in template": {
+			platformFixture: "is-platform-annotation",
+			templateFixture: "is-template-annotation-changed",
+			expectedAction:  "Update",
+			expectedPatches: jsonPatches{
+				&jsonPatch{
+					Op:    "replace",
+					Path:  "/metadata/annotations/bar",
+					Value: "qux",
+				},
+			},
+		},
+		"Present in platform, different key in template": {
+			platformFixture: "is-platform-annotation",
+			templateFixture: "is-template-different-annotation",
+			expectedAction:  "Update",
+			expectedPatches: jsonPatches{
+				&jsonPatch{
+					Op:   "remove",
+					Path: "/metadata/annotations/bar",
+				},
+				&jsonPatch{
+					Op:    "add",
+					Path:  "/metadata/annotations/baz",
+					Value: "qux",
+				},
+				&jsonPatch{
+					Op:    "replace",
+					Path:  "/metadata/annotations/tailor.opendevstack.org~1managed-annotations",
+					Value: "baz",
+				},
+			},
+		},
+		"Unmanaged in platform added to template": {
+			platformFixture: "is-platform-unmanaged",
+			templateFixture: "is-template-annotation",
+			expectedAction:  "Update",
+			expectedPatches: jsonPatches{
+				&jsonPatch{
+					Op:    "add",
+					Path:  "/metadata/annotations/tailor.opendevstack.org~1managed-annotations",
+					Value: "bar",
+				},
+			},
+		},
+	}
+
+	for name, tc := range tests {
+		t.Run(name, func(t *testing.T) {
+			platformItem := getPlatformItem(t, "item-managed-annotations/"+tc.platformFixture+".yml")
+			templateItem := getTemplateItem(t, "item-managed-annotations/"+tc.templateFixture+".yml")
+			changes, err := calculateChanges(templateItem, platformItem, []string{})
+			if err != nil {
+				t.Fatal(err)
+			}
+			if len(changes) != 1 {
+				t.Fatalf("Expected 1 change, got: %d", len(changes))
+			}
+			actualChange := changes[0]
+			if actualChange.Action != tc.expectedAction {
+				t.Fatalf("Expected change action to be: %s, got: %s", tc.expectedAction, actualChange.Action)
+			}
+			if len(actualChange.Patches) != len(tc.expectedPatches) {
+				t.Fatalf("Expected patches:\n%s\n--- got: ---\n%s", pretty(tc.expectedPatches), actualChange.PrettyJSONPatches())
+			}
+			for i, ap := range actualChange.Patches {
+				ep := tc.expectedPatches[i]
+				if !reflect.DeepEqual(ap, ep) {
+					t.Fatalf("Expected patch:\n%s\n--- got: ---\n%s", ep.Pretty(), ap.Pretty())
+				}
+			}
+		})
+	}
+}
+
+func TestCalculateChangesAppliedConfiguration(t *testing.T) {
+
+	tests := map[string]struct {
+		platformFixture string
+		templateFixture string
+		expectedAction  string
+		expectedPatches jsonPatches
+	}{
+		"Without annotation in platform": {
+			platformFixture: "dc-platform",
+			templateFixture: "dc-template",
+			expectedAction:  "Update",
+			expectedPatches: jsonPatches{
+				&jsonPatch{
+					Op:   "add",
+					Path: "/metadata/annotations",
+					Value: map[string]string{
+						"tailor.opendevstack.org~1applied-config": "{\"/spec/template/spec/containers/0/image\":\"bar/foo:latest\"}",
+					},
+				},
+				&jsonPatch{
+					Op:    "replace",
+					Path:  "/spec/template/spec/containers/0/image",
+					Value: "bar/foo:latest",
+				},
+			},
+		},
+		"Present in platform": {
+			platformFixture: "dc-platform-annotation",
+			templateFixture: "dc-template",
+			expectedAction:  "Noop",
+			expectedPatches: jsonPatches{},
+		},
+		"Present in platform, changed in template": {
+			platformFixture: "dc-platform-annotation",
+			templateFixture: "dc-template-changed",
+			expectedAction:  "Update",
+			expectedPatches: jsonPatches{
+				&jsonPatch{
+					Op:    "replace",
+					Path:  "/metadata/annotations/tailor.opendevstack.org~1applied-config",
+					Value: "{\"/spec/template/spec/containers/0/image\":\"bar/foo:experiment\"}",
+				},
+				&jsonPatch{
+					Op:    "replace",
+					Path:  "/spec/template/spec/containers/0/image",
+					Value: "bar/foo:experiment",
+				},
+			},
+		},
+	}
+
+	for name, tc := range tests {
+		t.Run(name, func(t *testing.T) {
+			platformItem := getPlatformItem(t, "item-applied-config/"+tc.platformFixture+".yml")
+			templateItem := getTemplateItem(t, "item-applied-config/"+tc.templateFixture+".yml")
+			changes, err := calculateChanges(templateItem, platformItem, []string{})
+			if err != nil {
+				t.Fatal(err)
+			}
+			if len(changes) != 1 {
+				t.Fatalf("Expected 1 change, got: %d", len(changes))
+			}
+			actualChange := changes[0]
+			if actualChange.Action != tc.expectedAction {
+				t.Fatalf("Expected change action to be: %s, got: %s. Patches: \n%s", tc.expectedAction, actualChange.Action, actualChange.PrettyJSONPatches())
+			}
+			if len(actualChange.Patches) != len(tc.expectedPatches) {
+				t.Fatalf("Expected patches:\n%s\n--- got: ---\n%s", pretty(tc.expectedPatches), actualChange.PrettyJSONPatches())
+			}
+			for i, ap := range actualChange.Patches {
+				ep := tc.expectedPatches[i]
+				if !reflect.DeepEqual(ap, ep) {
+					t.Fatalf("Expected patch:\n%s\n--- got: ---\n%s", ep.Pretty(), ap.Pretty())
+				}
+			}
+		})
+	}
+}
+
+func TestEmptyValuesDoNotCauseDrift(t *testing.T) {
+	platformItem := getPlatformItem(t, "empty-values/bc-platform.yml")
+	templateItem := getTemplateItem(t, "empty-values/bc-template.yml")
+	changes, err := calculateChanges(templateItem, platformItem, []string{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(changes) != 1 {
+		t.Fatalf("Expected 1 change, got: %d", len(changes))
+	}
+	actualChange := changes[0]
+	expectedAction := "Noop"
+	if actualChange.Action != expectedAction {
+		t.Fatalf("Expected change action to be: %s, got: %s. Patches: \n%s", expectedAction, actualChange.Action, actualChange.PrettyJSONPatches())
+	}
+}
 
 func TestAddCreateOrder(t *testing.T) {
 	cs := &Changeset{}
@@ -105,8 +328,11 @@ objects:
 	}
 	changeset := getChangeset(t, filter, platformInput, templateInput, false, []string{})
 	if !changeset.Blank() {
-		//t.Errorf("Changeset is not blank, got %v", changeset.Update[0].JsonPatches(true))
-		t.Fail()
+		updates := []string{""}
+		for _, u := range changeset.Update {
+			updates = append(updates, u.PrettyJSONPatches())
+		}
+		t.Fatalf("Changeset is not blank, got: update=%s", strings.Join(updates, ", "))
 	}
 }
 
@@ -233,7 +459,7 @@ objects:
 	if actualUpdates != expectedUpdates {
 		t.Errorf("Changeset.Update has %d items instead of %d", actualUpdates, expectedUpdates)
 		for i, u := range changeset.Update {
-			t.Errorf("Patchset Update#%d: %s", i, u.JsonPatches(true))
+			t.Errorf("Patchset Update#%d: %s", i, u.PrettyJSONPatches())
 		}
 	}
 }
@@ -315,7 +541,7 @@ objects:
 	}
 }
 
-func TestChangesFromEqual(t *testing.T) {
+func TestCalculateChangesEqual(t *testing.T) {
 	currentItem := getItem(t, getBuildConfig(), "platform")
 	desiredItem := getItem(t, getBuildConfig(), "template")
 	_, err := calculateChanges(desiredItem, currentItem, []string{})
@@ -324,7 +550,7 @@ func TestChangesFromEqual(t *testing.T) {
 	}
 }
 
-func TestChangesFromDifferent(t *testing.T) {
+func TestCalculateChangesDifferent(t *testing.T) {
 	currentItem := getItem(t, getBuildConfig(), "platform")
 	desiredItem := getItem(t, getChangedBuildConfig(), "template")
 	changes, err := calculateChanges(desiredItem, currentItem, []string{})
@@ -332,12 +558,12 @@ func TestChangesFromDifferent(t *testing.T) {
 		t.Errorf(err.Error())
 	}
 	change := changes[0]
-	if len(change.Patches) != 11 {
-		t.Errorf("Got %d instead of %d changes: %s", len(change.Patches), 11, change.JsonPatches(true))
+	if len(change.Patches) != 10 {
+		t.Errorf("Got %d instead of %d changes: %s", len(change.Patches), 10, change.PrettyJSONPatches())
 	}
 }
 
-func TestChangesFromImmutableFields(t *testing.T) {
+func TestCalculateChangesImmutableFields(t *testing.T) {
 	platformItem := getItem(t, getRoute([]byte("old.com")), "platform")
 
 	unchangedTemplateItem := getItem(t, getRoute([]byte("old.com")), "template")
@@ -356,176 +582,6 @@ func TestChangesFromImmutableFields(t *testing.T) {
 	}
 	if len(changes) == 0 {
 		t.Errorf("Platform and template should have drift.")
-	}
-}
-
-func TestChangesFromPlatformModifiedFields(t *testing.T) {
-	platformItem := getItem(t, getPlatformDeploymentConfig(), "platform")
-	templateItem := getItem(t, getTemplateDeploymentConfig([]byte("latest")), "template")
-	changes, err := calculateChanges(templateItem, platformItem, []string{})
-	if err != nil {
-		t.Errorf(err.Error())
-	}
-	if len(changes) > 1 || changes[0].Action != "Noop" {
-		t.Errorf("Platform and template should be in sync, got %v", changes[0].JsonPatches(true))
-	}
-
-	changedTemplateItem := getItem(t, getTemplateDeploymentConfig([]byte("test")), "template")
-	changes, err = calculateChanges(changedTemplateItem, platformItem, []string{})
-	if err != nil {
-		t.Errorf(err.Error())
-	}
-	if len(changes) != 1 {
-		t.Errorf("Platform and template should have drift for image field")
-	}
-
-	patchAnnotation := changes[0].Patches[0]
-	if patchAnnotation.Op != "replace" {
-		t.Errorf("Got op %s instead of replace", patchAnnotation.Op)
-	}
-	if patchAnnotation.Path != "/metadata/annotations/original-values.tailor.io~1spec.template.spec.containers.0.image" {
-		t.Errorf("Got path %s instead of /metadata/annotations/original-values.tailor.io~1spec.template.spec.containers.0.image", patchAnnotation.Path)
-	}
-	if patchAnnotation.Value != "bar/foo:test" {
-		t.Errorf("Got op %s instead of bar/foo:test", patchAnnotation.Value)
-	}
-	patchImage := changes[0].Patches[1]
-	if patchImage.Op != "replace" {
-		t.Errorf("Got op %s instead of replace", patchImage.Op)
-	}
-	if patchImage.Path != "/spec/template/spec/containers/0/image" {
-		t.Errorf("Got path %s instead of /spec/template/spec/containers/0/image", patchImage.Path)
-	}
-	if patchImage.Value != "bar/foo:test" {
-		t.Errorf("Got op %s instead of bar/foo:test", patchImage.Value)
-	}
-}
-
-func TestChangesFromAnnotationFields(t *testing.T) {
-	t.Log("> Adding an annotation in the template")
-	platformItem := getItem(t, getConfigMap([]byte("{}")), "platform")
-	templateItem := getItem(t, getConfigMap([]byte("{foo: bar}")), "template")
-	changes, err := calculateChanges(templateItem, platformItem, []string{})
-	if err != nil {
-		t.Errorf(err.Error())
-	}
-	if len(changes) != 1 {
-		t.Errorf("Platform and template should have drift")
-	}
-	actualPatchOne := changes[0].Patches[0]
-	actualPatchTwo := changes[0].Patches[1]
-	expectedPatchOne := &jsonPatch{
-		Op:    "add",
-		Path:  "/metadata/annotations/foo",
-		Value: "bar",
-	}
-	expectedPatchTwo := &jsonPatch{
-		Op:    "add",
-		Path:  "/metadata/annotations/managed-annotations.tailor.opendevstack.org",
-		Value: "foo",
-	}
-	if !reflect.DeepEqual(actualPatchOne, expectedPatchOne) {
-		t.Errorf("Got %v instead of %v", actualPatchOne, expectedPatchOne)
-	}
-	if !reflect.DeepEqual(actualPatchTwo, expectedPatchTwo) {
-		t.Errorf("Got %v instead of %v", actualPatchTwo, expectedPatchTwo)
-	}
-
-	t.Log("> Having a platform-managed annotation")
-	platformItem = getItem(t, getConfigMap([]byte("{foo: bar}")), "platform")
-	templateItem = getItem(t, getConfigMap([]byte("{}")), "template")
-	changes, err = calculateChanges(templateItem, platformItem, []string{})
-	if err != nil {
-		t.Errorf(err.Error())
-	}
-	var actualPatch *jsonPatch
-	var expectedPatch *jsonPatch
-	if len(changes) > 1 || changes[0].Action != "Noop" {
-		actualPatch = changes[0].Patches[0]
-		t.Errorf("Platform and template should have no drift, got %v", actualPatch)
-	}
-
-	t.Log("> Adding a platform-managed annotation from the template")
-	platformItem = getItem(t, getConfigMap([]byte("{foo: bar}")), "platform")
-	templateItem = getItem(t, getConfigMap([]byte("{foo: bar}")), "template")
-	changes, err = calculateChanges(templateItem, platformItem, []string{})
-	if err != nil {
-		t.Errorf(err.Error())
-	}
-	if len(changes) != 1 {
-		t.Errorf("Platform and template should have drift")
-	}
-	actualPatch = changes[0].Patches[0]
-	expectedPatch = &jsonPatch{
-		Op:    "add",
-		Path:  "/metadata/annotations/managed-annotations.tailor.opendevstack.org",
-		Value: "foo",
-	}
-	if !reflect.DeepEqual(actualPatch, expectedPatch) {
-		t.Errorf("Got %v instead of %v", actualPatch, expectedPatch)
-	}
-
-	t.Log("> Changing a platform-managed annotation from the template")
-	platformItem = getItem(t, getConfigMap([]byte("{foo: bar}")), "platform")
-	templateItem = getItem(t, getConfigMap([]byte("{foo: baz}")), "template")
-	changes, err = calculateChanges(templateItem, platformItem, []string{})
-	if err != nil {
-		t.Errorf(err.Error())
-	}
-	if len(changes) == 0 {
-		t.Errorf("Platform and template should have drift")
-	}
-	actualPatch = changes[0].Patches[0]
-	expectedPatch = &jsonPatch{
-		Op:    "replace",
-		Path:  "/metadata/annotations/foo",
-		Value: "baz",
-	}
-	if !reflect.DeepEqual(actualPatch, expectedPatch) {
-		t.Errorf("Got %v instead of %v", actualPatch, expectedPatch)
-	}
-
-	t.Log("> Managed annotation")
-	c := getConfigMap([]byte(`
-    managed-annotations.tailor.opendevstack.org: foo
-    foo: bar`))
-	platformItem = getItem(t, c, "platform")
-
-	t.Log("> - Modifying it")
-	templateItem = getItem(t, getConfigMap([]byte("{foo: baz}")), "template")
-	changes, err = calculateChanges(templateItem, platformItem, []string{})
-	if err != nil {
-		t.Errorf(err.Error())
-	}
-	if len(changes) == 0 {
-		t.Errorf("Platform and template should have drift")
-	}
-	actualPatch = changes[0].Patches[0]
-	expectedPatch = &jsonPatch{
-		Op:    "replace",
-		Path:  "/metadata/annotations/foo",
-		Value: "baz",
-	}
-	if !reflect.DeepEqual(actualPatch, expectedPatch) {
-		t.Errorf("Got %v instead of %v", actualPatch, expectedPatch)
-	}
-
-	t.Log("> - Removing it")
-	templateItem = getItem(t, getConfigMap([]byte("{}")), "template")
-	changes, err = calculateChanges(templateItem, platformItem, []string{})
-	if err != nil {
-		t.Errorf(err.Error())
-	}
-	if len(changes) != 1 {
-		t.Errorf("Platform and template should have drift")
-	}
-	actualPatch = changes[0].Patches[0]
-	expectedPatch = &jsonPatch{
-		Op:   "remove",
-		Path: "/metadata/annotations/foo",
-	}
-	if !reflect.DeepEqual(actualPatch, expectedPatch) {
-		t.Errorf("Got %v instead of %v", actualPatch, expectedPatch)
 	}
 }
 

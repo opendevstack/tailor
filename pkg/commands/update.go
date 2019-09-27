@@ -3,7 +3,6 @@ package commands
 import (
 	"errors"
 	"fmt"
-	"io"
 
 	"github.com/opendevstack/tailor/pkg/cli"
 	"github.com/opendevstack/tailor/pkg/openshift"
@@ -43,27 +42,28 @@ func Update(nonInteractive bool, compareOptionSets map[string]*cli.CompareOption
 }
 
 func apply(compareOptions *cli.CompareOptions, c *openshift.Changeset) error {
+	ocClient := cli.NewOcClient(compareOptions.Namespace)
 	fmt.Printf(
 		"===== Applying changes related to context directory %s =====\n",
 		compareOptions.ContextDir,
 	)
 
 	for _, change := range c.Create {
-		err := ocCreate(change, compareOptions)
+		err := ocCreate(change, compareOptions, ocClient)
 		if err != nil {
 			return err
 		}
 	}
 
 	for _, change := range c.Delete {
-		err := ocDelete(change, compareOptions)
+		err := ocDelete(change, compareOptions, ocClient)
 		if err != nil {
 			return err
 		}
 	}
 
 	for _, change := range c.Update {
-		err := ocPatch(change, compareOptions)
+		err := ocPatch(change, compareOptions, ocClient)
 		if err != nil {
 			return err
 		}
@@ -72,17 +72,9 @@ func apply(compareOptions *cli.CompareOptions, c *openshift.Changeset) error {
 	return nil
 }
 
-func ocDelete(change *openshift.Change, compareOptions *cli.CompareOptions) error {
-	kind := change.Kind
-	name := change.Name
-	fmt.Printf("Deleting %s/%s ... ", kind, name)
-	args := []string{"delete", kind, name}
-	cmd := cli.ExecOcCmd(
-		args,
-		compareOptions.Namespace,
-		"", // empty as name and selector is not allowed
-	)
-	_, errBytes, err := cli.RunCmd(cmd)
+func ocDelete(change *openshift.Change, compareOptions *cli.CompareOptions, ocClient cli.OcClientDeleter) error {
+	fmt.Printf("Deleting %s ... ", change.ItemName())
+	errBytes, err := ocClient.Delete(change.Kind, change.Name)
 	if err == nil {
 		fmt.Println("done")
 	} else {
@@ -92,26 +84,9 @@ func ocDelete(change *openshift.Change, compareOptions *cli.CompareOptions) erro
 	return nil
 }
 
-func ocCreate(change *openshift.Change, compareOptions *cli.CompareOptions) error {
-	kind := change.Kind
-	name := change.Name
-	config := change.DesiredState
-	fmt.Printf("Creating %s/%s ... ", kind, name)
-	args := []string{"create", "-f", "-"}
-	cmd := cli.ExecOcCmd(
-		args,
-		compareOptions.Namespace,
-		compareOptions.Selector,
-	)
-	stdin, err := cmd.StdinPipe()
-	if err != nil {
-		return err
-	}
-	go func() {
-		defer stdin.Close()
-		_, _ = io.WriteString(stdin, config)
-	}()
-	_, errBytes, err := cli.RunCmd(cmd)
+func ocCreate(change *openshift.Change, compareOptions *cli.CompareOptions, ocClient cli.OcClientCreator) error {
+	fmt.Printf("Creating %s ... ", change.ItemName())
+	errBytes, err := ocClient.Create(change.DesiredState, compareOptions.Selector)
 	if err == nil {
 		fmt.Println("done")
 	} else {
@@ -122,21 +97,9 @@ func ocCreate(change *openshift.Change, compareOptions *cli.CompareOptions) erro
 	return nil
 }
 
-func ocPatch(change *openshift.Change, compareOptions *cli.CompareOptions) error {
-	kind := change.Kind
-	name := change.Name
-
-	j := change.JsonPatches(false)
-
-	fmt.Printf("Patching %s/%s ... ", kind, name)
-
-	args := []string{"patch", kind + "/" + name, "--type=json", "--patch", j}
-	cmd := cli.ExecOcCmd(
-		args,
-		compareOptions.Namespace,
-		"", // empty as name and selector is not allowed
-	)
-	_, errBytes, err := cli.RunCmd(cmd)
+func ocPatch(change *openshift.Change, compareOptions *cli.CompareOptions, ocClient cli.OcClientPatcher) error {
+	fmt.Printf("Patching %s ... ", change.ItemName())
+	errBytes, err := ocClient.Patch(change.ItemName(), change.JSONPatches())
 	if err == nil {
 		fmt.Println("done")
 	} else {

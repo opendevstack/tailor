@@ -9,17 +9,22 @@ import (
 	"github.com/xeipuuv/gojsonpointer"
 )
 
+// ResourceList is a collection of resources that conform to a filter.
 type ResourceList struct {
 	Filter *ResourceFilter
 	Items  []*ResourceItem
 }
 
+// NewTemplateBasedResourceList assembles a ResourceList from an input that is
+// treated as coming from a local template (desired state).
 func NewTemplateBasedResourceList(filter *ResourceFilter, inputs ...[]byte) (*ResourceList, error) {
 	list := &ResourceList{Filter: filter}
 	err := list.appendItems("template", "/items", inputs...)
 	return list, err
 }
 
+// NewPlatformBasedResourceList assembles a ResourceList from an input that is
+// treated as coming from an OpenShift cluster (current state).
 func NewPlatformBasedResourceList(filter *ResourceFilter, inputs ...[]byte) (*ResourceList, error) {
 	list := &ResourceList{Filter: filter}
 	err := list.appendItems("platform", "/objects", inputs...)

@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/ghodss/yaml"
+	"github.com/opendevstack/tailor/internal/test/helper"
 )
 
 func TestNewResourceItem(t *testing.T) {
@@ -20,6 +21,14 @@ func TestNewResourceItem(t *testing.T) {
 	}
 }
 
+func getPlatformItem(t *testing.T, filename string) *ResourceItem {
+	return getItem(t, helper.ReadFixtureFile(t, filename), "platform")
+}
+
+func getTemplateItem(t *testing.T, filename string) *ResourceItem {
+	return getItem(t, helper.ReadFixtureFile(t, filename), "template")
+}
+
 func getItem(t *testing.T, input []byte, source string) *ResourceItem {
 	var f interface{}
 	err := yaml.Unmarshal(input, &f)
@@ -32,20 +41,6 @@ func getItem(t *testing.T, input []byte, source string) *ResourceItem {
 		t.Errorf("Could not create item: %v", err)
 	}
 	return item
-}
-
-func getConfigMap(annotations []byte) []byte {
-	config := []byte(
-		`apiVersion: v1
-kind: ConfigMap
-metadata:
-  labels:
-    app: bar
-  annotations: ANNOTATIONS
-  name: bar
-data:
-  bar: baz`)
-	return bytes.Replace(config, []byte("ANNOTATIONS"), annotations, -1)
 }
 
 func getBuildConfig() []byte {
@@ -133,78 +128,4 @@ spec:
   wildcardPolicy: None`)
 
 	return bytes.Replace(config, []byte("HOST"), host, -1)
-}
-
-func getTemplateDeploymentConfig(tag []byte) []byte {
-	config := []byte(
-		`apiVersion: v1
-kind: DeploymentConfig
-metadata:
-  name: foo
-spec:
-  replicas: 1
-  selector:
-    name: foo
-  strategy:
-    type: Recreate
-  template:
-    metadata:
-      annotations: {}
-      labels:
-        name: foo
-    spec:
-      containers:
-      - image: bar/foo:TAG
-        imagePullPolicy: IfNotPresent
-        name: foo
-      dnsPolicy: ClusterFirst
-      restartPolicy: Always
-      schedulerName: default-scheduler
-      securityContext: {}
-      serviceAccount: foo
-      serviceAccountName: foo
-      volumes: []
-  test: false
-  triggers:
-  - type: ImageChange
-    imageChangeParams: {}`)
-	return bytes.Replace(config, []byte("TAG"), tag, -1)
-}
-
-func getPlatformDeploymentConfig() []byte {
-	return []byte(
-		`apiVersion: v1
-kind: DeploymentConfig
-metadata:
-  name: foo
-  annotations:
-    original-values.tailor.io/spec.template.spec.containers.0.image: 'bar/foo:latest'
-spec:
-  replicas: 1
-  selector:
-    name: foo
-  strategy:
-    type: Recreate
-  template:
-    metadata:
-      annotations: {}
-      labels:
-        name: foo
-    spec:
-      containers:
-      - image: 192.168.0.1:5000/bar/foo@sha256:51ead8367892a487ca4a1ca7435fa418466901ca2842b777e15a12d0b470ab30
-        imagePullPolicy: IfNotPresent
-        name: foo
-      dnsPolicy: ClusterFirst
-      restartPolicy: Always
-      schedulerName: default-scheduler
-      securityContext: {}
-      serviceAccount: foo
-      serviceAccountName: foo
-      volumes: []
-  test: false
-  triggers:
-  - type: ImageChange
-    imageChangeParams:
-      lastTriggeredImage: 127.0.0.1:5000/bar/foo@sha256:123`)
 }

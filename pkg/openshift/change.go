@@ -5,6 +5,7 @@ import (
 	"sort"
 
 	"github.com/opendevstack/tailor/pkg/cli"
+	"github.com/opendevstack/tailor/pkg/utils"
 	"github.com/pmezard/go-difflib/difflib"
 )
 
@@ -24,6 +25,8 @@ var (
 	}
 )
 
+// Change is a description of a drift between current and desired state, and
+// the required patches to bring them back in sync.
 type Change struct {
 	Action       string
 	Kind         string
@@ -39,6 +42,15 @@ type jsonPatch struct {
 	Value interface{} `json:"value,omitempty"`
 }
 
+type jsonPatches []*jsonPatch
+
+func (jp jsonPatch) Pretty() string {
+	var b []byte
+	b, _ = json.MarshalIndent(jp, "", "  ")
+	return string(b)
+}
+
+// NewChange creates a new change for given template/platform item.
 func NewChange(templateItem *ResourceItem, platformItem *ResourceItem, comparison map[string]*jsonPatch) *Change {
 	c := &Change{
 		Kind:         templateItem.Kind,
@@ -65,21 +77,30 @@ func NewChange(templateItem *ResourceItem, platformItem *ResourceItem, compariso
 	return c
 }
 
+// ItemName returns the kind/name of the resource the change relates to.
 func (c *Change) ItemName() string {
 	return kindToShortMapping[c.Kind] + "/" + c.Name
 }
 
-func (c *Change) JsonPatches(pretty bool) string {
+// PrettyJSONPatches prints the JSON patches in pretty form (with indentation).
+func (c *Change) PrettyJSONPatches() string {
 	var b []byte
-	if pretty {
-		b, _ = json.MarshalIndent(c.Patches, "", "  ")
-	} else {
-		b, _ = json.Marshal(c.Patches)
-	}
+	b, _ = json.MarshalIndent(c.Patches, "", "  ")
 	return string(b)
 }
 
+// JSONPatches prints the JSON patches in plain form.
+func (c *Change) JSONPatches() string {
+	var b []byte
+	b, _ = json.Marshal(c.Patches)
+	return string(b)
+}
+
+// Diff returns a unified diff text for the change.
 func (c *Change) Diff() string {
+	if c.isTailorInternalOnly() {
+		return "Only annotations used by Tailor internally differ. Use --diff=json to see details.\n"
+	}
 	diff := difflib.UnifiedDiff{
 		A:        difflib.SplitLines(c.CurrentState),
 		B:        difflib.SplitLines(c.DesiredState),
@@ -96,4 +117,14 @@ func (c *Change) addPatch(patch *jsonPatch) {
 	sort.Slice(c.Patches, func(i, j int) bool {
 		return c.Patches[i].Path < c.Patches[j].Path
 	})
+}
+
+func (c *Change) isTailorInternalOnly() bool {
+	internalPaths := []string{tailorAppliedConfigAnnotationPath, tailorManagedAnnotationPath}
+	for _, p := range c.Patches {
+		if !utils.Includes(internalPaths, p.Path) {
+			return false
+		}
+	}
+	return true
 }
