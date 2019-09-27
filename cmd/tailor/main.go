@@ -65,7 +65,7 @@ var (
 	).Short('t').Default(".").String()
 	paramDirFlag = app.Flag(
 		"param-dir",
-		"Path to parameter files for local templates",
+		"Path to parameter files for local templates (defaults to <NAMESPACE> or working directory)",
 	).Short('p').Default(".").String()
 	publicKeyDirFlag = app.Flag(
 		"public-key-dir",
@@ -225,7 +225,16 @@ func main() {
 		return
 	}
 
+	clusterRequired := true
+	if command == editCommand.FullCommand() ||
+		command == revealCommand.FullCommand() ||
+		command == reEncryptCommand.FullCommand() ||
+		command == generateKeyCommand.FullCommand() {
+		clusterRequired = false
+	}
+
 	globalOptions, err := cli.NewGlobalOptions(
+		clusterRequired,
 		*fileFlag,
 		*verboseFlag,
 		*debugFlag,

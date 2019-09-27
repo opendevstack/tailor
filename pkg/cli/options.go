@@ -76,6 +76,7 @@ type SecretsOptions struct {
 // NewGlobalOptions returns new global options based on file/flags.
 // Those options are shared across all commands.
 func NewGlobalOptions(
+	clusterRequired bool,
 	fileFlag string,
 	verboseFlag bool,
 	debugFlag bool,
@@ -137,7 +138,7 @@ func NewGlobalOptions(
 
 	DebugMsg(fmt.Sprintf("%#v", o))
 
-	return o, o.check()
+	return o, o.check(clusterRequired)
 }
 
 // NewCompareOptions returns new options for the status/update command based on file/flags.
@@ -410,21 +411,23 @@ func NewSecretsOptions(
 	return o, o.check()
 }
 
-func (o *GlobalOptions) check() error {
+func (o *GlobalOptions) check(clusterRequired bool) error {
 	if !o.checkOcBinary() {
 		return fmt.Errorf("No such oc binary: %s", o.OcBinary)
 	}
-	if !o.checkLoggedIn() {
-		return errors.New("You need to login with 'oc login' first")
-	}
-	if openshiftVersion := checkOcVersionMatches(); !openshiftVersion.Matches() {
-		errorMsg := fmt.Sprintf("Version mismatch between client (%s) and server (%s) detected. "+
-			"This can lead to incorrect behaviour. "+
-			"Update your oc binary or point to an alternative binary with --oc-binary.", openshiftVersion.Client, openshiftVersion.Server)
-		if !o.Force {
-			return fmt.Errorf("%s\n\nRefusing to continue without --force", errorMsg)
+	if clusterRequired {
+		if !o.checkLoggedIn() {
+			return errors.New("You need to login with 'oc login' first")
 		}
-		VerboseMsg(errorMsg)
+		if openshiftVersion := checkOcVersionMatches(); !openshiftVersion.Matches() {
+			errorMsg := fmt.Sprintf("Version mismatch between client (%s) and server (%s) detected. "+
+				"This can lead to incorrect behaviour. "+
+				"Update your oc binary or point to an alternative binary with --oc-binary.", openshiftVersion.Client, openshiftVersion.Server)
+			if !o.Force {
+				return fmt.Errorf("%s\n\nRefusing to continue without --force", errorMsg)
+			}
+			VerboseMsg(errorMsg)
+		}
 	}
 	return nil
 }
@@ -502,7 +505,7 @@ func (o *ExportOptions) check() error {
 }
 
 func (o *SecretsOptions) check() error {
-	if len(o.ContextDirs) > 0 {
+	if len(o.ContextDirs) > 1 {
 		return errors.New("secrets subcommand does not support multiple context directories")
 	}
 	return nil
