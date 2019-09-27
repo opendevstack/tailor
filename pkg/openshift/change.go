@@ -97,9 +97,11 @@ func (c *Change) JSONPatches() string {
 }
 
 // Diff returns a unified diff text for the change.
-func (c *Change) Diff() string {
+func (c *Change) Diff(revealSecrets bool) string {
 	if c.isTailorInternalOnly() {
 		return "Only annotations used by Tailor internally differ. Use --diff=json to see details.\n"
+	} else if c.isSecret() && !revealSecrets {
+		return "Secret drift is hidden. Use --reveal-secrets to see details.\n"
 	}
 	diff := difflib.UnifiedDiff{
 		A:        difflib.SplitLines(c.CurrentState),
@@ -127,4 +129,8 @@ func (c *Change) isTailorInternalOnly() bool {
 		}
 	}
 	return true
+}
+
+func (c *Change) isSecret() bool {
+	return kindToShortMapping[c.Kind] == "secret"
 }

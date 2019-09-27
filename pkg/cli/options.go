@@ -47,6 +47,7 @@ type CompareOptions struct {
 	IgnorePaths             []string
 	IgnoreUnknownParameters bool
 	UpsertOnly              bool
+	RevealSecrets           bool
 	Resource                string
 }
 
@@ -160,6 +161,7 @@ func NewCompareOptions(
 	ignorePathFlag []string,
 	ignoreUnknownParametersFlag bool,
 	upsertOnlyFlag bool,
+	revealSecretsFlag bool,
 	resourceArg string) (*CompareOptions, error) {
 	o := &CompareOptions{
 		GlobalOptions:    globalOptions,
@@ -281,6 +283,12 @@ func NewCompareOptions(
 		o.UpsertOnly = true
 	} else if fileFlags["upsert-only"] == "true" {
 		o.UpsertOnly = true
+	}
+
+	if revealSecretsFlag {
+		o.RevealSecrets = true
+	} else if fileFlags["reveal-secrets"] == "true" {
+		o.RevealSecrets = true
 	}
 
 	if len(resourceArg) > 0 {

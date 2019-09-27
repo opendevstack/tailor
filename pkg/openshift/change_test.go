@@ -236,7 +236,7 @@ func TestDiff(t *testing.T) {
 				t.Fatal(err)
 			}
 			change := changes[0]
-			actualDiff := change.Diff()
+			actualDiff := change.Diff(true)
 			if actualDiff != tt.expectedDiff {
 				t.Fatalf(
 					"Diff()\n===== expected =====\n%s\n===== actual =====\n%s",
