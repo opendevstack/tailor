@@ -35,7 +35,7 @@ type Changeset struct {
 	Noop   []*Change
 }
 
-func NewChangeset(platformBasedList, templateBasedList *ResourceList, upsertOnly bool, ignoredPaths []string) (*Changeset, error) {
+func NewChangeset(platformBasedList, templateBasedList *ResourceList, upsertOnly bool, allowRecreate bool, ignoredPaths []string) (*Changeset, error) {
 	changeset := &Changeset{
 		Create: []*Change{},
 		Delete: []*Change{},
@@ -105,7 +105,7 @@ func NewChangeset(platformBasedList, templateBasedList *ResourceList, upsertOnly
 				}
 			}
 
-			changes, err := calculateChanges(templateItem, platformItem, externallyModifiedPaths)
+			changes, err := calculateChanges(templateItem, platformItem, externallyModifiedPaths, allowRecreate)
 			if err != nil {
 				return changeset, err
 			}
@@ -116,7 +116,7 @@ func NewChangeset(platformBasedList, templateBasedList *ResourceList, upsertOnly
 	return changeset, nil
 }
 
-func calculateChanges(templateItem *ResourceItem, platformItem *ResourceItem, externallyModifiedPaths []string) ([]*Change, error) {
+func calculateChanges(templateItem *ResourceItem, platformItem *ResourceItem, externallyModifiedPaths []string, allowRecreate bool) ([]*Change, error) {
 	err := templateItem.prepareForComparisonWithPlatformItem(platformItem, externallyModifiedPaths)
 	if err != nil {
 		return nil, err
@@ -143,7 +143,12 @@ func calculateChanges(templateItem *ResourceItem, platformItem *ResourceItem, ex
 		if err != nil {
 			// Pointer does not exist in platformItem
 			if templateItem.isImmutableField(path) {
-				return recreateChanges(templateItem, platformItem), nil
+				if allowRecreate {
+					return recreateChanges(templateItem, platformItem), nil
+				} else {
+					return nil, fmt.Errorf("Path %s is immutable. Changing its value requires to delete and re-create the whole resource, which is only done when --allow-recreate is present", path)
+				}
+
 			}
 			comparison[path] = &jsonPatch{Op: "add", Value: templateItemVal}
 			addedPaths = append(addedPaths, path)
@@ -164,7 +169,11 @@ func calculateChanges(templateItem *ResourceItem, platformItem *ResourceItem, ex
 					comparison[path] = &jsonPatch{Op: "noop"}
 				} else {
 					if templateItem.isImmutableField(path) {
-						return recreateChanges(templateItem, platformItem), nil
+						if allowRecreate {
+							return recreateChanges(templateItem, platformItem), nil
+						} else {
+							return nil, fmt.Errorf("Path %s is immutable. Changing its value requires to delete and re-create the whole resource, which is only done when --allow-recreate is present", path)
+						}
 					}
 					comparison[path] = &jsonPatch{Op: "replace", Value: templateItemVal}
 				}

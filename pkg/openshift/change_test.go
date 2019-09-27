@@ -231,7 +231,7 @@ func TestDiff(t *testing.T) {
 				getConfigMapForDiff(tt.desiredAnnotations, tt.desiredData),
 				"template",
 			)
-			changes, err := calculateChanges(desiredItem, currentItem, []string{})
+			changes, err := calculateChanges(desiredItem, currentItem, []string{}, true)
 			if err != nil {
 				t.Fatal(err)
 			}

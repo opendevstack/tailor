@@ -47,6 +47,7 @@ type CompareOptions struct {
 	IgnorePaths             []string
 	IgnoreUnknownParameters bool
 	UpsertOnly              bool
+	AllowRecreate           bool
 	RevealSecrets           bool
 	Resource                string
 }
@@ -161,6 +162,7 @@ func NewCompareOptions(
 	ignorePathFlag []string,
 	ignoreUnknownParametersFlag bool,
 	upsertOnlyFlag bool,
+	allowRecreateFlag bool,
 	revealSecretsFlag bool,
 	resourceArg string) (*CompareOptions, error) {
 	o := &CompareOptions{
@@ -283,6 +285,12 @@ func NewCompareOptions(
 		o.UpsertOnly = true
 	} else if fileFlags["upsert-only"] == "true" {
 		o.UpsertOnly = true
+	}
+
+	if allowRecreateFlag {
+		o.AllowRecreate = true
+	} else if fileFlags["allow-recreate"] == "true" {
+		o.AllowRecreate = true
 	}
 
 	if revealSecretsFlag {

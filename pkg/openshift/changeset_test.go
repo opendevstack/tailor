@@ -107,7 +107,7 @@ func TestCalculateChangesManagedAnnotations(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			platformItem := getPlatformItem(t, "item-managed-annotations/"+tc.platformFixture+".yml")
 			templateItem := getTemplateItem(t, "item-managed-annotations/"+tc.templateFixture+".yml")
-			changes, err := calculateChanges(templateItem, platformItem, []string{})
+			changes, err := calculateChanges(templateItem, platformItem, []string{}, true)
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -187,7 +187,7 @@ func TestCalculateChangesAppliedConfiguration(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			platformItem := getPlatformItem(t, "item-applied-config/"+tc.platformFixture+".yml")
 			templateItem := getTemplateItem(t, "item-applied-config/"+tc.templateFixture+".yml")
-			changes, err := calculateChanges(templateItem, platformItem, []string{})
+			changes, err := calculateChanges(templateItem, platformItem, []string{}, true)
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -214,7 +214,7 @@ func TestCalculateChangesAppliedConfiguration(t *testing.T) {
 func TestEmptyValuesDoNotCauseDrift(t *testing.T) {
 	platformItem := getPlatformItem(t, "empty-values/bc-platform.yml")
 	templateItem := getTemplateItem(t, "empty-values/bc-template.yml")
-	changes, err := calculateChanges(templateItem, platformItem, []string{})
+	changes, err := calculateChanges(templateItem, platformItem, []string{}, true)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -326,7 +326,7 @@ objects:
 	filter := &ResourceFilter{
 		Kinds: []string{"PersistentVolumeClaim"},
 	}
-	changeset := getChangeset(t, filter, platformInput, templateInput, false, []string{})
+	changeset := getChangeset(t, filter, platformInput, templateInput, false, true, []string{})
 	if !changeset.Blank() {
 		updates := []string{""}
 		for _, u := range changeset.Update {
@@ -382,7 +382,7 @@ objects:
 	filter := &ResourceFilter{
 		Kinds: []string{"PersistentVolumeClaim"},
 	}
-	changeset := getChangeset(t, filter, platformInput, templateInput, false, []string{})
+	changeset := getChangeset(t, filter, platformInput, templateInput, false, true, []string{})
 	if len(changeset.Update) != 1 {
 		t.Errorf("Changeset.Update has %d items instead of 1", len(changeset.Update))
 	}
@@ -453,7 +453,7 @@ objects:
 	filter := &ResourceFilter{
 		Kinds: []string{"BuildConfig"},
 	}
-	changeset := getChangeset(t, filter, platformInput, templateInput, false, []string{"bc:/spec/output/to/name", "bc:/spec/output/imageLabels"})
+	changeset := getChangeset(t, filter, platformInput, templateInput, false, true, []string{"bc:/spec/output/to/name", "bc:/spec/output/imageLabels"})
 	actualUpdates := len(changeset.Update)
 	expectedUpdates := 0
 	if actualUpdates != expectedUpdates {
@@ -504,7 +504,7 @@ objects:
 	filter := &ResourceFilter{
 		Kinds: []string{"PersistentVolumeClaim"},
 	}
-	changeset := getChangeset(t, filter, platformInput, templateInput, false, []string{})
+	changeset := getChangeset(t, filter, platformInput, templateInput, false, true, []string{})
 	if len(changeset.Create) != 1 {
 		t.Errorf("Changeset.Create is blank but should not be")
 	}
@@ -535,7 +535,7 @@ objects:
 	filter := &ResourceFilter{
 		Kinds: []string{"PersistentVolumeClaim"},
 	}
-	changeset := getChangeset(t, filter, platformInput, templateInput, false, []string{})
+	changeset := getChangeset(t, filter, platformInput, templateInput, false, true, []string{})
 	if len(changeset.Delete) != 1 {
 		t.Errorf("Changeset.Delete is blank but should not be")
 	}
@@ -544,7 +544,7 @@ objects:
 func TestCalculateChangesEqual(t *testing.T) {
 	currentItem := getItem(t, getBuildConfig(), "platform")
 	desiredItem := getItem(t, getBuildConfig(), "template")
-	_, err := calculateChanges(desiredItem, currentItem, []string{})
+	_, err := calculateChanges(desiredItem, currentItem, []string{}, true)
 	if err != nil {
 		t.Errorf(err.Error())
 	}
@@ -553,7 +553,7 @@ func TestCalculateChangesEqual(t *testing.T) {
 func TestCalculateChangesDifferent(t *testing.T) {
 	currentItem := getItem(t, getBuildConfig(), "platform")
 	desiredItem := getItem(t, getChangedBuildConfig(), "template")
-	changes, err := calculateChanges(desiredItem, currentItem, []string{})
+	changes, err := calculateChanges(desiredItem, currentItem, []string{}, true)
 	if err != nil {
 		t.Errorf(err.Error())
 	}
@@ -567,7 +567,7 @@ func TestCalculateChangesImmutableFields(t *testing.T) {
 	platformItem := getItem(t, getRoute([]byte("old.com")), "platform")
 
 	unchangedTemplateItem := getItem(t, getRoute([]byte("old.com")), "template")
-	changes, err := calculateChanges(unchangedTemplateItem, platformItem, []string{})
+	changes, err := calculateChanges(unchangedTemplateItem, platformItem, []string{}, true)
 	if err != nil {
 		t.Errorf(err.Error())
 	}
@@ -576,7 +576,7 @@ func TestCalculateChangesImmutableFields(t *testing.T) {
 	}
 
 	changedTemplateItem := getItem(t, getRoute([]byte("new.com")), "template")
-	changes, err = calculateChanges(changedTemplateItem, platformItem, []string{})
+	changes, err = calculateChanges(changedTemplateItem, platformItem, []string{}, true)
 	if err != nil {
 		t.Errorf(err.Error())
 	}
@@ -585,7 +585,7 @@ func TestCalculateChangesImmutableFields(t *testing.T) {
 	}
 }
 
-func getChangeset(t *testing.T, filter *ResourceFilter, platformInput, templateInput []byte, upsertOnly bool, ignoredPaths []string) *Changeset {
+func getChangeset(t *testing.T, filter *ResourceFilter, platformInput, templateInput []byte, upsertOnly bool, allowRecreate bool, ignoredPaths []string) *Changeset {
 	platformBasedList, err := NewPlatformBasedResourceList(filter, platformInput)
 	if err != nil {
 		t.Error("Could not create platform based list:", err)
@@ -594,7 +594,7 @@ func getChangeset(t *testing.T, filter *ResourceFilter, platformInput, templateI
 	if err != nil {
 		t.Error("Could not create template based list:", err)
 	}
-	changeset, err := NewChangeset(platformBasedList, templateBasedList, upsertOnly, ignoredPaths)
+	changeset, err := NewChangeset(platformBasedList, templateBasedList, upsertOnly, allowRecreate, ignoredPaths)
 	if err != nil {
 		t.Error("Could not create changeset:", err)
 	}
