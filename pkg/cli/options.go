@@ -435,10 +435,11 @@ func (o *GlobalOptions) check(clusterRequired bool) error {
 		if !o.checkLoggedIn() {
 			return errors.New("You need to login with 'oc login' first")
 		}
-		if openshiftVersion := checkOcVersionMatches(); !openshiftVersion.Matches() {
+		c := NewOcClient("")
+		if v := ocVersion(c); !v.Matches() {
 			errorMsg := fmt.Sprintf("Version mismatch between client (%s) and server (%s) detected. "+
 				"This can lead to incorrect behaviour. "+
-				"Update your oc binary or point to an alternative binary with --oc-binary.", openshiftVersion.Client, openshiftVersion.Server)
+				"Update your oc binary or point to an alternative binary with --oc-binary.", v.client, v.server)
 			if !o.Force {
 				return fmt.Errorf("%s\n\nRefusing to continue without --force", errorMsg)
 			}
@@ -558,23 +559,6 @@ func (o *NamespaceOptions) checkOcNamespace(n string) error {
 		o.CheckedNamespaces = append(o.CheckedNamespaces, n)
 	}
 	return err
-}
-
-// Check that OC client and server version match.
-// The output of "oc version" is e.g.:
-//   oc v3.9.0+191fece
-//   kubernetes v1.9.1+a0ce1bc657
-//   features: Basic-Auth
-//   Server https://api.domain.com:443
-//   openshift v3.11.43
-//   kubernetes v1.11.0+d4cacc0
-func checkOcVersionMatches() OpenshiftVersion {
-	c := NewOcClient("")
-	v, err := c.Version()
-	if err != nil {
-		VerboseMsg(err.Error())
-	}
-	return v
 }
 
 func getOcNamespace() (string, error) {

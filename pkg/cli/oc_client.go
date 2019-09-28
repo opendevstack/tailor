@@ -39,10 +39,9 @@ type OcClientCreator interface {
 	Create(config string, selector string) ([]byte, error)
 }
 
-// OpenshiftVersion represents the client/server version pair.
-type OpenshiftVersion struct {
-	Client string
-	Server string
+// OcClientVersioner allows to retrieve the OpenShift version..
+type OcClientVersioner interface {
+	Version() ([]byte, []byte, error)
 }
 
 // OcClient is a wrapper around the "oc" binary (client).
@@ -55,52 +54,11 @@ func NewOcClient(namespace string) *OcClient {
 	return &OcClient{namespace: namespace}
 }
 
-// Matches is true when client and server version are equal.
-func (ov OpenshiftVersion) Matches() bool {
-	return ov.Client == ov.Server
-}
-
-// Version returns an OpenshiftVersion.
-func (c *OcClient) Version() (OpenshiftVersion, error) {
+// Version returns the output of "ov versiopn".
+func (c *OcClient) Version() ([]byte, []byte, error) {
 	cmd := c.execPlainOcCmd([]string{"version"})
-	outBytes, errBytes, err := c.runCmd(cmd)
-	if err != nil {
-		return OpenshiftVersion{"?", "?"}, fmt.Errorf("Failed to query client and server version, got: %s", string(errBytes))
-	}
-	output := string(outBytes)
+	return c.runCmd(cmd)
 
-	ocClientVersion := ""
-	ocServerVersion := ""
-	extractVersion := func(versionPart string) string {
-		ocVersionParts := strings.SplitN(versionPart, ".", 3)
-		return strings.Join(ocVersionParts[:len(ocVersionParts)-1], ".")
-	}
-
-	lines := strings.Split(strings.TrimSuffix(output, "\n"), "\n")
-	for _, line := range lines {
-		if len(line) > 0 {
-			parts := strings.SplitN(line, " ", 2)
-			if parts[0] == "oc" {
-				ocClientVersion = extractVersion(parts[1])
-			}
-			if parts[0] == "openshift" {
-				ocServerVersion = extractVersion(parts[1])
-			}
-		}
-	}
-
-	if len(ocClientVersion) == 0 || !strings.Contains(ocClientVersion, ".") {
-		ocClientVersion = "?"
-	}
-	if len(ocServerVersion) == 0 || !strings.Contains(ocServerVersion, ".") {
-		ocServerVersion = "?"
-	}
-
-	if ocClientVersion == "?" || ocServerVersion == "?" {
-		err = fmt.Errorf("Client and server version could not be detected properly, got: %s", output)
-	}
-
-	return OpenshiftVersion{Client: ocClientVersion, Server: ocServerVersion}, err
 }
 
 // CurrentProject returns the currently active project name (namespace).
