@@ -231,12 +231,12 @@ func TestDiff(t *testing.T) {
 				getConfigMapForDiff(tt.desiredAnnotations, tt.desiredData),
 				"template",
 			)
-			changes, err := calculateChanges(desiredItem, currentItem, []string{})
+			changes, err := calculateChanges(desiredItem, currentItem, []string{}, true)
 			if err != nil {
 				t.Fatal(err)
 			}
 			change := changes[0]
-			actualDiff := change.Diff()
+			actualDiff := change.Diff(true)
 			if actualDiff != tt.expectedDiff {
 				t.Fatalf(
 					"Diff()\n===== expected =====\n%s\n===== actual =====\n%s",

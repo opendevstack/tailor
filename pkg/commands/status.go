@@ -160,6 +160,8 @@ func calculateChangeset(compareOptions *cli.CompareOptions, ocClient cli.ClientP
 		platformBasedList,
 		templateBasedList,
 		compareOptions.UpsertOnly,
+		compareOptions.AllowRecreate,
+		compareOptions.RevealSecrets,
 		compareOptions.Diff,
 		compareOptions.IgnorePaths,
 	)
@@ -170,8 +172,8 @@ func calculateChangeset(compareOptions *cli.CompareOptions, ocClient cli.ClientP
 	return updateRequired, changeset, nil
 }
 
-func compare(remoteResourceList *openshift.ResourceList, localResourceList *openshift.ResourceList, upsertOnly bool, diff string, ignorePaths []string) (*openshift.Changeset, error) {
-	changeset, err := openshift.NewChangeset(remoteResourceList, localResourceList, upsertOnly, ignorePaths)
+func compare(remoteResourceList *openshift.ResourceList, localResourceList *openshift.ResourceList, upsertOnly bool, allowRecreate bool, revealSecrets bool, diff string, ignorePaths []string) (*openshift.Changeset, error) {
+	changeset, err := openshift.NewChangeset(remoteResourceList, localResourceList, upsertOnly, allowRecreate, ignorePaths)
 	if err != nil {
 		return changeset, err
 	}
@@ -182,18 +184,18 @@ func compare(remoteResourceList *openshift.ResourceList, localResourceList *open
 
 	for _, change := range changeset.Delete {
 		cli.PrintRedf("- %s to delete\n", change.ItemName())
-		fmt.Print(change.Diff())
+		fmt.Print(change.Diff(revealSecrets))
 	}
 
 	for _, change := range changeset.Create {
 		cli.PrintGreenf("+ %s to create\n", change.ItemName())
-		fmt.Print(change.Diff())
+		fmt.Print(change.Diff(revealSecrets))
 	}
 
 	for _, change := range changeset.Update {
 		cli.PrintYellowf("~ %s to update\n", change.ItemName())
 		if diff == "text" {
-			fmt.Print(change.Diff())
+			fmt.Print(change.Diff(revealSecrets))
 		} else {
 			fmt.Println(change.PrettyJSONPatches())
 		}

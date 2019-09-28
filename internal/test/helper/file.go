@@ -8,35 +8,25 @@ import (
 	"testing"
 )
 
-// ReadFixtureFileOrErr returns the contents of the fixture file or an error.
-func ReadFixtureFileOrErr(filename string) ([]byte, error) {
-	return readFileOrErr("../fixtures/" + filename)
-}
-
-// ReadGoldenFileOrErr returns the contents of the golden file or an error.
-func ReadGoldenFileOrErr(t *testing.T, filename string) ([]byte, error) {
-	return readFileOrErr("../golden/" + filename)
-}
-
 // ReadFixtureFile returns the contents of the fixture file or fails.
 func ReadFixtureFile(t *testing.T, filename string) []byte {
-	return readFile(t, "../fixtures/"+filename)
+	return readFileOrFatal(t, "../fixtures/"+filename)
 }
 
 // ReadGoldenFile returns the contents of the golden file or fails.
 func ReadGoldenFile(t *testing.T, filename string) []byte {
-	return readFile(t, "../golden/"+filename)
+	return readFileOrFatal(t, "../golden/"+filename)
 }
 
-func readFile(t *testing.T, name string) []byte {
-	b, err := readFileOrErr(name)
+func readFileOrFatal(t *testing.T, name string) []byte {
+	b, err := readFile(name)
 	if err != nil {
 		t.Fatal(err)
 	}
 	return b
 }
 
-func readFileOrErr(name string) ([]byte, error) {
+func readFile(name string) ([]byte, error) {
 	_, filename, _, ok := runtime.Caller(1)
 	if !ok {
 		return []byte{}, fmt.Errorf("Could not get filename when looking for %s", name)

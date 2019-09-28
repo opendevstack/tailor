@@ -1,0 +1,6 @@
+oc v3.11.0+0cbc58b
+kubernetes v1.11.0+d4cacc0
+features: Basic-Auth
+Server https://api.domain.com:443
+openshift v3.11.43
+kubernetes v1.11.0+d4cacc0

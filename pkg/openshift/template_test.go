@@ -6,10 +6,12 @@ import (
 	"github.com/opendevstack/tailor/internal/test/helper"
 )
 
-type fakeOcClient struct{}
+type mockOcExportClient struct {
+	t *testing.T
+}
 
-func (c *fakeOcClient) Export(target string, label string) ([]byte, error) {
-	return helper.ReadFixtureFileOrErr("export/is.yml")
+func (c *mockOcExportClient) Export(target string, label string) ([]byte, error) {
+	return helper.ReadFixtureFile(c.t, "export/is.yml"), nil
 }
 
 func TestExportAsTemplateFile(t *testing.T) {
@@ -34,7 +36,8 @@ func TestExportAsTemplateFile(t *testing.T) {
 				t.Fatal(err)
 			}
 
-			actual, err := ExportAsTemplateFile(filter, tc.withAnnotations, &fakeOcClient{})
+			c := &mockOcExportClient{t}
+			actual, err := ExportAsTemplateFile(filter, tc.withAnnotations, c)
 			if err != nil {
 				t.Fatal(err)
 			}

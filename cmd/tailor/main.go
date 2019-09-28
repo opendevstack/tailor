@@ -103,7 +103,7 @@ var (
 	).Strings()
 	statusDiffFlag = statusCommand.Flag(
 		"diff",
-		"Type of diff (text or json)",
+		"Whether to show textual diff (\"text\") or JSON patches (\"json\"). JSON patches might show secret values in clear text.",
 	).Default("text").String()
 	statusIgnorePathFlag = statusCommand.Flag(
 		"ignore-path",
@@ -117,6 +117,14 @@ var (
 		"upsert-only",
 		"Don't delete resource, only create / update.",
 	).Short('u').Bool()
+	statusAllowRecreateFlag = statusCommand.Flag(
+		"allow-recreate",
+		"Allow to recreate the whole resource when an immutable field is changed.",
+	).Bool()
+	statusRevealSecretsFlag = statusCommand.Flag(
+		"reveal-secrets",
+		"Reveal drift of Secret resources (might show secret values in clear text).",
+	).Bool()
 	statusResourceArg = statusCommand.Arg(
 		"resource", "Remote resource (defaults to all)",
 	).String()
@@ -139,7 +147,7 @@ var (
 	).Strings()
 	updateDiffFlag = updateCommand.Flag(
 		"diff",
-		"Type of diff (text or json)",
+		"Whether to show textual diff (\"text\") or JSON patches (\"json\"). JSON patches might show secret values in clear text.",
 	).Default("text").String()
 	updateIgnorePathFlag = updateCommand.Flag(
 		"ignore-path",
@@ -153,6 +161,14 @@ var (
 		"upsert-only",
 		"Don't delete resource, only create / update.",
 	).Short('u').Bool()
+	updateAllowRecreateFlag = updateCommand.Flag(
+		"allow-recreate",
+		"Allow to recreate the whole resource when an immutable field is changed.",
+	).Bool()
+	updateRevealSecretsFlag = updateCommand.Flag(
+		"reveal-secrets",
+		"Reveal drift of Secret resources (might show secret values in clear text).",
+	).Bool()
 	updateResourceArg = updateCommand.Arg(
 		"resource", "Remote resource (defaults to all)",
 	).String()
@@ -333,6 +349,8 @@ func main() {
 				*statusIgnorePathFlag,
 				*statusIgnoreUnknownParametersFlag,
 				*statusUpsertOnlyFlag,
+				*statusAllowRecreateFlag,
+				*statusRevealSecretsFlag,
 				*statusResourceArg,
 			)
 			if err != nil {
@@ -370,6 +388,8 @@ func main() {
 				*updateIgnorePathFlag,
 				*updateIgnoreUnknownParametersFlag,
 				*updateUpsertOnlyFlag,
+				*updateAllowRecreateFlag,
+				*updateRevealSecretsFlag,
 				*updateResourceArg,
 			)
 			if err != nil {
