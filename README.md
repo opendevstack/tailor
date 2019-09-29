@@ -14,7 +14,7 @@ templates under version control. Any drift between your desired state (the YAML 
 
 ## Installation
 
-The latest release is 0.9.5 and requires oc >= v3.9.0.
+The latest release is 0.9.5 and requires oc >= v3.9.0. OpenShift 4 is not supported yet.
 Please have a look at the [changelog](https://github.com/opendevstack/tailor/blob/master/CHANGELOG.md) when upgrading.
 
 MacOS:
