@@ -14,27 +14,27 @@ templates under version control. Any drift between your desired state (the YAML 
 
 ## Installation
 
-The latest release is 0.9.5 and requires oc >= v3.9.0. OpenShift 4 is not supported yet.
+The latest release is 0.10.0 and requires oc >= v3.9.0. OpenShift 4 is not supported yet.
 Please have a look at the [changelog](https://github.com/opendevstack/tailor/blob/master/CHANGELOG.md) when upgrading.
 
 MacOS:
 
 ```
-curl -LO "https://github.com/opendevstack/tailor/releases/download/v0.9.5/tailor_darwin_amd64" && \
+curl -LO "https://github.com/opendevstack/tailor/releases/download/v0.10.0/tailor_darwin_amd64" && \
 mv tailor_darwin_amd64 /usr/local/bin/tailor
 ```
 
 Linux:
 
 ```
-curl -LO "https://github.com/opendevstack/tailor/releases/download/v0.9.5/tailor_linux_amd64" && \
+curl -LO "https://github.com/opendevstack/tailor/releases/download/v0.10.0/tailor_linux_amd64" && \
 mv tailor_linux_amd64 /usr/local/bin/tailor
 ```
 
 Windows (using Git Bash):
 
 ```
-curl -LO "https://github.com/opendevstack/tailor/releases/download/v0.9.5/tailor_windows_amd64.exe" && \
+curl -LO "https://github.com/opendevstack/tailor/releases/download/v0.10.0/tailor_windows_amd64.exe" && \
 mv tailor_windows_amd64.exe /mingw64/bin/tailor.exe
 ```
 

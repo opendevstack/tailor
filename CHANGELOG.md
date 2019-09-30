@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## [0.10.0] - 2019-09-30
+
 ### Added
 
 - Support multiple context directories. This basically allows to execute Tailor
