@@ -237,7 +237,7 @@ func main() {
 	command := kingpin.MustParse(app.Parse(os.Args[1:]))
 
 	if command == versionCommand.FullCommand() {
-		fmt.Println("0.10.0")
+		fmt.Println("0.10.0+master")
 		return
 	}
 
