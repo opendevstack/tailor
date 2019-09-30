@@ -2,6 +2,26 @@
 
 ## Unreleased
 
+### Added
+
+- Support multiple context directories. This basically allows to execute Tailor
+  once for multiple directories. Alongside, template and param dir flags have
+  been cleaned up. See [#113](https://github.com/opendevstack/tailor/issues/113)
+  for more details.
+
+### Changed
+
+- Hide internal annotations ([#112](https://github.com/opendevstack/tailor/issues/122))
+- Unify annotation names ([#76](https://github.com/opendevstack/tailor/issues/76))
+- Avoid drift on empty values to reduce template boilerplate ([#107](https://github.com/opendevstack/tailor/issues/107))
+- Hide secrets drift by default. If drift should be shown, pass `--reveal-secrets` ([#109](https://github.com/opendevstack/tailor/issues/109))
+- Prevent resource recreation by default. If re-creation should be allowed, pass `--allow-recreate` ([#111](https://github.com/opendevstack/tailor/issues/111))
+- Extract OpenShift client to allow easier testing. This should have no effect
+  on the tool itself  ([#118](https://github.com/opendevstack/tailor/issues/118))
+- Adopt github.com/golang-standards/project-layout. This should have no effect
+  on the tool itself.
+
+
 ## [0.9.5] - 2019-07-22
 
 ### Added
