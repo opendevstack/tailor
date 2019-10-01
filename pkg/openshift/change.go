@@ -98,7 +98,7 @@ func (c *Change) JSONPatches() string {
 
 // Diff returns a unified diff text for the change.
 func (c *Change) Diff(revealSecrets bool) string {
-	if c.isTailorInternalOnly() {
+	if len(c.Patches) > 0 && c.patchesAreTailorInternalOnly() {
 		return "Only annotations used by Tailor internally differ. Use --diff=json to see details.\n"
 	} else if c.isSecret() && !revealSecrets {
 		return "Secret drift is hidden. Use --reveal-secrets to see details.\n"
@@ -121,7 +121,7 @@ func (c *Change) addPatch(patch *jsonPatch) {
 	})
 }
 
-func (c *Change) isTailorInternalOnly() bool {
+func (c *Change) patchesAreTailorInternalOnly() bool {
 	internalPaths := []string{tailorAppliedConfigAnnotationPath, tailorManagedAnnotationPath}
 	for _, p := range c.Patches {
 		if !utils.Includes(internalPaths, p.Path) {
