@@ -203,7 +203,10 @@ func calculateChanges(templateItem *ResourceItem, platformItem *ResourceItem, ex
 			if path == annotationsPath {
 				if x, ok := val.(map[string]interface{}); ok {
 					if len(x) == 0 {
-						pp.Set(templateItem.Config, map[string]interface{}{})
+						_, err := pp.Set(templateItem.Config, map[string]interface{}{})
+						if err != nil {
+							return nil, err
+						}
 					}
 				}
 				continue
@@ -214,19 +217,28 @@ func calculateChanges(templateItem *ResourceItem, platformItem *ResourceItem, ex
 			// by omitting fields that have an "empty value".
 			if x, ok := val.(map[string]interface{}); ok {
 				if len(x) == 0 {
-					pp.Set(templateItem.Config, map[string]interface{}{})
+					_, err := pp.Set(templateItem.Config, map[string]interface{}{})
+					if err != nil {
+						return nil, err
+					}
 					continue
 				}
 			}
 			if x, ok := val.([]interface{}); ok {
 				if len(x) == 0 {
-					pp.Set(templateItem.Config, []interface{}{})
+					_, err := pp.Set(templateItem.Config, []interface{}{})
+					if err != nil {
+						return nil, err
+					}
 					continue
 				}
 			}
 			if x, ok := val.([]string); ok {
 				if len(x) == 0 {
-					pp.Set(templateItem.Config, []string{})
+					_, err := pp.Set(templateItem.Config, []string{})
+					if err != nil {
+						return nil, err
+					}
 					continue
 				}
 			}
