@@ -1,0 +1,1 @@
+Only annotations used by Tailor internally differ. Use --diff=json to see details.

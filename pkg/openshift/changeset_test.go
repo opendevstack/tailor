@@ -4,15 +4,18 @@ import (
 	"reflect"
 	"strings"
 	"testing"
+
+	"github.com/opendevstack/tailor/internal/test/helper"
 )
 
 func TestCalculateChangesManagedAnnotations(t *testing.T) {
 
 	tests := map[string]struct {
-		platformFixture string
-		templateFixture string
-		expectedAction  string
-		expectedPatches jsonPatches
+		platformFixture        string
+		templateFixture        string
+		expectedAction         string
+		expectedPatches        jsonPatches
+		expectedDiffGoldenFile string
 	}{
 		"Without annotations": {
 			platformFixture: "is-platform",
@@ -34,6 +37,7 @@ func TestCalculateChangesManagedAnnotations(t *testing.T) {
 					},
 				},
 			},
+			expectedDiffGoldenFile: "present-in-template-not-in-platform",
 		},
 		"Present in platform, not in template": {
 			platformFixture: "is-platform-annotation",
@@ -49,6 +53,7 @@ func TestCalculateChangesManagedAnnotations(t *testing.T) {
 					Path: "/metadata/annotations/tailor.opendevstack.org~1managed-annotations",
 				},
 			},
+			expectedDiffGoldenFile: "present-in-platform-not-in-template",
 		},
 		"Present in both": {
 			platformFixture: "is-platform-annotation",
@@ -67,6 +72,7 @@ func TestCalculateChangesManagedAnnotations(t *testing.T) {
 					Value: "qux",
 				},
 			},
+			expectedDiffGoldenFile: "present-in-platform-changed-in-template",
 		},
 		"Present in platform, different key in template": {
 			platformFixture: "is-platform-annotation",
@@ -88,6 +94,7 @@ func TestCalculateChangesManagedAnnotations(t *testing.T) {
 					Value: "baz",
 				},
 			},
+			expectedDiffGoldenFile: "present-in-platform-different-key-in-template",
 		},
 		"Unmanaged in platform added to template": {
 			platformFixture: "is-platform-unmanaged",
@@ -100,6 +107,26 @@ func TestCalculateChangesManagedAnnotations(t *testing.T) {
 					Value: "bar",
 				},
 			},
+			expectedDiffGoldenFile: "unmanaged-in-platform-added-to-template",
+		},
+		"Unmanaged in platform, none in template": {
+			platformFixture: "is-platform-unmanaged",
+			templateFixture: "is-template",
+			expectedAction:  "Noop",
+			expectedPatches: jsonPatches{},
+		},
+		"Unmanaged in platform, none in template, and other change in template": {
+			platformFixture: "is-platform-unmanaged",
+			templateFixture: "is-template-other-change",
+			expectedAction:  "Update",
+			expectedPatches: jsonPatches{
+				&jsonPatch{
+					Op:    "replace",
+					Path:  "/spec/lookupPolicy/local",
+					Value: true,
+				},
+			},
+			expectedDiffGoldenFile: "unmanaged-in-platform-none-in-template-other-change-in-template",
 		},
 	}
 
@@ -125,6 +152,13 @@ func TestCalculateChangesManagedAnnotations(t *testing.T) {
 				ep := tc.expectedPatches[i]
 				if !reflect.DeepEqual(ap, ep) {
 					t.Fatalf("Expected patch:\n%s\n--- got: ---\n%s", ep.Pretty(), ap.Pretty())
+				}
+			}
+			if len(tc.expectedDiffGoldenFile) > 0 {
+				expectedDiff := strings.TrimSpace(getGoldenDiff(t, "item-managed-annotations", tc.expectedDiffGoldenFile+".txt"))
+				actualDiff := strings.TrimSpace(actualChange.Diff(true))
+				if expectedDiff != actualDiff {
+					t.Fatalf("Expected change diff:\n%s\n--- got: ---\n%s", expectedDiff, actualDiff)
 				}
 			}
 		})
@@ -599,4 +633,9 @@ func getChangeset(t *testing.T, filter *ResourceFilter, platformInput, templateI
 		t.Error("Could not create changeset:", err)
 	}
 	return changeset
+}
+
+func getGoldenDiff(t *testing.T, folder string, filename string) string {
+	b := helper.ReadGoldenFile(t, folder+"/"+filename)
+	return string(b)
 }

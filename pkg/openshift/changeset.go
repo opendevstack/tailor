@@ -190,14 +190,6 @@ func calculateChanges(templateItem *ResourceItem, platformItem *ResourceItem, ex
 				continue
 			}
 
-			// Skip annotations
-			if path == annotationsPath {
-				continue
-			}
-
-			// If the value is an "empty value", there is no need to detect
-			// drift for it. This allows template authors to reduce boilerplate
-			// by omitting fields that have an "empty value".
 			pp, _ := gojsonpointer.NewJsonPointer(path)
 			val, _, err := pp.Get(platformItem.Config)
 			if err != nil {
@@ -206,18 +198,47 @@ func calculateChanges(templateItem *ResourceItem, platformItem *ResourceItem, ex
 			if val == nil {
 				continue
 			}
+
+			// Skip annotations
+			if path == annotationsPath {
+				if x, ok := val.(map[string]interface{}); ok {
+					if len(x) == 0 {
+						_, err := pp.Set(templateItem.Config, map[string]interface{}{})
+						if err != nil {
+							return nil, err
+						}
+					}
+				}
+				continue
+			}
+
+			// If the value is an "empty value", there is no need to detect
+			// drift for it. This allows template authors to reduce boilerplate
+			// by omitting fields that have an "empty value".
 			if x, ok := val.(map[string]interface{}); ok {
 				if len(x) == 0 {
+					_, err := pp.Set(templateItem.Config, map[string]interface{}{})
+					if err != nil {
+						return nil, err
+					}
 					continue
 				}
 			}
 			if x, ok := val.([]interface{}); ok {
 				if len(x) == 0 {
+					_, err := pp.Set(templateItem.Config, []interface{}{})
+					if err != nil {
+						return nil, err
+					}
 					continue
 				}
 			}
 			if x, ok := val.([]string); ok {
 				if len(x) == 0 {
+					_, err := pp.Set(templateItem.Config, []string{})
+					if err != nil {
+						return nil, err
+					}
 					continue
 				}
 			}
