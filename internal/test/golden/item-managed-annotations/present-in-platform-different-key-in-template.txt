@@ -1,0 +1,11 @@
+--- Current State (OpenShift cluster)
++++ Desired State (Processed template)
+@@ -2,7 +2,7 @@
+ kind: ImageStream
+ metadata:
+   annotations:
+-    bar: baz
++    baz: qux
+   name: foo
+ spec:
+   dockerImageRepository: foo

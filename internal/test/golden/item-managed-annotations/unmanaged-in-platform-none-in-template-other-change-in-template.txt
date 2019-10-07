@@ -1,0 +1,8 @@
+--- Current State (OpenShift cluster)
++++ Desired State (Processed template)
+@@ -6,5 +6,5 @@
+ spec:
+   dockerImageRepository: foo
+   lookupPolicy:
+-    local: false
++    local: true
