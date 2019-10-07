@@ -21,21 +21,21 @@ MacOS:
 
 ```
 curl -LO "https://github.com/opendevstack/tailor/releases/download/v0.10.0/tailor_darwin_amd64" && \
-mv tailor_darwin_amd64 /usr/local/bin/tailor
+mv tailor-darwin-amd64 /usr/local/bin/tailor
 ```
 
 Linux:
 
 ```
 curl -LO "https://github.com/opendevstack/tailor/releases/download/v0.10.0/tailor_linux_amd64" && \
-mv tailor_linux_amd64 /usr/local/bin/tailor
+mv tailor-linux-amd64 /usr/local/bin/tailor
 ```
 
 Windows (using Git Bash):
 
 ```
 curl -LO "https://github.com/opendevstack/tailor/releases/download/v0.10.0/tailor_windows_amd64.exe" && \
-mv tailor_windows_amd64.exe /mingw64/bin/tailor.exe
+mv tailor-windows-amd64.exe /mingw64/bin/tailor.exe
 ```
 
 ## Usage
