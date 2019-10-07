@@ -4,6 +4,11 @@
 
 ## [0.10.1] - 2019-10-07
 
+### Fixed
+- Deletion of resources does not show notice anymore ([#131](https://github.com/opendevstack/tailor/issues/131))
+- Textual diff reflects actual changes corretly now. In 0.10.0, it showed some
+  deletions which were not part of the JSON patches. See [#130](https://github.com/opendevstack/tailor/issues/130).
+
 ## [0.10.0] - 2019-09-30
 
 ### Added
@@ -16,7 +21,9 @@
 ### Changed
 
 - Hide internal annotations ([#112](https://github.com/opendevstack/tailor/issues/122))
-- Unify annotation names ([#76](https://github.com/opendevstack/tailor/issues/76))
+- Unify annotation names. You can delete existing annotations in OCP starting
+  with `original-values.tailor.io` and
+  `managed-annotations.tailor.opendevstack.org`. See [#76](https://github.com/opendevstack/tailor/issues/76).
 - Avoid drift on empty values to reduce template boilerplate ([#107](https://github.com/opendevstack/tailor/issues/107))
 - Hide secrets drift by default. If drift should be shown, pass `--reveal-secrets` ([#109](https://github.com/opendevstack/tailor/issues/109))
 - Prevent resource recreation by default. If re-creation should be allowed, pass `--allow-recreate` ([#111](https://github.com/opendevstack/tailor/issues/111))
