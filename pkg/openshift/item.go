@@ -122,11 +122,17 @@ func (i *ResourceItem) parseConfig(m map[string]interface{}) error {
 	}
 	i.Kind = kind.(string)
 	namePointer, _ := gojsonpointer.NewJsonPointer("/metadata/name")
-	name, _, err := namePointer.Get(m)
-	if err != nil {
-		return err
+	name, _, noNameErr := namePointer.Get(m)
+	if noNameErr == nil {
+		i.Name = name.(string)
+	} else {
+		generateNamePointer, _ := gojsonpointer.NewJsonPointer("/metadata/generateName")
+		generateName, _, err := generateNamePointer.Get(m)
+		if err != nil {
+			return fmt.Errorf("Resource does not have paths /metadata/name or /metadata/generateName: %s", err)
+		}
+		i.Name = generateName.(string)
 	}
-	i.Name = name.(string)
 
 	// Extract labels
 	labelsPointer, _ := gojsonpointer.NewJsonPointer("/metadata/labels")

@@ -1,0 +1,20 @@
+apiVersion: template.openshift.io/v1
+kind: Template
+metadata:
+  creationTimestamp: null
+  name: tailor
+objects:
+- apiVersion: authorization.openshift.io/v1
+  groupNames: null
+  kind: RoleBinding
+  metadata:
+    creationTimestamp: null
+    generateName: system:image-pusher-
+  roleRef:
+    name: system:image-pusher
+  subjects:
+  - kind: ServiceAccount
+    name: default
+    namespace: foo-dev
+  userNames:
+  - system:serviceaccount:foo-dev:default

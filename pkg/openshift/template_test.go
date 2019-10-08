@@ -7,25 +7,34 @@ import (
 )
 
 type mockOcExportClient struct {
-	t *testing.T
+	t       *testing.T
+	fixture string
 }
 
 func (c *mockOcExportClient) Export(target string, label string) ([]byte, error) {
-	return helper.ReadFixtureFile(c.t, "export/is.yml"), nil
+	return helper.ReadFixtureFile(c.t, "export/"+c.fixture), nil
 }
 
 func TestExportAsTemplateFile(t *testing.T) {
 	tests := map[string]struct {
-		goldenTemplateFile string
-		withAnnotations    bool
+		fixture         string
+		goldenTemplate  string
+		withAnnotations bool
 	}{
 		"Without annotations": {
-			goldenTemplateFile: "is.yml",
-			withAnnotations:    false,
+			fixture:         "is.yml",
+			goldenTemplate:  "is.yml",
+			withAnnotations: false,
 		},
 		"With annotations": {
-			goldenTemplateFile: "is-annotation.yml",
-			withAnnotations:    true,
+			fixture:         "is.yml",
+			goldenTemplate:  "is-annotation.yml",
+			withAnnotations: true,
+		},
+		"With generateName": {
+			fixture:         "rolebinding-generate-name.yml",
+			goldenTemplate:  "rolebinding-generate-name.yml",
+			withAnnotations: false,
 		},
 	}
 
@@ -36,16 +45,16 @@ func TestExportAsTemplateFile(t *testing.T) {
 				t.Fatal(err)
 			}
 
-			c := &mockOcExportClient{t}
+			c := &mockOcExportClient{t: t, fixture: tc.fixture}
 			actual, err := ExportAsTemplateFile(filter, tc.withAnnotations, c)
 			if err != nil {
 				t.Fatal(err)
 			}
 
-			expected := string(helper.ReadGoldenFile(t, "export/"+tc.goldenTemplateFile))
+			expected := string(helper.ReadGoldenFile(t, "export/"+tc.goldenTemplate))
 
 			if expected != actual {
-				t.Fatalf("Expected template:\n%s\nGot template:\n%s", expected, actual)
+				t.Fatalf("Expected template:\n%s\n--- Got template: --- \n%s", expected, actual)
 			}
 		})
 	}
