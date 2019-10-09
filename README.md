@@ -14,27 +14,27 @@ templates under version control. Any drift between your desired state (the YAML 
 
 ## Installation
 
-The latest release is 0.10.1 and requires oc >= v3.9.0. OpenShift 4 is not supported yet.
+The latest release is 0.10.2 and requires oc >= v3.9.0. OpenShift 4 is not supported yet.
 Please have a look at the [changelog](https://github.com/opendevstack/tailor/blob/master/CHANGELOG.md) when upgrading.
 
 MacOS:
 
 ```
-curl -LO "https://github.com/opendevstack/tailor/releases/download/v0.10.1/tailor-darwin-amd64" && \
+curl -LO "https://github.com/opendevstack/tailor/releases/download/v0.10.2/tailor-darwin-amd64" && \
 chmod +x tailor-darwin-amd64 && mv tailor-darwin-amd64 /usr/local/bin/tailor
 ```
 
 Linux:
 
 ```
-curl -LO "https://github.com/opendevstack/tailor/releases/download/v0.10.1/tailor-linux-amd64" && \
+curl -LO "https://github.com/opendevstack/tailor/releases/download/v0.10.2/tailor-linux-amd64" && \
 chmod +x tailor-linux-amd64 && mv tailor-linux-amd64 /usr/local/bin/tailor
 ```
 
 Windows (using Git Bash):
 
 ```
-curl -LO "https://github.com/opendevstack/tailor/releases/download/v0.10.1/tailor-windows-amd64.exe" && \
+curl -LO "https://github.com/opendevstack/tailor/releases/download/v0.10.2/tailor-windows-amd64.exe" && \
 chmod +x tailor-windows-amd64.exe && mv tailor-windows-amd64.exe /mingw64/bin/tailor.exe
 ```
 
