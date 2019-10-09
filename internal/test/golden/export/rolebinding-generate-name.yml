@@ -1,0 +1,16 @@
+apiVersion: template.openshift.io/v1
+kind: Template
+objects:
+- apiVersion: authorization.openshift.io/v1
+  groupNames: null
+  kind: RoleBinding
+  metadata:
+    generateName: system:image-pusher-
+  roleRef:
+    name: system:image-pusher
+  subjects:
+  - kind: ServiceAccount
+    name: default
+    namespace: foo-dev
+  userNames:
+  - system:serviceaccount:foo-dev:default
