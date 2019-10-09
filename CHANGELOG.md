@@ -4,6 +4,11 @@
 
 ## [0.10.2] - 2019-10-09
 
+### Fixed
+- Export of resources with `/metadata/generateName` instead of `/metadata/name`
+  failed as Tailor expects every resource to have a name. Now Tailor will
+  fallback to `generateName`, see [#135](https://github.com/opendevstack/tailor/issues/135).
+
 ## [0.10.1] - 2019-10-07
 
 ### Fixed
