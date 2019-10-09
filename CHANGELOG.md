@@ -23,7 +23,7 @@
 - Hide internal annotations ([#112](https://github.com/opendevstack/tailor/issues/122))
 - Unify annotation names. You can delete existing annotations in OCP starting
   with `original-values.tailor.io` and
-  `managed-annotations.tailor.opendevstack.org`. See [#76](https://github.com/opendevstack/tailor/issues/76).
+  `managed-annotations.tailor.opendevstack.org`. Note that this is a breaking change: Tailor will show drift on e.g. image references in `DeploymentConfig` resources. Once `tailor update` has run (if the referenced image tag did not change, no de-deployment will happen), the drift disappears. See [#76](https://github.com/opendevstack/tailor/issues/76).
 - Avoid drift on empty values to reduce template boilerplate ([#107](https://github.com/opendevstack/tailor/issues/107))
 - Hide secrets drift by default. If drift should be shown, pass `--reveal-secrets` ([#109](https://github.com/opendevstack/tailor/issues/109))
 - Prevent resource recreation by default. If re-creation should be allowed, pass `--allow-recreate` ([#111](https://github.com/opendevstack/tailor/issues/111))
