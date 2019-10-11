@@ -245,7 +245,7 @@ func assembleTemplateBasedResourceList(filter *openshift.ResourceFilter, compare
 func assemblePlatformBasedResourceList(filter *openshift.ResourceFilter, compareOptions *cli.CompareOptions, ocClient cli.OcClientExporter) (*openshift.ResourceList, error) {
 	exportedOut, err := ocClient.Export(filter.ConvertToKinds(), filter.Label)
 	if err != nil {
-		return nil, fmt.Errorf("Could not export %s resources", filter.String())
+		return nil, fmt.Errorf("Could not export %s resources: %s", filter.String(), err)
 	}
 	return openshift.NewPlatformBasedResourceList(filter, exportedOut)
 }
