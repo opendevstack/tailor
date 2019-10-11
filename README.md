@@ -123,6 +123,7 @@ param BAZ=qux
 
 bc,is,dc,svc
 ```
+Please note that boolean flags need to be specified with a value, e.g. `upsert-only true`.
 
 ### Command Completion
 
