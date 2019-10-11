@@ -62,12 +62,16 @@ func NewChangeset(platformBasedList, templateBasedList *ResourceList, upsertOnly
 	// items to create
 	for _, item := range templateBasedList.Items {
 		if _, err := platformBasedList.getItem(item.Kind, item.Name); err != nil {
+			desiredState, err := item.DesiredConfig()
+			if err != nil {
+				return changeset, err
+			}
 			change := &Change{
 				Action:       "Create",
 				Kind:         item.Kind,
 				Name:         item.Name,
 				CurrentState: "",
-				DesiredState: item.YamlConfig(),
+				DesiredState: desiredState,
 			}
 			changeset.Add(change)
 		}
@@ -271,8 +275,8 @@ func calculateChanges(templateItem *ResourceItem, platformItem *ResourceItem, ex
 	// Add hidden JSON patches - we do not want to show those in the textual
 	// diff to avoid unnecessary confusion for the enduser.
 	// Managed annotations
-	platformManagedAnnotations := strings.Join(platformItem.TailorManagedAnnotations, ",")
-	templateManagedAnnotations := strings.Join(templateItem.TailorManagedAnnotations, ",")
+	platformManagedAnnotations := platformItem.TailorManagedAnnotationsList()
+	templateManagedAnnotations := templateItem.TailorManagedAnnotationsList()
 	managedAnnotationsPatch := &jsonPatch{Op: "noop"}
 	if platformManagedAnnotations != templateManagedAnnotations {
 		if len(templateItem.TailorManagedAnnotations) == 0 {

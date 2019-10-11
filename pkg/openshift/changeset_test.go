@@ -1,12 +1,83 @@
 package openshift
 
 import (
-	"reflect"
 	"strings"
 	"testing"
 
+	"github.com/google/go-cmp/cmp"
 	"github.com/opendevstack/tailor/internal/test/helper"
 )
+
+func TestNewChangesetCreationOfResources(t *testing.T) {
+	tests := map[string]struct {
+		templateFixture string
+		expectedGolden  string
+	}{
+		"Without annotations": {
+			templateFixture: "is.yml",
+			expectedGolden:  "is.yml",
+		},
+		"With annotations": {
+			templateFixture: "is-annotation.yml",
+			expectedGolden:  "is-annotation.yml",
+		},
+		"With image reference": {
+			templateFixture: "dc.yml",
+			expectedGolden:  "dc.yml",
+		},
+		"With image reference and annotation": {
+			templateFixture: "dc-annotation.yml",
+			expectedGolden:  "dc-annotation.yml",
+		},
+	}
+
+	for name, tc := range tests {
+		t.Run(name, func(t *testing.T) {
+			filter, err := NewResourceFilter("", "", "")
+			if err != nil {
+				t.Fatal(err)
+			}
+			platformBasedList, err := NewPlatformBasedResourceList(
+				filter,
+				[]byte(""), // empty to ensure creation of resource
+			)
+			if err != nil {
+				t.Fatal(err)
+			}
+			templateBasedList, err := NewTemplateBasedResourceList(
+				filter,
+				helper.ReadFixtureFile(t, "templates/"+tc.templateFixture),
+			)
+			if err != nil {
+				t.Fatal(err)
+			}
+			upsertOnly := false
+			allowRecreate := false
+			ignoredPaths := []string{}
+			cs, err := NewChangeset(
+				platformBasedList,
+				templateBasedList,
+				upsertOnly,
+				allowRecreate,
+				ignoredPaths,
+			)
+			if err != nil {
+				t.Fatal(err)
+			}
+			createChanges := cs.Create
+			numberOfCreateChanges := len(createChanges)
+			if numberOfCreateChanges != 1 {
+				t.Fatalf("Expected one creation change, got: %d", numberOfCreateChanges)
+			}
+			createChange := createChanges[0]
+			want := string(helper.ReadGoldenFile(t, "desired-state/"+tc.expectedGolden))
+			got := createChange.DesiredState
+			if diff := cmp.Diff(want, got); diff != "" {
+				t.Errorf("Desired state mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}
 
 func TestCalculateChangesManagedAnnotations(t *testing.T) {
 
@@ -148,17 +219,17 @@ func TestCalculateChangesManagedAnnotations(t *testing.T) {
 			if len(actualChange.Patches) != len(tc.expectedPatches) {
 				t.Fatalf("Expected patches:\n%s\n--- got: ---\n%s", pretty(tc.expectedPatches), actualChange.PrettyJSONPatches())
 			}
-			for i, ap := range actualChange.Patches {
-				ep := tc.expectedPatches[i]
-				if !reflect.DeepEqual(ap, ep) {
-					t.Fatalf("Expected patch:\n%s\n--- got: ---\n%s", ep.Pretty(), ap.Pretty())
+			for i, got := range actualChange.Patches {
+				want := tc.expectedPatches[i]
+				if diff := cmp.Diff(want, got); diff != "" {
+					t.Errorf("Change diff mismatch (-want +got):\n%s", diff)
 				}
 			}
 			if len(tc.expectedDiffGoldenFile) > 0 {
-				expectedDiff := strings.TrimSpace(getGoldenDiff(t, "item-managed-annotations", tc.expectedDiffGoldenFile+".txt"))
-				actualDiff := strings.TrimSpace(actualChange.Diff(true))
-				if expectedDiff != actualDiff {
-					t.Fatalf("Expected change diff:\n%s\n--- got: ---\n%s", expectedDiff, actualDiff)
+				want := strings.TrimSpace(getGoldenDiff(t, "item-managed-annotations", tc.expectedDiffGoldenFile+".txt"))
+				got := strings.TrimSpace(actualChange.Diff(true))
+				if diff := cmp.Diff(want, got); diff != "" {
+					t.Errorf("Change diff mismatch (-want +got):\n%s", diff)
 				}
 			}
 		})
@@ -235,10 +306,10 @@ func TestCalculateChangesAppliedConfiguration(t *testing.T) {
 			if len(actualChange.Patches) != len(tc.expectedPatches) {
 				t.Fatalf("Expected patches:\n%s\n--- got: ---\n%s", pretty(tc.expectedPatches), actualChange.PrettyJSONPatches())
 			}
-			for i, ap := range actualChange.Patches {
-				ep := tc.expectedPatches[i]
-				if !reflect.DeepEqual(ap, ep) {
-					t.Fatalf("Expected patch:\n%s\n--- got: ---\n%s", ep.Pretty(), ap.Pretty())
+			for i, got := range actualChange.Patches {
+				want := tc.expectedPatches[i]
+				if diff := cmp.Diff(want, got); diff != "" {
+					t.Errorf("Change diff mismatch (-want +got):\n%s", diff)
 				}
 			}
 		})

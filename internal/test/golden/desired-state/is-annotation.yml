@@ -1,0 +1,11 @@
+apiVersion: v1
+kind: ImageStream
+metadata:
+  annotations:
+    foo: bar
+    tailor.opendevstack.org/managed-annotations: foo
+  name: foo
+spec:
+  dockerImageRepository: foo
+  lookupPolicy:
+    local: false
