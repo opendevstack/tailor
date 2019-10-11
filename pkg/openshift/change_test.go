@@ -207,7 +207,7 @@ func TestDiff(t *testing.T) {
 			[]byte("{}"),
 			[]byte("{foo: bar, baz: qux}"),
 			[]byte("{}"),
-			`Only annotations used by Tailor internally differ. Use --diff=json to see details.
+			`Only annotations used by Tailor internally differ. Updating the resource is recommended, but not required. Use --diff=json to see the exact changes.
 `,
 			[]*jsonPatch{
 				&jsonPatch{

@@ -99,7 +99,7 @@ func (c *Change) JSONPatches() string {
 // Diff returns a unified diff text for the change.
 func (c *Change) Diff(revealSecrets bool) string {
 	if len(c.Patches) > 0 && c.patchesAreTailorInternalOnly() {
-		return "Only annotations used by Tailor internally differ. Use --diff=json to see details.\n"
+		return "Only annotations used by Tailor internally differ. Updating the resource is recommended, but not required. Use --diff=json to see the exact changes.\n"
 	} else if c.isSecret() && !revealSecrets {
 		return "Secret drift is hidden. Use --reveal-secrets to see details.\n"
 	}
