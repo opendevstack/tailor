@@ -53,7 +53,7 @@ var (
 	).Short('n').String()
 	selectorFlag = app.Flag(
 		"selector",
-		"Selector (label query) to filter on",
+		"Selector (label query) to filter on. When using multiple labels (comma-separated), all need to be present (AND condition).",
 	).Short('l').String()
 	excludeFlag = app.Flag(
 		"exclude",
