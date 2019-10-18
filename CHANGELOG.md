@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## [0.10.3] - 2019-10-18
+
 ### Fixed
 - Avoid drift in annotations after creation of resource ([#142](https://github.com/opendevstack/tailor/issues/142))
 - Remove legacy fields `/userNames` and `/groupNames` from `Rolebinding`
