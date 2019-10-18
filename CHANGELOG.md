@@ -2,6 +2,18 @@
 
 ## Unreleased
 
+### Fixed
+- Avoid drift in annotations after creation of resource ([#142](https://github.com/opendevstack/tailor/issues/142))
+- Remove legacy fields `/userNames` and `/groupNames` from `Rolebinding`
+  resources. Those fields are added by `oc export` but might cause issues when
+  set to `null`. Tailor removes those now, so only changes in `subjects` have
+  any effect. See [#140](https://github.com/opendevstack/tailor/issues/140).
+- Do not escape field names when adding annotations object, as when
+  `/metadata/annotations` is added, the keys inside need to contain raw slashes
+  (`/`) instead of escaped ones (`~1`). Only when annotations already exist,
+  keys containing a slash need to escape them. See
+  [#145](https://github.com/opendevstack/tailor/issues/145).
+
 ## [0.10.2] - 2019-10-09
 
 ### Fixed
