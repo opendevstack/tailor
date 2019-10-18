@@ -30,6 +30,8 @@ var (
 		"/status",
 		"/spec/volumeName",
 		"/spec/template/metadata/creationTimestamp",
+		"/groupNames",
+		"/userNames",
 	}
 	platformManagedRegexFields = []string{
 		"^/spec/triggers/[0-9]*/imageChangeParams/lastTriggeredImage",
@@ -246,9 +248,13 @@ func (i *ResourceItem) parseConfig(m map[string]interface{}) error {
 	}
 
 	// Remove platform-managed simple fields
+	legacyFields := []string{"/userNames", "/groupNames"}
 	for _, p := range platformManagedSimpleFields {
 		deletePointer, _ := gojsonpointer.NewJsonPointer(p)
 		_, _ = deletePointer.Delete(m)
+		if utils.Includes(legacyFields, p) {
+			cli.VerboseMsg("Removed", p, "which is used for legacy clients, but not supported by Tailor")
+		}
 	}
 
 	i.Config = m

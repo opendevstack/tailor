@@ -1,0 +1,16 @@
+apiVersion: authorization.openshift.io/v1
+groupNames:
+- dedicated-admins
+- system:serviceaccounts:dedicated-admin
+kind: RoleBinding
+metadata:
+  creationTimestamp: null
+  name: admin-0
+roleRef:
+  name: admin
+subjects:
+- kind: Group
+  name: dedicated-admins
+- kind: SystemGroup
+  name: system:serviceaccounts:dedicated-admin
+userNames: null
