@@ -316,6 +316,79 @@ func TestCalculateChangesAppliedConfiguration(t *testing.T) {
 	}
 }
 
+func TestCalculateChangesOmittedFields(t *testing.T) {
+
+	tests := map[string]struct {
+		platformFixture        string
+		templateFixture        string
+		expectedAction         string
+		expectedPatches        jsonPatches
+		expectedDiffGoldenFile string
+	}{
+		"Rolebinding with legacy fields": {
+			platformFixture: "rolebinding-platform",
+			templateFixture: "rolebinding-template",
+			expectedAction:  "Update",
+			expectedPatches: jsonPatches{
+				&jsonPatch{
+					Op:    "replace",
+					Path:  "/subjects/0/kind",
+					Value: "ServiceAccount",
+				},
+				&jsonPatch{
+					Op:    "replace",
+					Path:  "/subjects/0/name",
+					Value: "jenkins",
+				},
+				&jsonPatch{
+					Op:    "add",
+					Path:  "/subjects/0/namespace",
+					Value: "foo-cd",
+				},
+				&jsonPatch{
+					Op:   "remove",
+					Path: "/subjects/1",
+				},
+			},
+			expectedDiffGoldenFile: "rolebinding-changed",
+		},
+	}
+
+	for name, tc := range tests {
+		t.Run(name, func(t *testing.T) {
+			platformItem := getPlatformItem(t, "item-omitted-fields/"+tc.platformFixture+".yml")
+			templateItem := getTemplateItem(t, "item-omitted-fields/"+tc.templateFixture+".yml")
+			changes, err := calculateChanges(templateItem, platformItem, []string{}, true)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if len(changes) != 1 {
+				t.Fatalf("Expected 1 change, got: %d", len(changes))
+			}
+			actualChange := changes[0]
+			if actualChange.Action != tc.expectedAction {
+				t.Fatalf("Expected change action to be: %s, got: %s. Patches: \n%s", tc.expectedAction, actualChange.Action, actualChange.PrettyJSONPatches())
+			}
+			if len(actualChange.Patches) != len(tc.expectedPatches) {
+				t.Fatalf("Expected patches:\n%s\n--- got: ---\n%s", pretty(tc.expectedPatches), actualChange.PrettyJSONPatches())
+			}
+			for i, got := range actualChange.Patches {
+				want := tc.expectedPatches[i]
+				if diff := cmp.Diff(want, got); diff != "" {
+					t.Errorf("Change diff mismatch (-want +got):\n%s", diff)
+				}
+			}
+			if len(tc.expectedDiffGoldenFile) > 0 {
+				want := strings.TrimSpace(getGoldenDiff(t, "item-omitted-fields", tc.expectedDiffGoldenFile+".txt"))
+				got := strings.TrimSpace(actualChange.Diff(true))
+				if diff := cmp.Diff(want, got); diff != "" {
+					t.Errorf("Change diff mismatch (-want +got):\n%s", diff)
+				}
+			}
+		})
+	}
+}
+
 func TestEmptyValuesDoNotCauseDrift(t *testing.T) {
 	platformItem := getPlatformItem(t, "empty-values/bc-platform.yml")
 	templateItem := getTemplateItem(t, "empty-values/bc-template.yml")

@@ -1,0 +1,13 @@
+--- Current State (OpenShift cluster)
++++ Desired State (Processed template)
+@@ -5,8 +5,7 @@
+ roleRef:
+   name: admin
+ subjects:
+-- kind: Group
+-  name: dedicated-admins
+-- kind: SystemGroup
+-  name: system:serviceaccounts:dedicated-admin
++- kind: ServiceAccount
++  name: jenkins
++  namespace: foo-cd
