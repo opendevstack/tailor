@@ -294,7 +294,7 @@ func calculateChanges(templateItem *ResourceItem, platformItem *ResourceItem, ex
 	}
 	if managedAnnotationsPatch.Op != "noop" {
 		if annotationsOp == "add" {
-			annotationsMap[escapedTailorManagedAnnotation] = managedAnnotationsPatch.Value.(string)
+			annotationsMap[tailorManagedAnnotation] = managedAnnotationsPatch.Value.(string)
 		} else {
 			if annotationsOp == "remove" {
 				comparison[annotationsPath].Op = "noop"
@@ -303,7 +303,7 @@ func calculateChanges(templateItem *ResourceItem, platformItem *ResourceItem, ex
 				comparison[tailorManagedAnnotationPath] = managedAnnotationsPatch
 			} else {
 				comparison[annotationsPath] = &jsonPatch{Op: "add"}
-				annotationsMap[escapedTailorManagedAnnotation] = managedAnnotationsPatch.Value.(string)
+				annotationsMap[tailorManagedAnnotation] = managedAnnotationsPatch.Value.(string)
 			}
 		}
 	}
@@ -330,7 +330,7 @@ func calculateChanges(templateItem *ResourceItem, platformItem *ResourceItem, ex
 	}
 	if appliedConfigAnnotationsPatch.Op != "noop" {
 		if annotationsOp == "add" {
-			annotationsMap[escapedTailorAppliedConfigAnnotation] = appliedConfigAnnotationsPatch.Value.(string)
+			annotationsMap[tailorAppliedConfigAnnotation] = appliedConfigAnnotationsPatch.Value.(string)
 		} else {
 			if annotationsOp == "remove" {
 				comparison[annotationsPath].Op = "noop"
@@ -339,7 +339,7 @@ func calculateChanges(templateItem *ResourceItem, platformItem *ResourceItem, ex
 				comparison[tailorAppliedConfigAnnotationPath] = appliedConfigAnnotationsPatch
 			} else {
 				comparison[annotationsPath] = &jsonPatch{Op: "add"}
-				annotationsMap[escapedTailorAppliedConfigAnnotation] = appliedConfigAnnotationsPatch.Value.(string)
+				annotationsMap[tailorAppliedConfigAnnotation] = appliedConfigAnnotationsPatch.Value.(string)
 			}
 		}
 	}

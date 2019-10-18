@@ -104,7 +104,7 @@ func TestCalculateChangesManagedAnnotations(t *testing.T) {
 					Path: "/metadata/annotations",
 					Value: map[string]string{
 						"bar": "baz",
-						"tailor.opendevstack.org~1managed-annotations": "bar",
+						"tailor.opendevstack.org/managed-annotations": "bar",
 					},
 				},
 			},
@@ -253,7 +253,7 @@ func TestCalculateChangesAppliedConfiguration(t *testing.T) {
 					Op:   "add",
 					Path: "/metadata/annotations",
 					Value: map[string]string{
-						"tailor.opendevstack.org~1applied-config": "{\"/spec/template/spec/containers/0/image\":\"bar/foo:latest\"}",
+						"tailor.opendevstack.org/applied-config": "{\"/spec/template/spec/containers/0/image\":\"bar/foo:latest\"}",
 					},
 				},
 				&jsonPatch{
@@ -263,14 +263,31 @@ func TestCalculateChangesAppliedConfiguration(t *testing.T) {
 				},
 			},
 		},
+		"With annotation in platform": {
+			platformFixture: "dc-platform-annotation-other",
+			templateFixture: "dc-template",
+			expectedAction:  "Update",
+			expectedPatches: jsonPatches{
+				&jsonPatch{
+					Op:    "add",
+					Path:  "/metadata/annotations/tailor.opendevstack.org~1applied-config",
+					Value: "{\"/spec/template/spec/containers/0/image\":\"bar/foo:latest\"}",
+				},
+				&jsonPatch{
+					Op:    "replace",
+					Path:  "/spec/template/spec/containers/0/image",
+					Value: "bar/foo:latest",
+				},
+			},
+		},
 		"Present in platform": {
-			platformFixture: "dc-platform-annotation",
+			platformFixture: "dc-platform-annotation-applied",
 			templateFixture: "dc-template",
 			expectedAction:  "Noop",
 			expectedPatches: jsonPatches{},
 		},
 		"Present in platform, changed in template": {
-			platformFixture: "dc-platform-annotation",
+			platformFixture: "dc-platform-annotation-applied",
 			templateFixture: "dc-template-changed",
 			expectedAction:  "Update",
 			expectedPatches: jsonPatches{
