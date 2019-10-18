@@ -105,9 +105,35 @@ func (i *ResourceItem) HasLabel(label string) bool {
 	return true
 }
 
+func (i *ResourceItem) DesiredConfig() (string, error) {
+	config := i.Config
+	if len(i.TailorManagedAnnotations) > 0 {
+		err := addInternalAnnotations(config, tailorManagedAnnotation, i.TailorManagedAnnotationsList())
+		if err != nil {
+			return "", fmt.Errorf("Could not add managed annotation %#v: %s", i.TailorManagedAnnotations, err)
+		}
+	}
+	if len(i.TailorAppliedConfigFields) > 0 {
+		val, err := json.Marshal(i.TailorAppliedConfigFields)
+		if err != nil {
+			return "", fmt.Errorf("Could not marshal %#v: %s", i.TailorAppliedConfigFields, err)
+		}
+		err = addInternalAnnotations(config, tailorAppliedConfigAnnotation, string(val))
+		if err != nil {
+			return "", fmt.Errorf("Could not add applied-config annotation %#v: %s", i.TailorAppliedConfigFields, err)
+		}
+	}
+	y, _ := yaml.Marshal(config)
+	return string(y), nil
+}
+
 func (i *ResourceItem) YamlConfig() string {
 	y, _ := yaml.Marshal(i.Config)
 	return string(y)
+}
+
+func (i *ResourceItem) TailorManagedAnnotationsList() string {
+	return strings.Join(i.TailorManagedAnnotations, ",")
 }
 
 // parseConfig uses the config to initialise an item. The logic is the same
@@ -401,6 +427,25 @@ func (platformItem *ResourceItem) prepareForComparisonWithTemplateItem(templateI
 			return fmt.Errorf("Could not delete %s from configuration", path)
 		}
 		platformItem.Paths = utils.Remove(platformItem.Paths, path)
+	}
+	return nil
+}
+
+func addInternalAnnotations(config map[string]interface{}, key string, val string) error {
+	annotationPointer, err := gojsonpointer.NewJsonPointer(annotationsPath)
+	if err != nil {
+		return fmt.Errorf("Could not get pointer to %s: %s", annotationsPath, err)
+	}
+	annotationsValue, _, err := annotationPointer.Get(config)
+	if err != nil {
+		// When annotations are not present, just assume an empty map.
+		annotationsValue = map[string]interface{}{}
+	}
+	annotationsValueMap := annotationsValue.(map[string]interface{})
+	annotationsValueMap[key] = val
+	_, err = annotationPointer.Set(config, annotationsValueMap)
+	if err != nil {
+		return fmt.Errorf("Could not set updated annotations map %#v : %s", annotationsValueMap, err)
 	}
 	return nil
 }
