@@ -97,7 +97,7 @@ func ProcessTemplate(templateDir string, name string, paramDir string, compareOp
 		args = append(args, "--param=TAILOR_NAMESPACE="+compareOptions.Namespace)
 	}
 
-	actualParamFiles := compareOptions.ParamFiles
+	actualParamFiles := compareOptions.ResolvedParamFiles()
 	// If param-file is not given, we assume a param-dir
 	if len(actualParamFiles) == 0 {
 		// Prefer <namespace> folder over current directory

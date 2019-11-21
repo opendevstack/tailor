@@ -512,6 +512,15 @@ func (o *CompareOptions) ResolvedParamDir() string {
 	return utils.AbsoluteOrRelativePath(o.ParamDir, o.ContextDir)
 }
 
+// ResolvedParamFiles returns param files prefixed by the context dir.
+func (o *CompareOptions) ResolvedParamFiles() []string {
+	files := []string{}
+	for _, f := range o.ParamFiles {
+		files = append(files, utils.AbsoluteOrRelativePath(f, o.ContextDir))
+	}
+	return files
+}
+
 func (o *ExportOptions) check() error {
 	if strings.Contains(o.Resource, "/") && len(o.Selector) > 0 {
 		DebugMsg("Ignoring selector", o.Selector, "as resource is given")
