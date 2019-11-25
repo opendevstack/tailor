@@ -135,7 +135,7 @@ func ProcessTemplate(templateDir string, name string, paramDir string, compareOp
 				if err != nil {
 					return []byte{}, err
 				}
-				encoded, err := EncodedParams(string(b), compareOptions.PrivateKey, compareOptions.Passphrase)
+				encoded, err := EncodedParams(string(b), compareOptions.ResolvedPrivateKey(), compareOptions.Passphrase)
 				if err != nil {
 					return []byte{}, err
 				}
