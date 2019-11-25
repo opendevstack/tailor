@@ -521,6 +521,11 @@ func (o *CompareOptions) ResolvedParamFiles() []string {
 	return files
 }
 
+// ResolvedPrivateKey returns private key prefixed by the context dir.
+func (o *CompareOptions) ResolvedPrivateKey() string {
+	return utils.AbsoluteOrRelativePath(o.PrivateKey, o.ContextDir)
+}
+
 func (o *ExportOptions) check() error {
 	if strings.Contains(o.Resource, "/") && len(o.Selector) > 0 {
 		DebugMsg("Ignoring selector", o.Selector, "as resource is given")
