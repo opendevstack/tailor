@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## [0.10.4] - 2019-11-25
+
 ### Fixed
 - Resolve `--param-file` and `--private-key` relative to context directory. See
   [#152](https://github.com/opendevstack/tailor/pull/152) and
