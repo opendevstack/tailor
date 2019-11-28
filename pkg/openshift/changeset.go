@@ -18,13 +18,14 @@ var (
 		"ConfigMap":             "b",
 		"Secret":                "c",
 		"PersistentVolumeClaim": "d",
-		"ImageStream":           "e",
-		"BuildConfig":           "f",
-		"DeploymentConfig":      "g",
-		"Service":               "h",
-		"Route":                 "i",
-		"ServiceAccount":        "j",
-		"RoleBinding":           "k",
+		"CronJob":               "e",
+		"ImageStream":           "f",
+		"BuildConfig":           "g",
+		"DeploymentConfig":      "h",
+		"Service":               "i",
+		"Route":                 "j",
+		"ServiceAccount":        "k",
+		"RoleBinding":           "l",
 	}
 )
 
