@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+### Added
+- Support cron jobs resources. See [#155](https://github.com/opendevstack/tailor/issues).
+
 ## [0.10.4] - 2019-11-25
 
 ### Fixed
