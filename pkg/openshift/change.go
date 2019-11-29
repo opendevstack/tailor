@@ -22,6 +22,7 @@ var (
 		"Secret":                "secret",
 		"RoleBinding":           "rolebinding",
 		"ServiceAccount":        "serviceaccount",
+		"CronJob":               "cronjob",
 	}
 )
 

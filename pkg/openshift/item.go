@@ -71,6 +71,8 @@ var (
 		"secret":                "Secret",
 		"rolebinding":           "RoleBinding",
 		"serviceaccount":        "ServiceAccount",
+		"cronjob":               "CronJob",
+		"cj":                    "CronJob",
 	}
 )
 
