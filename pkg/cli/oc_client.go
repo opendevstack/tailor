@@ -87,7 +87,7 @@ func (c *OcClient) Process(args []string) ([]byte, []byte, error) {
 
 // Export exports resources from OpenShift as a template.
 func (c *OcClient) Export(target string, label string) ([]byte, error) {
-	args := []string{"export", target, "--output=yaml", "--as-template=tailor"}
+	args := []string{"get", target, "--output=yaml", "--export"}
 	cmd := c.execOcCmd(
 		args,
 		c.namespace,

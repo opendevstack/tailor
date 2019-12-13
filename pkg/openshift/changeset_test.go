@@ -369,10 +369,10 @@ items:
   status: {}`)
 
 	platformInput := []byte(
-		`kind: Template
+		`kind: List
 metadata: {}
 apiVersion: v1
-objects:
+items:
 - apiVersion: v1
   kind: PersistentVolumeClaim
   metadata:
@@ -425,10 +425,10 @@ items:
   status: {}`)
 
 	platformInput := []byte(
-		`kind: Template
+		`kind: List
 metadata: {}
 apiVersion: v1
-objects:
+items:
 - apiVersion: v1
   kind: PersistentVolumeClaim
   metadata:
@@ -485,9 +485,9 @@ items:
       type: Generic`)
 
 	platformInput := []byte(
-		`kind: Template
+		`kind: List
 apiVersion: v1
-objects:
+items:
 - apiVersion: v1
   kind: BuildConfig
   metadata:
@@ -547,10 +547,10 @@ items:
   status: {}`)
 
 	platformInput := []byte(
-		`kind: Template
+		`kind: List
 metadata: {}
 apiVersion: v1
-objects:
+items:
 - apiVersion: v1
   kind: PersistentVolumeClaim
   metadata:
@@ -578,10 +578,10 @@ func TestConfigDeletion(t *testing.T) {
 	templateInput := []byte{}
 
 	platformInput := []byte(
-		`kind: Template
+		`kind: List
 metadata: {}
 apiVersion: v1
-objects:
+items:
 - apiVersion: v1
   kind: PersistentVolumeClaim
   metadata:

@@ -1,9 +1,6 @@
-apiVersion: template.openshift.io/v1
-kind: Template
-metadata:
-  creationTimestamp: null
-  name: tailor
-objects:
+apiVersion: v1
+kind: List
+items:
 - apiVersion: authorization.openshift.io/v1
   groupNames: null
   kind: RoleBinding
