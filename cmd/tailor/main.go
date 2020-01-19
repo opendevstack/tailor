@@ -85,91 +85,91 @@ var (
 		"Show version",
 	)
 
-	statusCommand = app.Command(
-		"status",
+	diffCommand = app.Command(
+		"diff",
 		"Show diff between remote and local",
-	)
-	statusLabelsFlag = statusCommand.Flag(
+	).Alias("status")
+	diffLabelsFlag = diffCommand.Flag(
 		"labels",
 		"Label to set in all resources for this template.",
 	).String()
-	statusParamFlag = statusCommand.Flag(
+	diffParamFlag = diffCommand.Flag(
 		"param",
 		"Specify a key-value pair (eg. -p FOO=BAR) to set/override a parameter value in the template.",
 	).Strings()
-	statusParamFileFlag = statusCommand.Flag(
+	diffParamFileFlag = diffCommand.Flag(
 		"param-file",
 		"File(s) containing template parameter values to set/override in the template.",
 	).Strings()
-	statusDiffFlag = statusCommand.Flag(
+	diffDiffFlag = diffCommand.Flag(
 		"diff",
 		"Whether to show textual diff (\"text\") or JSON patches (\"json\"). JSON patches might show secret values in clear text.",
 	).Default("text").String()
-	statusIgnorePathFlag = statusCommand.Flag(
+	diffIgnorePathFlag = diffCommand.Flag(
 		"ignore-path",
 		"Path(s) per kind/name to ignore (e.g. because they are externally modified) in RFC 6901 format.",
 	).PlaceHolder("bc:foobar:/spec/output/to/name").Strings()
-	statusIgnoreUnknownParametersFlag = statusCommand.Flag(
+	diffIgnoreUnknownParametersFlag = diffCommand.Flag(
 		"ignore-unknown-parameters",
 		"If true, will not stop processing if a provided parameter does not exist in the template.",
 	).Bool()
-	statusUpsertOnlyFlag = statusCommand.Flag(
+	diffUpsertOnlyFlag = diffCommand.Flag(
 		"upsert-only",
 		"Don't delete resource, only create / update.",
 	).Short('u').Bool()
-	statusAllowRecreateFlag = statusCommand.Flag(
+	diffAllowRecreateFlag = diffCommand.Flag(
 		"allow-recreate",
 		"Allow to recreate the whole resource when an immutable field is changed.",
 	).Bool()
-	statusRevealSecretsFlag = statusCommand.Flag(
+	diffRevealSecretsFlag = diffCommand.Flag(
 		"reveal-secrets",
 		"Reveal drift of Secret resources (might show secret values in clear text).",
 	).Bool()
-	statusResourceArg = statusCommand.Arg(
+	diffResourceArg = diffCommand.Arg(
 		"resource", "Remote resource (defaults to all)",
 	).String()
 
-	updateCommand = app.Command(
-		"update",
+	applyCommand = app.Command(
+		"apply",
 		"Update remote with local",
-	)
-	updateLabelsFlag = updateCommand.Flag(
+	).Alias("update")
+	applyLabelsFlag = applyCommand.Flag(
 		"labels",
 		"Label to set in all resources for this template.",
 	).String()
-	updateParamFlag = updateCommand.Flag(
+	applyParamFlag = applyCommand.Flag(
 		"param",
 		"Specify a key-value pair (eg. -p FOO=BAR) to set/override a parameter value in the template.",
 	).Strings()
-	updateParamFileFlag = updateCommand.Flag(
+	applyParamFileFlag = applyCommand.Flag(
 		"param-file",
 		"File(s) containing template parameter values to set/override in the template.",
 	).Strings()
-	updateDiffFlag = updateCommand.Flag(
+	applyDiffFlag = applyCommand.Flag(
 		"diff",
 		"Whether to show textual diff (\"text\") or JSON patches (\"json\"). JSON patches might show secret values in clear text.",
 	).Default("text").String()
-	updateIgnorePathFlag = updateCommand.Flag(
+	applyIgnorePathFlag = applyCommand.Flag(
 		"ignore-path",
 		"Path(s) per kind to ignore (e.g. because they are externally modified) in RFC 6901 format.",
 	).PlaceHolder("bc:foobar:/spec/output/to/name").Strings()
-	updateIgnoreUnknownParametersFlag = updateCommand.Flag(
+	applyIgnoreUnknownParametersFlag = applyCommand.Flag(
 		"ignore-unknown-parameters",
 		"If true, will not stop processing if a provided parameter does not exist in the template.",
 	).Bool()
-	updateUpsertOnlyFlag = updateCommand.Flag(
+	applyUpsertOnlyFlag = applyCommand.Flag(
 		"upsert-only",
-		"Don't delete resource, only create / update.",
+		"Don't delete resource, only create / apply.",
 	).Short('u').Bool()
-	updateAllowRecreateFlag = updateCommand.Flag(
+	applyAllowRecreateFlag = applyCommand.Flag(
 		"allow-recreate",
 		"Allow to recreate the whole resource when an immutable field is changed.",
 	).Bool()
-	updateRevealSecretsFlag = updateCommand.Flag(
+	applyRevealSecretsFlag = applyCommand.Flag(
 		"reveal-secrets",
 		"Reveal drift of Secret resources (might show secret values in clear text).",
 	).Bool()
-	updateResourceArg = updateCommand.Arg(
+	applyResourceArg = applyCommand.Arg(
 		"resource", "Remote resource (defaults to all)",
 	).String()
 
@@ -328,7 +328,7 @@ func main() {
 			log.Fatalf("Failed to generate keypair: %s.", err)
 		}
 
-	case statusCommand.FullCommand():
+	case diffCommand.FullCommand():
 		optionSets := map[string]*cli.CompareOptions{}
 		for _, contextDir := range globalOptions.ContextDirs {
 			opt, err := cli.NewCompareOptions(
@@ -342,16 +342,16 @@ func main() {
 				*publicKeyDirFlag,
 				*privateKeyFlag,
 				*passphraseFlag,
-				*statusLabelsFlag,
-				*statusParamFlag,
-				*statusParamFileFlag,
-				*statusDiffFlag,
-				*statusIgnorePathFlag,
-				*statusIgnoreUnknownParametersFlag,
-				*statusUpsertOnlyFlag,
-				*statusAllowRecreateFlag,
-				*statusRevealSecretsFlag,
-				*statusResourceArg,
+				*diffLabelsFlag,
+				*diffParamFlag,
+				*diffParamFileFlag,
+				*diffDiffFlag,
+				*diffIgnorePathFlag,
+				*diffIgnoreUnknownParametersFlag,
+				*diffUpsertOnlyFlag,
+				*diffAllowRecreateFlag,
+				*diffRevealSecretsFlag,
+				*diffResourceArg,
 			)
 			if err != nil {
 				log.Fatalln("Options could not be processed:", err)
@@ -359,15 +359,15 @@ func main() {
 			optionSets[contextDir] = opt
 		}
 
-		updateRequired, err := commands.Status(optionSets)
+		driftDectected, err := commands.Diff(optionSets)
 		if err != nil {
 			log.Fatalln(err)
 		}
-		if updateRequired {
+		if driftDectected {
 			os.Exit(3)
 		}
 
-	case updateCommand.FullCommand():
+	case applyCommand.FullCommand():
 		optionSets := map[string]*cli.CompareOptions{}
 		for _, contextDir := range globalOptions.ContextDirs {
 			opt, err := cli.NewCompareOptions(
@@ -381,16 +381,16 @@ func main() {
 				*publicKeyDirFlag,
 				*privateKeyFlag,
 				*passphraseFlag,
-				*updateLabelsFlag,
-				*updateParamFlag,
-				*updateParamFileFlag,
-				*updateDiffFlag,
-				*updateIgnorePathFlag,
-				*updateIgnoreUnknownParametersFlag,
-				*updateUpsertOnlyFlag,
-				*updateAllowRecreateFlag,
-				*updateRevealSecretsFlag,
-				*updateResourceArg,
+				*applyLabelsFlag,
+				*applyParamFlag,
+				*applyParamFileFlag,
+				*applyDiffFlag,
+				*applyIgnorePathFlag,
+				*applyIgnoreUnknownParametersFlag,
+				*applyUpsertOnlyFlag,
+				*applyAllowRecreateFlag,
+				*applyRevealSecretsFlag,
+				*applyResourceArg,
 			)
 			if err != nil {
 				log.Fatalln("Options could not be processed:", err)
@@ -398,7 +398,7 @@ func main() {
 			optionSets[contextDir] = opt
 		}
 
-		err = commands.Update(globalOptions.NonInteractive, optionSets)
+		err = commands.Apply(globalOptions.NonInteractive, optionSets)
 		if err != nil {
 			log.Fatalln(err)
 		}

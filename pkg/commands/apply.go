@@ -8,9 +8,9 @@ import (
 	"github.com/opendevstack/tailor/pkg/openshift"
 )
 
-// Update prints the drift between desired and current state to STDOUT.
+// Apply prints the drift between desired and current state to STDOUT.
 // If there is any, it asks for confirmation and applies the changeset.
-func Update(nonInteractive bool, compareOptionSets map[string]*cli.CompareOptions) error {
+func Apply(nonInteractive bool, compareOptionSets map[string]*cli.CompareOptions) error {
 	updateRequired, changesets, err := calculateChangesets(compareOptionSets)
 	if err != nil {
 		return err
@@ -21,7 +21,7 @@ func Update(nonInteractive bool, compareOptionSets map[string]*cli.CompareOption
 			for contextDir, compareOptions := range compareOptionSets {
 				err = apply(compareOptions, changesets[contextDir])
 				if err != nil {
-					return fmt.Errorf("Update aborted: %s", err)
+					return fmt.Errorf("Apply aborted: %s", err)
 				}
 			}
 		} else {
@@ -31,7 +31,7 @@ func Update(nonInteractive bool, compareOptionSets map[string]*cli.CompareOption
 				for contextDir, compareOptions := range compareOptionSets {
 					err = apply(compareOptions, changesets[contextDir])
 					if err != nil {
-						return fmt.Errorf("Update aborted: %s", err)
+						return fmt.Errorf("Apply aborted: %s", err)
 					}
 				}
 			}

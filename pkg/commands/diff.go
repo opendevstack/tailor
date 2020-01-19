@@ -9,8 +9,8 @@ import (
 	"github.com/opendevstack/tailor/pkg/openshift"
 )
 
-// Status prints the drift between desired and current state to STDOUT.
-func Status(compareOptionSets map[string]*cli.CompareOptions) (bool, error) {
+// Diff prints the drift between desired and current state to STDOUT.
+func Diff(compareOptionSets map[string]*cli.CompareOptions) (bool, error) {
 	updateRequired, _, err := calculateChangesets(compareOptionSets)
 	return updateRequired, err
 }
