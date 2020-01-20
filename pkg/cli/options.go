@@ -143,7 +143,7 @@ func NewGlobalOptions(
 	return o, o.check(clusterRequired)
 }
 
-// NewCompareOptions returns new options for the status/update command based on file/flags.
+// NewCompareOptions returns new options for the diff/apply command based on file/flags.
 func NewCompareOptions(
 	globalOptions *GlobalOptions,
 	contextDir string,
