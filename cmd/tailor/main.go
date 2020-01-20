@@ -101,8 +101,8 @@ var (
 		"param-file",
 		"File(s) containing template parameter values to set/override in the template.",
 	).Strings()
-	diffDiffFlag = diffCommand.Flag(
-		"diff",
+	diffFormatFlag = diffCommand.Flag(
+		"format",
 		"Whether to show textual diff (\"text\") or JSON patches (\"json\"). JSON patches might show secret values in clear text.",
 	).Default("text").String()
 	diffIgnorePathFlag = diffCommand.Flag(
@@ -345,7 +345,7 @@ func main() {
 				*diffLabelsFlag,
 				*diffParamFlag,
 				*diffParamFileFlag,
-				*diffDiffFlag,
+				*diffFormatFlag,
 				*diffIgnorePathFlag,
 				*diffIgnoreUnknownParametersFlag,
 				*diffUpsertOnlyFlag,

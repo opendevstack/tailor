@@ -43,7 +43,7 @@ type CompareOptions struct {
 	Labels                  string
 	Params                  []string
 	ParamFiles              []string
-	Diff                    string
+	Format                  string
 	IgnorePaths             []string
 	IgnoreUnknownParameters bool
 	UpsertOnly              bool
@@ -158,7 +158,7 @@ func NewCompareOptions(
 	labelsFlag string,
 	paramFlag []string,
 	paramFileFlag []string,
-	diffFlag string,
+	formatFlag string,
 	ignorePathFlag []string,
 	ignoreUnknownParametersFlag bool,
 	upsertOnlyFlag bool,
@@ -263,10 +263,10 @@ func NewCompareOptions(
 		o.ParamFiles = strings.Split(val, ",")
 	}
 
-	if len(diffFlag) > 0 {
-		o.Diff = diffFlag
+	if len(formatFlag) > 0 {
+		o.Format = formatFlag
 	} else if val, ok := fileFlags["diff"]; ok {
-		o.Diff = val
+		o.Format = val
 	}
 
 	if len(ignorePathFlag) > 0 {
@@ -491,7 +491,7 @@ func (o *CompareOptions) check() error {
 		}
 	}
 
-	if o.Diff != "text" && o.Diff != "json" {
+	if o.Format != "text" && o.Format != "json" {
 		return errors.New("--diff must be either text or json")
 	}
 	if strings.Contains(o.Resource, "/") && len(o.Selector) > 0 {
