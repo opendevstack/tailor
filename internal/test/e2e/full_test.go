@@ -15,9 +15,9 @@ func TestFullScope(t *testing.T) {
 
 	tailorBinary := getTailorBinary()
 
-	export(t, tailorBinary)
+	runExport(t, tailorBinary)
 
-	statusWithNoExpectedDrift(t, tailorBinary)
+	diffWithNoExpectedDrift(t, tailorBinary)
 
 	// Create new resource
 	t.Log("Create new template with one resource")
@@ -40,7 +40,7 @@ objects:
 	}
 
 	// Status -> expected to have one created resource
-	cmd := exec.Command(tailorBinary, []string{"status", "--force"}...)
+	cmd := exec.Command(tailorBinary, []string{"diff", "--force"}...)
 	out, err := cmd.CombinedOutput()
 	if err == nil {
 		t.Fatalf("Status command should have exited with 3")
@@ -60,8 +60,8 @@ objects:
 		t.Fatalf("Some resources should be in synce")
 	}
 
-	update(t, tailorBinary)
-	statusWithNoExpectedDrift(t, tailorBinary)
+	runApply(t, tailorBinary)
+	diffWithNoExpectedDrift(t, tailorBinary)
 
 	// Check content of config map
 	cmd = exec.Command("oc", []string{"get", "cm/foo", "-oyaml"}...)
@@ -83,7 +83,7 @@ objects:
 	}
 
 	// Status -> expected to have drift (updated resource)
-	cmd = exec.Command(tailorBinary, []string{"status", "--force"}...)
+	cmd = exec.Command(tailorBinary, []string{"diff", "--force"}...)
 	out, err = cmd.CombinedOutput()
 	if err == nil {
 		t.Fatalf("Status command should have exited with 3")
@@ -102,8 +102,8 @@ objects:
 		t.Fatalf("Some resources should be in synce")
 	}
 
-	update(t, tailorBinary)
-	statusWithNoExpectedDrift(t, tailorBinary)
+	runApply(t, tailorBinary)
+	diffWithNoExpectedDrift(t, tailorBinary)
 
 	// Simulate manual change in cluster
 	cmd = exec.Command("oc", []string{"patch", "cm/foo", "-p", "{\"data\": {\"bar\": \"baz\"}}"}...)
@@ -114,7 +114,7 @@ objects:
 	t.Log("Patched content of ConfigMap")
 
 	// Status -> expected to have drift (updated resource)
-	cmd = exec.Command(tailorBinary, []string{"status", "--force"}...)
+	cmd = exec.Command(tailorBinary, []string{"diff", "--force"}...)
 	out, err = cmd.CombinedOutput()
 	if err == nil {
 		t.Fatalf("Status command should have exited with 3")
@@ -132,14 +132,14 @@ objects:
 		t.Fatalf("Some resources should be in synce")
 	}
 
-	update(t, tailorBinary)
-	statusWithNoExpectedDrift(t, tailorBinary)
+	runApply(t, tailorBinary)
+	diffWithNoExpectedDrift(t, tailorBinary)
 
 	t.Log("Remove ConfigMap template")
 	os.Remove("cm-template.yml")
 
 	// Status -> expected to have drift (deleted resource)
-	cmd = exec.Command(tailorBinary, []string{"status", "--force"}...)
+	cmd = exec.Command(tailorBinary, []string{"diff", "--force"}...)
 	out, err = cmd.CombinedOutput()
 	if err == nil {
 		t.Fatalf("Status command should have exited with 3")
@@ -158,13 +158,13 @@ objects:
 		t.Fatalf("Some resources should be in synce")
 	}
 
-	update(t, tailorBinary)
-	statusWithNoExpectedDrift(t, tailorBinary)
+	runApply(t, tailorBinary)
+	diffWithNoExpectedDrift(t, tailorBinary)
 }
 
-func update(t *testing.T, tailorBinary string) {
+func runApply(t *testing.T, tailorBinary string) {
 	t.Log("Updating test project")
-	cmd := exec.Command(tailorBinary, []string{"update", "--non-interactive", "--force"}...)
+	cmd := exec.Command(tailorBinary, []string{"apply", "--non-interactive", "--force"}...)
 	out, err := cmd.CombinedOutput()
 	if err != nil {
 		t.Fatalf("Could not update test project: %s", out)
@@ -172,9 +172,9 @@ func update(t *testing.T, tailorBinary string) {
 	t.Log("Updated test project")
 }
 
-func statusWithNoExpectedDrift(t *testing.T, tailorBinary string) {
-	t.Log("Getting status ...")
-	cmd := exec.Command(tailorBinary, []string{"status", "--force"}...)
+func diffWithNoExpectedDrift(t *testing.T, tailorBinary string) {
+	t.Log("Calculating diff ...")
+	cmd := exec.Command(tailorBinary, []string{"diff", "--force"}...)
 	out, err := cmd.CombinedOutput()
 	if err != nil {
 		t.Fatalf("Could not get status in test project: %s", out)
@@ -194,7 +194,7 @@ func statusWithNoExpectedDrift(t *testing.T, tailorBinary string) {
 	}
 }
 
-func export(t *testing.T, tailorBinary string) {
+func runExport(t *testing.T, tailorBinary string) {
 	cmd := exec.Command(tailorBinary, []string{"export", "--force"}...)
 	out, err := cmd.CombinedOutput()
 	if err != nil {
