@@ -255,7 +255,7 @@ func (i *ResourceItem) parseConfig(m map[string]interface{}) error {
 		deletePointer, _ := gojsonpointer.NewJsonPointer(p)
 		_, _ = deletePointer.Delete(m)
 		if utils.Includes(legacyFields, p) {
-			cli.VerboseMsg("Removed", p, "which is used for legacy clients, but not supported by Tailor")
+			cli.DebugMsg("Removed", p, "which is used for legacy clients, but not supported by Tailor")
 		}
 	}
 
