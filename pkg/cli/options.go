@@ -44,7 +44,7 @@ type CompareOptions struct {
 	Params                  []string
 	ParamFiles              []string
 	Format                  string
-	IgnorePaths             []string
+	PreservePaths           []string
 	IgnoreUnknownParameters bool
 	UpsertOnly              bool
 	AllowRecreate           bool
@@ -159,7 +159,7 @@ func NewCompareOptions(
 	paramFlag []string,
 	paramFileFlag []string,
 	formatFlag string,
-	ignorePathFlag []string,
+	preserveFlag []string,
 	ignoreUnknownParametersFlag bool,
 	upsertOnlyFlag bool,
 	allowRecreateFlag bool,
@@ -269,10 +269,10 @@ func NewCompareOptions(
 		o.Format = val
 	}
 
-	if len(ignorePathFlag) > 0 {
-		o.IgnorePaths = ignorePathFlag
-	} else if val, ok := fileFlags["ignore-path"]; ok {
-		o.IgnorePaths = strings.Split(val, ",")
+	if len(preserveFlag) > 0 {
+		o.PreservePaths = preserveFlag
+	} else if val, ok := fileFlags["preserve"]; ok {
+		o.PreservePaths = strings.Split(val, ",")
 	}
 
 	if ignoreUnknownParametersFlag {

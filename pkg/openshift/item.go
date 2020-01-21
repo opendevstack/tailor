@@ -397,7 +397,7 @@ func (templateItem *ResourceItem) prepareForComparisonWithPlatformItem(platformI
 					templateItem.FullName(),
 				))
 			} else {
-				// Add ignored path and its subpaths to the paths slice
+				// Add preserved path and its subpaths to the paths slice
 				// of the template item.
 				templateItem.Paths = append(templateItem.Paths, path)
 				switch vv := platformItemVal.(type) {

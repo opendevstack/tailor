@@ -53,13 +53,13 @@ func TestNewChangesetCreationOfResources(t *testing.T) {
 			}
 			upsertOnly := false
 			allowRecreate := false
-			ignoredPaths := []string{}
+			preservePaths := []string{}
 			cs, err := NewChangeset(
 				platformBasedList,
 				templateBasedList,
 				upsertOnly,
 				allowRecreate,
-				ignoredPaths,
+				preservePaths,
 			)
 			if err != nil {
 				t.Fatal(err)
@@ -583,7 +583,7 @@ objects:
 	}
 }
 
-func TestConfigIgnoredPaths(t *testing.T) {
+func TestConfigPreservePaths(t *testing.T) {
 	templateInput := []byte(
 		`kind: List
 apiVersion: v1
@@ -780,7 +780,7 @@ func TestCalculateChangesImmutableFields(t *testing.T) {
 	}
 }
 
-func getChangeset(t *testing.T, filter *ResourceFilter, platformInput, templateInput []byte, upsertOnly bool, allowRecreate bool, ignoredPaths []string) *Changeset {
+func getChangeset(t *testing.T, filter *ResourceFilter, platformInput, templateInput []byte, upsertOnly bool, allowRecreate bool, preservePaths []string) *Changeset {
 	platformBasedList, err := NewPlatformBasedResourceList(filter, platformInput)
 	if err != nil {
 		t.Error("Could not create platform based list:", err)
@@ -789,7 +789,7 @@ func getChangeset(t *testing.T, filter *ResourceFilter, platformInput, templateI
 	if err != nil {
 		t.Error("Could not create template based list:", err)
 	}
-	changeset, err := NewChangeset(platformBasedList, templateBasedList, upsertOnly, allowRecreate, ignoredPaths)
+	changeset, err := NewChangeset(platformBasedList, templateBasedList, upsertOnly, allowRecreate, preservePaths)
 	if err != nil {
 		t.Error("Could not create changeset:", err)
 	}

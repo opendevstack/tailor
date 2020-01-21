@@ -36,7 +36,7 @@ type Changeset struct {
 	Noop   []*Change
 }
 
-func NewChangeset(platformBasedList, templateBasedList *ResourceList, upsertOnly bool, allowRecreate bool, ignoredPaths []string) (*Changeset, error) {
+func NewChangeset(platformBasedList, templateBasedList *ResourceList, upsertOnly bool, allowRecreate bool, preservePaths []string) (*Changeset, error) {
 	changeset := &Changeset{
 		Create: []*Change{},
 		Delete: []*Change{},
@@ -86,15 +86,15 @@ func NewChangeset(platformBasedList, templateBasedList *ResourceList, upsertOnly
 		)
 		if err == nil {
 			externallyModifiedPaths := []string{}
-			for _, path := range ignoredPaths {
+			for _, path := range preservePaths {
 				pathParts := strings.Split(path, ":")
 				if len(pathParts) > 3 {
 					return changeset, fmt.Errorf(
-						"%s is not a valid ignore-path argument",
+						"%s is not a valid preserve argument",
 						path,
 					)
 				}
-				// ignored paths can be either:
+				// Preserved paths can be either:
 				// - globally (e.g. /spec/name)
 				// - per-kind (e.g. bc:/spec/name)
 				// - per-resource (e.g. bc:foo:/spec/name)

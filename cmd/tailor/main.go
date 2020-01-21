@@ -105,9 +105,9 @@ var (
 		"format",
 		"Whether to show textual diff (\"text\") or JSON patches (\"json\"). JSON patches might show secret values in clear text.",
 	).Default("text").String()
-	diffIgnorePathFlag = diffCommand.Flag(
-		"ignore-path",
-		"Path(s) per kind/name to ignore (e.g. because they are externally modified) in RFC 6901 format.",
+	diffPreservePathFlag = diffCommand.Flag(
+		"preserve",
+		"Path(s) per kind/name for which to preserve current state (e.g. because they are externally modified) in RFC 6901 format.",
 	).PlaceHolder("bc:foobar:/spec/output/to/name").Strings()
 	diffIgnoreUnknownParametersFlag = diffCommand.Flag(
 		"ignore-unknown-parameters",
@@ -149,9 +149,9 @@ var (
 		"diff",
 		"Whether to show textual diff (\"text\") or JSON patches (\"json\"). JSON patches might show secret values in clear text.",
 	).Default("text").String()
-	applyIgnorePathFlag = applyCommand.Flag(
-		"ignore-path",
-		"Path(s) per kind to ignore (e.g. because they are externally modified) in RFC 6901 format.",
+	applyPreservePathFlag = applyCommand.Flag(
+		"preserve",
+		"Path(s) per kind for which to preserve current state (e.g. because they are externally modified) in RFC 6901 format.",
 	).PlaceHolder("bc:foobar:/spec/output/to/name").Strings()
 	applyIgnoreUnknownParametersFlag = applyCommand.Flag(
 		"ignore-unknown-parameters",
@@ -346,7 +346,7 @@ func main() {
 				*diffParamFlag,
 				*diffParamFileFlag,
 				*diffFormatFlag,
-				*diffIgnorePathFlag,
+				*diffPreservePathFlag,
 				*diffIgnoreUnknownParametersFlag,
 				*diffUpsertOnlyFlag,
 				*diffAllowRecreateFlag,
@@ -385,7 +385,7 @@ func main() {
 				*applyParamFlag,
 				*applyParamFileFlag,
 				*applyDiffFlag,
-				*applyIgnorePathFlag,
+				*applyPreservePathFlag,
 				*applyIgnoreUnknownParametersFlag,
 				*applyUpsertOnlyFlag,
 				*applyAllowRecreateFlag,
