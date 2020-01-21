@@ -85,7 +85,7 @@ func NewChangeset(platformBasedList, templateBasedList *ResourceList, upsertOnly
 			templateItem.Name,
 		)
 		if err == nil {
-			externallyModifiedPaths := []string{}
+			actualReservePaths := []string{}
 			for _, path := range preservePaths {
 				pathParts := strings.Split(path, ":")
 				if len(pathParts) > 3 {
@@ -106,11 +106,11 @@ func NewChangeset(platformBasedList, templateBasedList *ResourceList, upsertOnly
 						templateItem.Name == strings.ToLower(pathParts[1])) {
 					// We only care about the last part (the JSON path) as we
 					// are already "inside" the item
-					externallyModifiedPaths = append(externallyModifiedPaths, pathParts[len(pathParts)-1])
+					actualReservePaths = append(actualReservePaths, pathParts[len(pathParts)-1])
 				}
 			}
 
-			changes, err := calculateChanges(templateItem, platformItem, externallyModifiedPaths, allowRecreate)
+			changes, err := calculateChanges(templateItem, platformItem, actualReservePaths, allowRecreate)
 			if err != nil {
 				return changeset, err
 			}
@@ -121,8 +121,8 @@ func NewChangeset(platformBasedList, templateBasedList *ResourceList, upsertOnly
 	return changeset, nil
 }
 
-func calculateChanges(templateItem *ResourceItem, platformItem *ResourceItem, externallyModifiedPaths []string, allowRecreate bool) ([]*Change, error) {
-	err := templateItem.prepareForComparisonWithPlatformItem(platformItem, externallyModifiedPaths)
+func calculateChanges(templateItem *ResourceItem, platformItem *ResourceItem, preservePaths []string, allowRecreate bool) ([]*Change, error) {
+	err := templateItem.prepareForComparisonWithPlatformItem(platformItem, preservePaths)
 	if err != nil {
 		return nil, err
 	}
@@ -138,6 +138,12 @@ func calculateChanges(templateItem *ResourceItem, platformItem *ResourceItem, ex
 
 		// Skip subpaths of already added paths
 		if utils.IncludesPrefix(addedPaths, path) {
+			continue
+		}
+
+		// Paths that should be preserved are no-ops
+		if utils.IncludesPrefix(preservePaths, path) {
+			comparison[path] = &jsonPatch{Op: "noop"}
 			continue
 		}
 

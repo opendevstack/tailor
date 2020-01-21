@@ -163,7 +163,7 @@ func calculateChangeset(compareOptions *cli.CompareOptions, ocClient cli.ClientP
 		compareOptions.AllowRecreate,
 		compareOptions.RevealSecrets,
 		compareOptions.Format,
-		compareOptions.PreservePaths,
+		compareOptions.PathsToPreserve(),
 	)
 	if err != nil {
 		return false, changeset, err

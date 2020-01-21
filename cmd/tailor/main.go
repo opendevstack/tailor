@@ -109,6 +109,10 @@ var (
 		"preserve",
 		"Path(s) per kind/name for which to preserve current state (e.g. because they are externally modified) in RFC 6901 format.",
 	).PlaceHolder("bc:foobar:/spec/output/to/name").Strings()
+	diffPreserveImmutableFieldsFlag = diffCommand.Flag(
+		"preserve-immutable-fields",
+		"Preserve current state of all immutable fields (such as host of a route, or storageClassName of a PVC).",
+	).Bool()
 	diffIgnoreUnknownParametersFlag = diffCommand.Flag(
 		"ignore-unknown-parameters",
 		"If true, will not stop processing if a provided parameter does not exist in the template.",
@@ -153,6 +157,10 @@ var (
 		"preserve",
 		"Path(s) per kind for which to preserve current state (e.g. because they are externally modified) in RFC 6901 format.",
 	).PlaceHolder("bc:foobar:/spec/output/to/name").Strings()
+	applyPreserveImmutableFieldsFlag = applyCommand.Flag(
+		"preserve-immutable-fields",
+		"Preserve current state of all immutable fields (such as host of a route, or storageClassName of a PVC).",
+	).Bool()
 	applyIgnoreUnknownParametersFlag = applyCommand.Flag(
 		"ignore-unknown-parameters",
 		"If true, will not stop processing if a provided parameter does not exist in the template.",
@@ -347,6 +355,7 @@ func main() {
 				*diffParamFileFlag,
 				*diffFormatFlag,
 				*diffPreservePathFlag,
+				*diffPreserveImmutableFieldsFlag,
 				*diffIgnoreUnknownParametersFlag,
 				*diffUpsertOnlyFlag,
 				*diffAllowRecreateFlag,
@@ -386,6 +395,7 @@ func main() {
 				*applyParamFileFlag,
 				*applyDiffFlag,
 				*applyPreservePathFlag,
+				*applyPreserveImmutableFieldsFlag,
 				*applyIgnoreUnknownParametersFlag,
 				*applyUpsertOnlyFlag,
 				*applyAllowRecreateFlag,
