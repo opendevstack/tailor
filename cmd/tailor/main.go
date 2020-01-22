@@ -105,10 +105,14 @@ var (
 		"format",
 		"Whether to show textual diff (\"text\") or JSON patches (\"json\"). JSON patches might show secret values in clear text.",
 	).Default("text").String()
-	diffIgnorePathFlag = diffCommand.Flag(
-		"ignore-path",
-		"Path(s) per kind/name to ignore (e.g. because they are externally modified) in RFC 6901 format.",
+	diffPreservePathFlag = diffCommand.Flag(
+		"preserve",
+		"Path(s) per kind/name for which to preserve current state (e.g. because they are externally modified) in RFC 6901 format.",
 	).PlaceHolder("bc:foobar:/spec/output/to/name").Strings()
+	diffPreserveImmutableFieldsFlag = diffCommand.Flag(
+		"preserve-immutable-fields",
+		"Preserve current state of all immutable fields (such as host of a route, or storageClassName of a PVC).",
+	).Bool()
 	diffIgnoreUnknownParametersFlag = diffCommand.Flag(
 		"ignore-unknown-parameters",
 		"If true, will not stop processing if a provided parameter does not exist in the template.",
@@ -149,10 +153,14 @@ var (
 		"diff",
 		"Whether to show textual diff (\"text\") or JSON patches (\"json\"). JSON patches might show secret values in clear text.",
 	).Default("text").String()
-	applyIgnorePathFlag = applyCommand.Flag(
-		"ignore-path",
-		"Path(s) per kind to ignore (e.g. because they are externally modified) in RFC 6901 format.",
+	applyPreservePathFlag = applyCommand.Flag(
+		"preserve",
+		"Path(s) per kind for which to preserve current state (e.g. because they are externally modified) in RFC 6901 format.",
 	).PlaceHolder("bc:foobar:/spec/output/to/name").Strings()
+	applyPreserveImmutableFieldsFlag = applyCommand.Flag(
+		"preserve-immutable-fields",
+		"Preserve current state of all immutable fields (such as host of a route, or storageClassName of a PVC).",
+	).Bool()
 	applyIgnoreUnknownParametersFlag = applyCommand.Flag(
 		"ignore-unknown-parameters",
 		"If true, will not stop processing if a provided parameter does not exist in the template.",
@@ -346,7 +354,8 @@ func main() {
 				*diffParamFlag,
 				*diffParamFileFlag,
 				*diffFormatFlag,
-				*diffIgnorePathFlag,
+				*diffPreservePathFlag,
+				*diffPreserveImmutableFieldsFlag,
 				*diffIgnoreUnknownParametersFlag,
 				*diffUpsertOnlyFlag,
 				*diffAllowRecreateFlag,
@@ -385,7 +394,8 @@ func main() {
 				*applyParamFlag,
 				*applyParamFileFlag,
 				*applyDiffFlag,
-				*applyIgnorePathFlag,
+				*applyPreservePathFlag,
+				*applyPreserveImmutableFieldsFlag,
 				*applyIgnoreUnknownParametersFlag,
 				*applyUpsertOnlyFlag,
 				*applyAllowRecreateFlag,

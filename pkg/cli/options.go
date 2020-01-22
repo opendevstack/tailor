@@ -44,7 +44,8 @@ type CompareOptions struct {
 	Params                  []string
 	ParamFiles              []string
 	Format                  string
-	IgnorePaths             []string
+	PreservePaths           []string
+	PreserveImmutableFields bool
 	IgnoreUnknownParameters bool
 	UpsertOnly              bool
 	AllowRecreate           bool
@@ -159,7 +160,8 @@ func NewCompareOptions(
 	paramFlag []string,
 	paramFileFlag []string,
 	formatFlag string,
-	ignorePathFlag []string,
+	preserveFlag []string,
+	preserveImmutableFieldsFlag bool,
 	ignoreUnknownParametersFlag bool,
 	upsertOnlyFlag bool,
 	allowRecreateFlag bool,
@@ -269,10 +271,16 @@ func NewCompareOptions(
 		o.Format = val
 	}
 
-	if len(ignorePathFlag) > 0 {
-		o.IgnorePaths = ignorePathFlag
-	} else if val, ok := fileFlags["ignore-path"]; ok {
-		o.IgnorePaths = strings.Split(val, ",")
+	if len(preserveFlag) > 0 {
+		o.PreservePaths = preserveFlag
+	} else if val, ok := fileFlags["preserve"]; ok {
+		o.PreservePaths = strings.Split(val, ",")
+	}
+
+	if preserveImmutableFieldsFlag {
+		o.PreserveImmutableFields = true
+	} else if fileFlags["preserve-immutable-fields"] == "true" {
+		o.PreserveImmutableFields = true
 	}
 
 	if ignoreUnknownParametersFlag {
@@ -524,6 +532,21 @@ func (o *CompareOptions) ResolvedParamFiles() []string {
 // ResolvedPrivateKey returns private key prefixed by the context dir.
 func (o *CompareOptions) ResolvedPrivateKey() string {
 	return utils.AbsoluteOrRelativePath(o.PrivateKey, o.ContextDir)
+}
+
+func (o *CompareOptions) PathsToPreserve() []string {
+	pathsToPreserve := []string{}
+	if o.PreserveImmutableFields {
+		pathsToPreserve = append(
+			pathsToPreserve,
+			"pvc:/spec/accessModes",
+			"pvc:/spec/storageClassName",
+			"pvc:/spec/resources/requests/storage",
+			"route:/spec/host",
+			"secret:/type",
+		)
+	}
+	return append(pathsToPreserve, o.PreservePaths...)
 }
 
 func (o *ExportOptions) check() error {

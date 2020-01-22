@@ -255,7 +255,7 @@ func (i *ResourceItem) parseConfig(m map[string]interface{}) error {
 		deletePointer, _ := gojsonpointer.NewJsonPointer(p)
 		_, _ = deletePointer.Delete(m)
 		if utils.Includes(legacyFields, p) {
-			cli.VerboseMsg("Removed", p, "which is used for legacy clients, but not supported by Tailor")
+			cli.DebugMsg("Removed", p, "which is used for legacy clients, but not supported by Tailor")
 		}
 	}
 
@@ -381,12 +381,18 @@ func recreateChanges(templateItem, platformItem *ResourceItem) []*Change {
 // prepareForComparisonWithPlatformItem massages template item in such a way
 // that it can be compared with the given platform item:
 // - copy value from platformItem to templateItem for externally modified paths
-func (templateItem *ResourceItem) prepareForComparisonWithPlatformItem(platformItem *ResourceItem, externallyModifiedPaths []string) error {
-	for _, path := range externallyModifiedPaths {
+func (templateItem *ResourceItem) prepareForComparisonWithPlatformItem(platformItem *ResourceItem, preservePaths []string) error {
+	for _, path := range preservePaths {
+		cli.DebugMsg("Trying to preserve path", path, "in platform item", platformItem.FullName())
 		pathPointer, _ := gojsonpointer.NewJsonPointer(path)
 		platformItemVal, _, err := pathPointer.Get(platformItem.Config)
 		if err != nil {
 			cli.DebugMsg("No such path", path, "in platform item", platformItem.FullName())
+			// As the current state for this path is "undefined" we need to make
+			// sure that the desired state does not define any value for it,
+			// otherwise it will show in the diff even if no patchset is created
+			// for it.
+			_, _ = pathPointer.Delete(templateItem.Config)
 		} else {
 			_, err = pathPointer.Set(templateItem.Config, platformItemVal)
 			if err != nil {
@@ -397,7 +403,7 @@ func (templateItem *ResourceItem) prepareForComparisonWithPlatformItem(platformI
 					templateItem.FullName(),
 				))
 			} else {
-				// Add ignored path and its subpaths to the paths slice
+				// Add preserved path and its subpaths to the paths slice
 				// of the template item.
 				templateItem.Paths = append(templateItem.Paths, path)
 				switch vv := platformItemVal.(type) {

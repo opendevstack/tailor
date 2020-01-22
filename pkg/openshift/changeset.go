@@ -36,7 +36,7 @@ type Changeset struct {
 	Noop   []*Change
 }
 
-func NewChangeset(platformBasedList, templateBasedList *ResourceList, upsertOnly bool, allowRecreate bool, ignoredPaths []string) (*Changeset, error) {
+func NewChangeset(platformBasedList, templateBasedList *ResourceList, upsertOnly bool, allowRecreate bool, preservePaths []string) (*Changeset, error) {
 	changeset := &Changeset{
 		Create: []*Change{},
 		Delete: []*Change{},
@@ -85,16 +85,16 @@ func NewChangeset(platformBasedList, templateBasedList *ResourceList, upsertOnly
 			templateItem.Name,
 		)
 		if err == nil {
-			externallyModifiedPaths := []string{}
-			for _, path := range ignoredPaths {
+			actualReservePaths := []string{}
+			for _, path := range preservePaths {
 				pathParts := strings.Split(path, ":")
 				if len(pathParts) > 3 {
 					return changeset, fmt.Errorf(
-						"%s is not a valid ignore-path argument",
+						"%s is not a valid preserve argument",
 						path,
 					)
 				}
-				// ignored paths can be either:
+				// Preserved paths can be either:
 				// - globally (e.g. /spec/name)
 				// - per-kind (e.g. bc:/spec/name)
 				// - per-resource (e.g. bc:foo:/spec/name)
@@ -106,11 +106,11 @@ func NewChangeset(platformBasedList, templateBasedList *ResourceList, upsertOnly
 						templateItem.Name == strings.ToLower(pathParts[1])) {
 					// We only care about the last part (the JSON path) as we
 					// are already "inside" the item
-					externallyModifiedPaths = append(externallyModifiedPaths, pathParts[len(pathParts)-1])
+					actualReservePaths = append(actualReservePaths, pathParts[len(pathParts)-1])
 				}
 			}
 
-			changes, err := calculateChanges(templateItem, platformItem, externallyModifiedPaths, allowRecreate)
+			changes, err := calculateChanges(templateItem, platformItem, actualReservePaths, allowRecreate)
 			if err != nil {
 				return changeset, err
 			}
@@ -121,8 +121,8 @@ func NewChangeset(platformBasedList, templateBasedList *ResourceList, upsertOnly
 	return changeset, nil
 }
 
-func calculateChanges(templateItem *ResourceItem, platformItem *ResourceItem, externallyModifiedPaths []string, allowRecreate bool) ([]*Change, error) {
-	err := templateItem.prepareForComparisonWithPlatformItem(platformItem, externallyModifiedPaths)
+func calculateChanges(templateItem *ResourceItem, platformItem *ResourceItem, preservePaths []string, allowRecreate bool) ([]*Change, error) {
+	err := templateItem.prepareForComparisonWithPlatformItem(platformItem, preservePaths)
 	if err != nil {
 		return nil, err
 	}
@@ -138,6 +138,12 @@ func calculateChanges(templateItem *ResourceItem, platformItem *ResourceItem, ex
 
 		// Skip subpaths of already added paths
 		if utils.IncludesPrefix(addedPaths, path) {
+			continue
+		}
+
+		// Paths that should be preserved are no-ops
+		if utils.IncludesPrefix(preservePaths, path) {
+			comparison[path] = &jsonPatch{Op: "noop"}
 			continue
 		}
 
