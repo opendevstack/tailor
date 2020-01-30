@@ -408,9 +408,12 @@ func main() {
 			optionSets[contextDir] = opt
 		}
 
-		err = commands.Apply(globalOptions.NonInteractive, optionSets)
+		driftDectected, err := commands.Apply(globalOptions.NonInteractive, optionSets)
 		if err != nil {
 			log.Fatalln(err)
+		}
+		if driftDectected {
+			os.Exit(3)
 		}
 
 	case exportCommand.FullCommand():

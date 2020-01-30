@@ -11,21 +11,21 @@ import (
 
 // Diff prints the drift between desired and current state to STDOUT.
 func Diff(compareOptionSets map[string]*cli.CompareOptions) (bool, error) {
-	updateRequired, _, err := calculateChangesets(compareOptionSets)
-	return updateRequired, err
+	driftDetected, _, err := calculateChangesets(compareOptionSets)
+	return driftDetected, err
 }
 
 func calculateChangesets(compareOptionSets map[string]*cli.CompareOptions) (bool, map[string]*openshift.Changeset, error) {
-	anyUpdateRequired := false
+	anyDriftDetected := false
 	changesets := map[string]*openshift.Changeset{}
 	for contextDir, compareOptions := range compareOptionSets {
 		ocClient := cli.NewOcClient(compareOptions.Namespace)
-		updateRequired, changeset, err := calculateChangeset(compareOptions, ocClient)
-		if updateRequired {
-			anyUpdateRequired = true
+		driftDetected, changeset, err := calculateChangeset(compareOptions, ocClient)
+		if driftDetected {
+			anyDriftDetected = true
 		}
 		if err != nil {
-			return anyUpdateRequired, changesets, err
+			return anyDriftDetected, changesets, err
 		}
 		changesets[contextDir] = changeset
 	}
@@ -50,7 +50,7 @@ func calculateChangesets(compareOptionSets map[string]*cli.CompareOptions) (bool
 		cli.PrintRedf("%d to delete\n\n", toDelete)
 	}
 
-	return anyUpdateRequired, changesets, nil
+	return anyDriftDetected, changesets, nil
 }
 
 func calculateChangeset(compareOptions *cli.CompareOptions, ocClient cli.ClientProcessorExporter) (bool, *openshift.Changeset, error) {

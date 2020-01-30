@@ -10,35 +10,44 @@ import (
 
 // Apply prints the drift between desired and current state to STDOUT.
 // If there is any, it asks for confirmation and applies the changeset.
-func Apply(nonInteractive bool, compareOptionSets map[string]*cli.CompareOptions) error {
-	updateRequired, changesets, err := calculateChangesets(compareOptionSets)
+func Apply(nonInteractive bool, compareOptionSets map[string]*cli.CompareOptions) (bool, error) {
+	driftDetected, changesets, err := calculateChangesets(compareOptionSets)
 	if err != nil {
-		return err
+		return driftDetected, err
 	}
 
-	if updateRequired {
+	if driftDetected {
 		if nonInteractive {
 			for contextDir, compareOptions := range compareOptionSets {
 				err = apply(compareOptions, changesets[contextDir])
 				if err != nil {
-					return fmt.Errorf("Apply aborted: %s", err)
+					return driftDetected, fmt.Errorf("Apply aborted: %s", err)
 				}
 			}
-		} else {
-			c := cli.AskForConfirmation("Apply changes?")
-			if c {
-				fmt.Println("")
-				for contextDir, compareOptions := range compareOptionSets {
-					err = apply(compareOptions, changesets[contextDir])
-					if err != nil {
-						return fmt.Errorf("Apply aborted: %s", err)
-					}
-				}
-			}
+			// As apply has run successfully, there should not be any drift
+			// anymore. Therefore we report driftDetected=false here.
+			return false, nil
 		}
+
+		c := cli.AskForConfirmation("Apply changes?")
+		if c {
+			fmt.Println("")
+			for contextDir, compareOptions := range compareOptionSets {
+				err = apply(compareOptions, changesets[contextDir])
+				if err != nil {
+					return driftDetected, fmt.Errorf("Apply aborted: %s", err)
+				}
+			}
+			// As apply has run successfully, there should not be any drift
+			// anymore. Therefore we report driftDetected=false here.
+			return false, nil
+		}
+		// Changes were not applied, so we report if drift was detected.
+		return driftDetected, nil
 	}
 
-	return nil
+	// No drift, nothing to do ...
+	return false, nil
 }
 
 func apply(compareOptions *cli.CompareOptions, c *openshift.Changeset) error {
