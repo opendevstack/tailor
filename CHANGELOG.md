@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## [0.12.0] - 2020-01-31
+
 ### Added
 
 - Introduce new flag `--preserve-immutable-fields`. It has the same effect as
