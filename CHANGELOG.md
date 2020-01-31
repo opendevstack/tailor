@@ -2,10 +2,31 @@
 
 ## Unreleased
 
+### Added
+
+- Introduce new flag `--preserve-immutable-fields`. It has the same effect as
+  specifying `--preserve` for all immutable fields (such as
+  `pvc:/spec/accessModes`). For more background, see [#162](https://github.com/opendevstack/tailor/issues/162).
+
+### Changed
+
+- Rename `status` to `diff` and `update` to `apply`. For backwards compatibility,
+  two aliases `status` and `update` have been created. As a consequence, `--diff`
+  has been renamed to `--format`. See
+  [#163](https://github.com/opendevstack/tailor/pull/163).
+
+- Rename `--ignore-path` to `--preserve` See
+  [#165](https://github.com/opendevstack/tailor/pull/165). For backwards
+  compatibility, `--ignore-path` is still supported (though deprecated).
+
+- Return with non-zero exit code when detected drift is not reconciled. This
+  allows scripts to know whether the user confirmed to apply the changes or not.
+  See [#166](https://github.com/opendevstack/tailor/pull/166).
+
 ## [0.11.0] - 2019-11-29
 
 ### Added
-- Support cron jobs resources. See [#155](https://github.com/opendevstack/tailor/issues).
+- Support cron jobs resources. See [#155](https://github.com/opendevstack/tailor/issues/155).
 
 ## [0.10.4] - 2019-11-25
 
