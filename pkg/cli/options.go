@@ -273,6 +273,8 @@ func NewCompareOptions(
 
 	if len(preserveFlag) > 0 {
 		o.PreservePaths = preserveFlag
+	} else if val, ok := fileFlags["ignore-path"]; ok {
+		o.PreservePaths = strings.Split(val, ",")
 	} else if val, ok := fileFlags["preserve"]; ok {
 		o.PreservePaths = strings.Split(val, ",")
 	}

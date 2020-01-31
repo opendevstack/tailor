@@ -105,6 +105,10 @@ var (
 		"format",
 		"Whether to show textual diff (\"text\") or JSON patches (\"json\"). JSON patches might show secret values in clear text.",
 	).Default("text").String()
+	diffIgnorePathFlag = diffCommand.Flag(
+		"ignore-path",
+		"DEPRECATED! Use --preserve instead.",
+	).PlaceHolder("bc:foobar:/spec/output/to/name").Strings()
 	diffPreservePathFlag = diffCommand.Flag(
 		"preserve",
 		"Path(s) per kind/name for which to preserve current state (e.g. because they are externally modified) in RFC 6901 format.",
@@ -153,6 +157,10 @@ var (
 		"format",
 		"Whether to show textual diff (\"text\") or JSON patches (\"json\"). JSON patches might show secret values in clear text.",
 	).Default("text").String()
+	applyIgnorePathFlag = applyCommand.Flag(
+		"ignore-path",
+		"DEPRECATED! Use --preserve instead.",
+	).PlaceHolder("bc:foobar:/spec/output/to/name").Strings()
 	applyPreservePathFlag = applyCommand.Flag(
 		"preserve",
 		"Path(s) per kind for which to preserve current state (e.g. because they are externally modified) in RFC 6901 format.",
@@ -338,6 +346,8 @@ func main() {
 
 	case diffCommand.FullCommand():
 		optionSets := map[string]*cli.CompareOptions{}
+		preservePathFlag := *diffPreservePathFlag
+		preservePathFlag = append(preservePathFlag, *diffIgnorePathFlag...)
 		for _, contextDir := range globalOptions.ContextDirs {
 			opt, err := cli.NewCompareOptions(
 				globalOptions,
@@ -354,7 +364,7 @@ func main() {
 				*diffParamFlag,
 				*diffParamFileFlag,
 				*diffFormatFlag,
-				*diffPreservePathFlag,
+				preservePathFlag,
 				*diffPreserveImmutableFieldsFlag,
 				*diffIgnoreUnknownParametersFlag,
 				*diffUpsertOnlyFlag,
@@ -378,6 +388,8 @@ func main() {
 
 	case applyCommand.FullCommand():
 		optionSets := map[string]*cli.CompareOptions{}
+		preservePathFlag := *applyPreservePathFlag
+		preservePathFlag = append(preservePathFlag, *applyIgnorePathFlag...)
 		for _, contextDir := range globalOptions.ContextDirs {
 			opt, err := cli.NewCompareOptions(
 				globalOptions,
@@ -394,7 +406,7 @@ func main() {
 				*applyParamFlag,
 				*applyParamFileFlag,
 				*applyFormatFlag,
-				*applyPreservePathFlag,
+				preservePathFlag,
 				*applyPreserveImmutableFieldsFlag,
 				*applyIgnoreUnknownParametersFlag,
 				*applyUpsertOnlyFlag,
