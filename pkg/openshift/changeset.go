@@ -1,9 +1,7 @@
 package openshift
 
 import (
-	"encoding/json"
 	"fmt"
-	"reflect"
 	"sort"
 	"strings"
 
@@ -131,7 +129,7 @@ func calculateChanges(templateItem *ResourceItem, platformItem *ResourceItem, pr
 		return nil, err
 	}
 
-	comparison := map[string]*jsonPatch{}
+	comparedPaths := map[string]bool{}
 	addedPaths := []string{}
 
 	for _, path := range templateItem.Paths {
@@ -143,7 +141,7 @@ func calculateChanges(templateItem *ResourceItem, platformItem *ResourceItem, pr
 
 		// Paths that should be preserved are no-ops
 		if utils.IncludesPrefix(preservePaths, path) {
-			comparison[path] = &jsonPatch{Op: "noop"}
+			comparedPaths[path] = true
 			continue
 		}
 
@@ -161,23 +159,23 @@ func calculateChanges(templateItem *ResourceItem, platformItem *ResourceItem, pr
 				}
 
 			}
-			comparison[path] = &jsonPatch{Op: "add", Value: templateItemVal}
+			comparedPaths[path] = true
 			addedPaths = append(addedPaths, path)
 		} else {
 			// Pointer exists in both items
 			switch templateItemVal.(type) {
 			case []interface{}:
 				// slice content changed, continue ...
-				comparison[path] = &jsonPatch{Op: "noop"}
+				comparedPaths[path] = true
 			case []string:
 				// slice content changed, continue ...
-				comparison[path] = &jsonPatch{Op: "noop"}
+				comparedPaths[path] = true
 			case map[string]interface{}:
 				// map content changed, continue
-				comparison[path] = &jsonPatch{Op: "noop"}
+				comparedPaths[path] = true
 			default:
 				if templateItemVal == platformItemVal {
-					comparison[path] = &jsonPatch{Op: "noop"}
+					comparedPaths[path] = true
 				} else {
 					if templateItem.isImmutableField(path) {
 						if allowRecreate {
@@ -186,7 +184,7 @@ func calculateChanges(templateItem *ResourceItem, platformItem *ResourceItem, pr
 							return nil, fmt.Errorf("Path %s is immutable. Changing its value requires to delete and re-create the whole resource, which is only done when --allow-recreate is present", path)
 						}
 					}
-					comparison[path] = &jsonPatch{Op: "replace", Value: templateItemVal}
+					comparedPaths[path] = true
 				}
 			}
 		}
@@ -195,7 +193,7 @@ func calculateChanges(templateItem *ResourceItem, platformItem *ResourceItem, pr
 	deletedPaths := []string{}
 
 	for _, path := range platformItem.Paths {
-		if _, ok := comparison[path]; !ok {
+		if _, ok := comparedPaths[path]; !ok {
 			// Do not delete subpaths of already deleted paths
 			if utils.IncludesPrefix(deletedPaths, path) {
 				continue
@@ -255,108 +253,12 @@ func calculateChanges(templateItem *ResourceItem, platformItem *ResourceItem, pr
 			}
 
 			// Pointer exist only in platformItem
-			comparison[path] = &jsonPatch{Op: "remove"}
+			comparedPaths[path] = true
 			deletedPaths = append(deletedPaths, path)
 		}
 	}
 
-	// /metadata/annotations can be in 3 states: "add" (complex object),
-	// "remove" or "noop". "replace" is NOT possible.
-
-	// If it is "add", we might need to merge the hidden annotations into it.
-	// If it is "remove", we might need to NOT remove it, but just add/replace
-	// the hidden annotations.
-	// If it is "noop", we do not need to care and just add/replace/remove the
-	// hidden annotations.
-	annotationsOp := "noop"
-	annotationsMap := map[string]string{}
-	if v, ok := comparison[annotationsPath]; ok {
-		annotationsOp = v.Op
-		if m, ok := v.Value.(map[string]interface{}); ok {
-			for k, v := range m {
-				annotationsMap[k] = v.(string)
-			}
-		}
-	}
-
-	// Add hidden JSON patches - we do not want to show those in the textual
-	// diff to avoid unnecessary confusion for the enduser.
-	// Managed annotations
-	platformManagedAnnotations := platformItem.TailorManagedAnnotationsList()
-	templateManagedAnnotations := templateItem.TailorManagedAnnotationsList()
-	managedAnnotationsPatch := &jsonPatch{Op: "noop"}
-	if platformManagedAnnotations != templateManagedAnnotations {
-		if len(templateItem.TailorManagedAnnotations) == 0 {
-			managedAnnotationsPatch = &jsonPatch{Op: "remove"}
-		} else {
-			managedAnnotationOp := "add"
-			if len(platformItem.TailorManagedAnnotations) > 0 {
-				managedAnnotationOp = "replace"
-			}
-			managedAnnotationsPatch = &jsonPatch{
-				Op:    managedAnnotationOp,
-				Value: templateManagedAnnotations,
-			}
-		}
-	}
-	if managedAnnotationsPatch.Op != "noop" {
-		if annotationsOp == "add" {
-			annotationsMap[tailorManagedAnnotation] = managedAnnotationsPatch.Value.(string)
-		} else {
-			if annotationsOp == "remove" {
-				comparison[annotationsPath].Op = "noop"
-			}
-			if platformItem.AnnotationsPresent {
-				comparison[tailorManagedAnnotationPath] = managedAnnotationsPatch
-			} else {
-				comparison[annotationsPath] = &jsonPatch{Op: "add"}
-				annotationsMap[tailorManagedAnnotation] = managedAnnotationsPatch.Value.(string)
-			}
-		}
-	}
-
-	// Applied configuration
-	appliedConfigAnnotationsPatch := &jsonPatch{Op: "noop"}
-	if !reflect.DeepEqual(platformItem.TailorAppliedConfigFields, templateItem.TailorAppliedConfigFields) {
-		if len(templateItem.TailorAppliedConfigFields) == 0 {
-			appliedConfigAnnotationsPatch = &jsonPatch{Op: "remove"}
-		} else {
-			templateAppliedConfigAnnotation, err := json.Marshal(templateItem.TailorAppliedConfigFields)
-			if err != nil {
-				return nil, err
-			}
-			appliedConfigAnnotationOp := "add"
-			if len(platformItem.TailorAppliedConfigFields) > 0 {
-				appliedConfigAnnotationOp = "replace"
-			}
-			appliedConfigAnnotationsPatch = &jsonPatch{
-				Op:    appliedConfigAnnotationOp,
-				Value: string(templateAppliedConfigAnnotation),
-			}
-		}
-	}
-	if appliedConfigAnnotationsPatch.Op != "noop" {
-		if annotationsOp == "add" {
-			annotationsMap[tailorAppliedConfigAnnotation] = appliedConfigAnnotationsPatch.Value.(string)
-		} else {
-			if annotationsOp == "remove" {
-				comparison[annotationsPath].Op = "noop"
-			}
-			if platformItem.AnnotationsPresent {
-				comparison[tailorAppliedConfigAnnotationPath] = appliedConfigAnnotationsPatch
-			} else {
-				comparison[annotationsPath] = &jsonPatch{Op: "add"}
-				annotationsMap[tailorAppliedConfigAnnotation] = appliedConfigAnnotationsPatch.Value.(string)
-			}
-		}
-	}
-
-	// Check if we need to set annotations as a complex key
-	if v, ok := comparison[annotationsPath]; ok {
-		v.Value = annotationsMap
-	}
-
-	c := NewChange(templateItem, platformItem, comparison)
+	c := NewChange(templateItem, platformItem)
 
 	return []*Change{c}, nil
 }

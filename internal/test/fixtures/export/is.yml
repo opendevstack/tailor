@@ -10,7 +10,6 @@ objects:
     annotations:
       description: Keeps track of changes in the application image
       openshift.io/image.dockerRepositoryCheck: 2018-08-07T12:32:24Z
-      tailor.opendevstack.org/managed-annotations: description
     creationTimestamp: null
     generation: 560
     labels:

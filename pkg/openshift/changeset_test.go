@@ -85,118 +85,56 @@ func TestCalculateChangesManagedAnnotations(t *testing.T) {
 		platformFixture        string
 		templateFixture        string
 		expectedAction         string
-		expectedPatches        jsonPatches
 		expectedDiffGoldenFile string
 	}{
 		"Without annotations": {
 			platformFixture: "is-platform",
 			templateFixture: "is-template",
 			expectedAction:  "Noop",
-			expectedPatches: jsonPatches{},
 		},
 		"Present in template, not in platform": {
-			platformFixture: "is-platform",
-			templateFixture: "is-template-annotation",
-			expectedAction:  "Update",
-			expectedPatches: jsonPatches{
-				&jsonPatch{
-					Op:   "add",
-					Path: "/metadata/annotations",
-					Value: map[string]string{
-						"bar": "baz",
-						"tailor.opendevstack.org/managed-annotations": "bar",
-					},
-				},
-			},
+			platformFixture:        "is-platform",
+			templateFixture:        "is-template-annotation",
+			expectedAction:         "Update",
 			expectedDiffGoldenFile: "present-in-template-not-in-platform",
 		},
 		"Present in platform, not in template": {
-			platformFixture: "is-platform-annotation",
-			templateFixture: "is-template",
-			expectedAction:  "Update",
-			expectedPatches: jsonPatches{
-				&jsonPatch{
-					Op:   "remove",
-					Path: "/metadata/annotations/bar",
-				},
-				&jsonPatch{
-					Op:   "remove",
-					Path: "/metadata/annotations/tailor.opendevstack.org~1managed-annotations",
-				},
-			},
+			platformFixture:        "is-platform-annotation",
+			templateFixture:        "is-template",
+			expectedAction:         "Update",
 			expectedDiffGoldenFile: "present-in-platform-not-in-template",
 		},
 		"Present in both": {
 			platformFixture: "is-platform-annotation",
 			templateFixture: "is-template-annotation",
 			expectedAction:  "Noop",
-			expectedPatches: jsonPatches{},
 		},
 		"Present in platform, changed in template": {
-			platformFixture: "is-platform-annotation",
-			templateFixture: "is-template-annotation-changed",
-			expectedAction:  "Update",
-			expectedPatches: jsonPatches{
-				&jsonPatch{
-					Op:    "replace",
-					Path:  "/metadata/annotations/bar",
-					Value: "qux",
-				},
-			},
+			platformFixture:        "is-platform-annotation",
+			templateFixture:        "is-template-annotation-changed",
+			expectedAction:         "Update",
 			expectedDiffGoldenFile: "present-in-platform-changed-in-template",
 		},
 		"Present in platform, different key in template": {
-			platformFixture: "is-platform-annotation",
-			templateFixture: "is-template-different-annotation",
-			expectedAction:  "Update",
-			expectedPatches: jsonPatches{
-				&jsonPatch{
-					Op:   "remove",
-					Path: "/metadata/annotations/bar",
-				},
-				&jsonPatch{
-					Op:    "add",
-					Path:  "/metadata/annotations/baz",
-					Value: "qux",
-				},
-				&jsonPatch{
-					Op:    "replace",
-					Path:  "/metadata/annotations/tailor.opendevstack.org~1managed-annotations",
-					Value: "baz",
-				},
-			},
+			platformFixture:        "is-platform-annotation",
+			templateFixture:        "is-template-different-annotation",
+			expectedAction:         "Update",
 			expectedDiffGoldenFile: "present-in-platform-different-key-in-template",
 		},
 		"Unmanaged in platform added to template": {
 			platformFixture: "is-platform-unmanaged",
 			templateFixture: "is-template-annotation",
-			expectedAction:  "Update",
-			expectedPatches: jsonPatches{
-				&jsonPatch{
-					Op:    "add",
-					Path:  "/metadata/annotations/tailor.opendevstack.org~1managed-annotations",
-					Value: "bar",
-				},
-			},
-			expectedDiffGoldenFile: "unmanaged-in-platform-added-to-template",
+			expectedAction:  "Noop",
 		},
 		"Unmanaged in platform, none in template": {
 			platformFixture: "is-platform-unmanaged",
 			templateFixture: "is-template",
 			expectedAction:  "Noop",
-			expectedPatches: jsonPatches{},
 		},
 		"Unmanaged in platform, none in template, and other change in template": {
-			platformFixture: "is-platform-unmanaged",
-			templateFixture: "is-template-other-change",
-			expectedAction:  "Update",
-			expectedPatches: jsonPatches{
-				&jsonPatch{
-					Op:    "replace",
-					Path:  "/spec/lookupPolicy/local",
-					Value: true,
-				},
-			},
+			platformFixture:        "is-platform-unmanaged",
+			templateFixture:        "is-template-other-change",
+			expectedAction:         "Update",
 			expectedDiffGoldenFile: "unmanaged-in-platform-none-in-template-other-change-in-template",
 		},
 	}
@@ -216,15 +154,6 @@ func TestCalculateChangesManagedAnnotations(t *testing.T) {
 			if actualChange.Action != tc.expectedAction {
 				t.Fatalf("Expected change action to be: %s, got: %s", tc.expectedAction, actualChange.Action)
 			}
-			if len(actualChange.Patches) != len(tc.expectedPatches) {
-				t.Fatalf("Expected patches:\n%s\n--- got: ---\n%s", pretty(tc.expectedPatches), actualChange.PrettyJSONPatches())
-			}
-			for i, got := range actualChange.Patches {
-				want := tc.expectedPatches[i]
-				if diff := cmp.Diff(want, got); diff != "" {
-					t.Errorf("Change diff mismatch (-want +got):\n%s", diff)
-				}
-			}
 			if len(tc.expectedDiffGoldenFile) > 0 {
 				want := strings.TrimSpace(getGoldenDiff(t, "item-managed-annotations", tc.expectedDiffGoldenFile+".txt"))
 				got := strings.TrimSpace(actualChange.Diff(true))
@@ -242,66 +171,26 @@ func TestCalculateChangesAppliedConfiguration(t *testing.T) {
 		platformFixture string
 		templateFixture string
 		expectedAction  string
-		expectedPatches jsonPatches
 	}{
 		"Without annotation in platform": {
 			platformFixture: "dc-platform",
 			templateFixture: "dc-template",
 			expectedAction:  "Update",
-			expectedPatches: jsonPatches{
-				&jsonPatch{
-					Op:   "add",
-					Path: "/metadata/annotations",
-					Value: map[string]string{
-						"tailor.opendevstack.org/applied-config": "{\"/spec/template/spec/containers/0/image\":\"bar/foo:latest\"}",
-					},
-				},
-				&jsonPatch{
-					Op:    "replace",
-					Path:  "/spec/template/spec/containers/0/image",
-					Value: "bar/foo:latest",
-				},
-			},
 		},
 		"With annotation in platform": {
 			platformFixture: "dc-platform-annotation-other",
 			templateFixture: "dc-template",
 			expectedAction:  "Update",
-			expectedPatches: jsonPatches{
-				&jsonPatch{
-					Op:    "add",
-					Path:  "/metadata/annotations/tailor.opendevstack.org~1applied-config",
-					Value: "{\"/spec/template/spec/containers/0/image\":\"bar/foo:latest\"}",
-				},
-				&jsonPatch{
-					Op:    "replace",
-					Path:  "/spec/template/spec/containers/0/image",
-					Value: "bar/foo:latest",
-				},
-			},
 		},
 		"Present in platform": {
 			platformFixture: "dc-platform-annotation-applied",
 			templateFixture: "dc-template",
 			expectedAction:  "Noop",
-			expectedPatches: jsonPatches{},
 		},
 		"Present in platform, changed in template": {
 			platformFixture: "dc-platform-annotation-applied",
 			templateFixture: "dc-template-changed",
 			expectedAction:  "Update",
-			expectedPatches: jsonPatches{
-				&jsonPatch{
-					Op:    "replace",
-					Path:  "/metadata/annotations/tailor.opendevstack.org~1applied-config",
-					Value: "{\"/spec/template/spec/containers/0/image\":\"bar/foo:experiment\"}",
-				},
-				&jsonPatch{
-					Op:    "replace",
-					Path:  "/spec/template/spec/containers/0/image",
-					Value: "bar/foo:experiment",
-				},
-			},
 		},
 	}
 
@@ -318,16 +207,7 @@ func TestCalculateChangesAppliedConfiguration(t *testing.T) {
 			}
 			actualChange := changes[0]
 			if actualChange.Action != tc.expectedAction {
-				t.Fatalf("Expected change action to be: %s, got: %s. Patches: \n%s", tc.expectedAction, actualChange.Action, actualChange.PrettyJSONPatches())
-			}
-			if len(actualChange.Patches) != len(tc.expectedPatches) {
-				t.Fatalf("Expected patches:\n%s\n--- got: ---\n%s", pretty(tc.expectedPatches), actualChange.PrettyJSONPatches())
-			}
-			for i, got := range actualChange.Patches {
-				want := tc.expectedPatches[i]
-				if diff := cmp.Diff(want, got); diff != "" {
-					t.Errorf("Change diff mismatch (-want +got):\n%s", diff)
-				}
+				t.Fatalf("Expected change action to be: %s, got: %s", tc.expectedAction, actualChange.Action)
 			}
 		})
 	}
@@ -339,34 +219,12 @@ func TestCalculateChangesOmittedFields(t *testing.T) {
 		platformFixture        string
 		templateFixture        string
 		expectedAction         string
-		expectedPatches        jsonPatches
 		expectedDiffGoldenFile string
 	}{
 		"Rolebinding with legacy fields": {
-			platformFixture: "rolebinding-platform",
-			templateFixture: "rolebinding-template",
-			expectedAction:  "Update",
-			expectedPatches: jsonPatches{
-				&jsonPatch{
-					Op:    "replace",
-					Path:  "/subjects/0/kind",
-					Value: "ServiceAccount",
-				},
-				&jsonPatch{
-					Op:    "replace",
-					Path:  "/subjects/0/name",
-					Value: "jenkins",
-				},
-				&jsonPatch{
-					Op:    "add",
-					Path:  "/subjects/0/namespace",
-					Value: "foo-cd",
-				},
-				&jsonPatch{
-					Op:   "remove",
-					Path: "/subjects/1",
-				},
-			},
+			platformFixture:        "rolebinding-platform",
+			templateFixture:        "rolebinding-template",
+			expectedAction:         "Update",
 			expectedDiffGoldenFile: "rolebinding-changed",
 		},
 	}
@@ -384,16 +242,7 @@ func TestCalculateChangesOmittedFields(t *testing.T) {
 			}
 			actualChange := changes[0]
 			if actualChange.Action != tc.expectedAction {
-				t.Fatalf("Expected change action to be: %s, got: %s. Patches: \n%s", tc.expectedAction, actualChange.Action, actualChange.PrettyJSONPatches())
-			}
-			if len(actualChange.Patches) != len(tc.expectedPatches) {
-				t.Fatalf("Expected patches:\n%s\n--- got: ---\n%s", pretty(tc.expectedPatches), actualChange.PrettyJSONPatches())
-			}
-			for i, got := range actualChange.Patches {
-				want := tc.expectedPatches[i]
-				if diff := cmp.Diff(want, got); diff != "" {
-					t.Errorf("Change diff mismatch (-want +got):\n%s", diff)
-				}
+				t.Fatalf("Expected change action to be: %s, got: %s", tc.expectedAction, actualChange.Action)
 			}
 			if len(tc.expectedDiffGoldenFile) > 0 {
 				want := strings.TrimSpace(getGoldenDiff(t, "item-omitted-fields", tc.expectedDiffGoldenFile+".txt"))
@@ -419,7 +268,7 @@ func TestEmptyValuesDoNotCauseDrift(t *testing.T) {
 	actualChange := changes[0]
 	expectedAction := "Noop"
 	if actualChange.Action != expectedAction {
-		t.Fatalf("Expected change action to be: %s, got: %s. Patches: \n%s", expectedAction, actualChange.Action, actualChange.PrettyJSONPatches())
+		t.Fatalf("Expected change action to be: %s, got: %s. Diff was: %s", expectedAction, actualChange.Action, actualChange.Diff(false))
 	}
 }
 
@@ -523,11 +372,7 @@ objects:
 	}
 	changeset := getChangeset(t, filter, platformInput, templateInput, false, true, []string{})
 	if !changeset.Blank() {
-		updates := []string{""}
-		for _, u := range changeset.Update {
-			updates = append(updates, u.PrettyJSONPatches())
-		}
-		t.Fatalf("Changeset is not blank, got: update=%s", strings.Join(updates, ", "))
+		t.Fatalf("Changeset is not blank!")
 	}
 }
 
@@ -653,9 +498,6 @@ objects:
 	expectedUpdates := 0
 	if actualUpdates != expectedUpdates {
 		t.Errorf("Changeset.Update has %d items instead of %d", actualUpdates, expectedUpdates)
-		for i, u := range changeset.Update {
-			t.Errorf("Patchset Update#%d: %s", i, u.PrettyJSONPatches())
-		}
 	}
 }
 
@@ -742,19 +584,6 @@ func TestCalculateChangesEqual(t *testing.T) {
 	_, err := calculateChanges(desiredItem, currentItem, []string{}, true)
 	if err != nil {
 		t.Errorf(err.Error())
-	}
-}
-
-func TestCalculateChangesDifferent(t *testing.T) {
-	currentItem := getItem(t, getBuildConfig(), "platform")
-	desiredItem := getItem(t, getChangedBuildConfig(), "template")
-	changes, err := calculateChanges(desiredItem, currentItem, []string{}, true)
-	if err != nil {
-		t.Errorf(err.Error())
-	}
-	change := changes[0]
-	if len(change.Patches) != 10 {
-		t.Errorf("Got %d instead of %d changes: %s", len(change.Patches), 10, change.PrettyJSONPatches())
 	}
 }
 

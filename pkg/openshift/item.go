@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"regexp"
-	"sort"
 	"strconv"
 	"strings"
 
@@ -15,15 +14,8 @@ import (
 )
 
 var (
-	annotationsPath                      = "/metadata/annotations"
-	tailorAnnotationPrefix               = "tailor.opendevstack.org"
-	tailorAppliedConfigAnnotation        = tailorAnnotationPrefix + "/applied-config"
-	escapedTailorAppliedConfigAnnotation = strings.Replace(tailorAppliedConfigAnnotation, "/", "~1", -1)
-	tailorAppliedConfigAnnotationPath    = annotationsPath + "/" + escapedTailorAppliedConfigAnnotation
-	tailorManagedAnnotation              = tailorAnnotationPrefix + "/managed-annotations"
-	escapedTailorManagedAnnotation       = strings.Replace(tailorManagedAnnotation, "/", "~1", -1)
-	tailorManagedAnnotationPath          = annotationsPath + "/" + escapedTailorManagedAnnotation
-	platformManagedSimpleFields          = []string{
+	annotationsPath             = "/metadata/annotations"
+	platformManagedSimpleFields = []string{
 		"/metadata/generation",
 		"/metadata/creationTimestamp",
 		"/spec/tags",
@@ -48,9 +40,6 @@ var (
 		"Secret": []string{
 			"/type",
 		},
-	}
-	platformModifiedFields = []string{
-		"/spec/template/spec/containers/[0-9]+/image$",
 	}
 
 	KindMapping = map[string]string{
@@ -77,16 +66,16 @@ var (
 )
 
 type ResourceItem struct {
-	Source                    string
-	Kind                      string
-	Name                      string
-	Labels                    map[string]interface{}
-	Annotations               map[string]interface{}
-	Paths                     []string
-	Config                    map[string]interface{}
-	TailorManagedAnnotations  []string
-	TailorAppliedConfigFields map[string]string
-	AnnotationsPresent        bool
+	Source                   string
+	Kind                     string
+	Name                     string
+	Labels                   map[string]interface{}
+	Annotations              map[string]interface{}
+	Paths                    []string
+	Config                   map[string]interface{}
+	AnnotationsPresent       bool
+	LastAppliedConfiguration map[string]interface{}
+	LastAppliedAnnotations   map[string]interface{}
 }
 
 func NewResourceItem(m map[string]interface{}, source string) (*ResourceItem, error) {
@@ -110,34 +99,13 @@ func (i *ResourceItem) HasLabel(label string) bool {
 }
 
 func (i *ResourceItem) DesiredConfig() (string, error) {
-	config := i.Config
-	if len(i.TailorManagedAnnotations) > 0 {
-		err := addInternalAnnotations(config, tailorManagedAnnotation, i.TailorManagedAnnotationsList())
-		if err != nil {
-			return "", fmt.Errorf("Could not add managed annotation %#v: %s", i.TailorManagedAnnotations, err)
-		}
-	}
-	if len(i.TailorAppliedConfigFields) > 0 {
-		val, err := json.Marshal(i.TailorAppliedConfigFields)
-		if err != nil {
-			return "", fmt.Errorf("Could not marshal %#v: %s", i.TailorAppliedConfigFields, err)
-		}
-		err = addInternalAnnotations(config, tailorAppliedConfigAnnotation, string(val))
-		if err != nil {
-			return "", fmt.Errorf("Could not add applied-config annotation %#v: %s", i.TailorAppliedConfigFields, err)
-		}
-	}
-	y, _ := yaml.Marshal(config)
+	y, _ := yaml.Marshal(i.Config)
 	return string(y), nil
 }
 
 func (i *ResourceItem) YamlConfig() string {
 	y, _ := yaml.Marshal(i.Config)
 	return string(y)
-}
-
-func (i *ResourceItem) TailorManagedAnnotationsList() string {
-	return strings.Join(i.TailorManagedAnnotations, ",")
 }
 
 // parseConfig uses the config to initialise an item. The logic is the same
@@ -185,68 +153,49 @@ func (i *ResourceItem) parseConfig(m map[string]interface{}) error {
 		}
 	}
 
-	// Figure out which annotations are managed by Tailor
-	i.TailorManagedAnnotations = []string{}
-	if i.Source == "platform" {
-		// For platform items, only annotation listed in tailorManagedAnnotation are managed
-		p, err := gojsonpointer.NewJsonPointer(tailorManagedAnnotationPath)
+	i.LastAppliedConfiguration = make(map[string]interface{})
+	i.LastAppliedAnnotations = make(map[string]interface{})
+
+	// kubectl.kubernetes.io/last-applied-configuration
+	lastAppliedConfigurationPointer, _ := gojsonpointer.NewJsonPointer("/metadata/annotations/kubectl.kubernetes.io~1last-applied-configuration")
+	lastAppliedConfiguration, _, err := lastAppliedConfigurationPointer.Get(m)
+	if err == nil {
+		s := lastAppliedConfiguration.(string)
+		var f interface{}
+		err := json.Unmarshal([]byte(s), &f)
 		if err != nil {
-			return fmt.Errorf("Could not create JSON pointer %s: %s", tailorManagedAnnotationPath, err)
+			return err
 		}
-		managedAnnotations, _, err := p.Get(m)
-		if err == nil {
-			i.TailorManagedAnnotations = strings.Split(managedAnnotations.(string), ",")
-			_, err = p.Delete(m)
-			if err != nil {
-				return fmt.Errorf("Could not delete %s: %s", tailorManagedAnnotationPath, err)
-			}
-			delete(i.Annotations, tailorManagedAnnotation)
-		}
-	} else { // source = template
-		// For template items, all annotations are managed
-		for k := range i.Annotations {
-			i.TailorManagedAnnotations = append(i.TailorManagedAnnotations, k)
-		}
-		sort.Strings(i.TailorManagedAnnotations)
+		lac := f.(map[string]interface{})
+		i.LastAppliedConfiguration = lac
+	}
+	// kubectl.kubernetes.io/last-applied-configuration -> annotations
+	lastAppliedAnnotationsPointer, _ := gojsonpointer.NewJsonPointer("/metadata/annotations")
+	lastAppliedAnnotations, _, err := lastAppliedAnnotationsPointer.Get(i.LastAppliedConfiguration)
+	if err == nil {
+		i.LastAppliedAnnotations = lastAppliedAnnotations.(map[string]interface{})
 	}
 
-	// Applied configuration
-	// Unfortunately the configuration we apply is sometimes overwritten with
-	// actual values. To be still able to compare, we need to store the applied
-	// configuration as an annotation.
-	i.TailorAppliedConfigFields = map[string]string{}
-	// If source is platform, we copy the values in the annotation into the
-	// corresponding spec locations.
-	if i.Source == "platform" {
-		annotationPointer, err := gojsonpointer.NewJsonPointer(tailorAppliedConfigAnnotationPath)
-		if err != nil {
-			return fmt.Errorf("Could not create JSON pointer %s: %s", tailorAppliedConfigAnnotationPath, err)
-		}
-		val, _, err := annotationPointer.Get(m)
+	// kubectl.kubernetes.io/last-applied-configuration -> container images
+	// get all container image definitions, and paste them into the spec.
+	if i.Kind == "DeploymentConfig" {
+		containerSpecsPointer, _ := gojsonpointer.NewJsonPointer("/spec/template/spec/containers")
+		appliedContainerSpecs, _, err := containerSpecsPointer.Get(i.LastAppliedConfiguration)
 		if err == nil {
-			valBytes := []byte(val.(string))
-			v := map[string]string{}
-			err = json.Unmarshal(valBytes, &v)
-			i.TailorAppliedConfigFields = v
-			if err != nil {
-				return fmt.Errorf("Could not unmarshal JSON %s: %s", tailorAppliedConfigAnnotationPath, val)
-			}
-			for k, v := range i.TailorAppliedConfigFields {
-				specPointer, err := gojsonpointer.NewJsonPointer(k)
-				if err != nil {
-					return fmt.Errorf("Could not create JSON pointer %s: %s", k, err)
+			for i, val := range appliedContainerSpecs.([]interface{}) {
+				acs := val.(map[string]interface{})
+				if appliedImageVal, ok := acs["image"]; ok {
+					_, _, err := containerSpecsPointer.Get(m)
+					if err == nil {
+						imagePointer, _ := gojsonpointer.NewJsonPointer(fmt.Sprintf("/spec/template/spec/containers/%d/image", i))
+						_, err := imagePointer.Set(m, appliedImageVal)
+						if err != nil {
+							cli.VerboseMsg("could not apply:", err.Error())
+						}
+					}
 				}
-				_, err = specPointer.Set(m, v)
-				if err != nil {
-					return fmt.Errorf("Could not set %s: %s", k, err)
-				}
-			}
-			_, err = annotationPointer.Delete(m)
-			if err != nil {
-				return fmt.Errorf("Could not delete %s: %s", tailorAppliedConfigAnnotationPath, err)
 			}
 		}
-		delete(i.Annotations, tailorAppliedConfigAnnotation)
 	}
 
 	// Remove platform-managed simple fields
@@ -276,27 +225,6 @@ func (i *ResourceItem) parseConfig(m map[string]interface{}) error {
 				deletePointer, _ := gojsonpointer.NewJsonPointer(path)
 				_, _ = deletePointer.Delete(i.Config)
 				deletedPathIndices = append(deletedPathIndices, pathIndex)
-			}
-		}
-
-		// Applied configuration
-		// If source is template, we need to check if the current path
-		// needs to be stored in the applied-config annotation.
-		if i.Source == "template" {
-			for _, platformModifiedField := range platformModifiedFields {
-				matched, _ := regexp.MatchString(platformModifiedField, path)
-				if matched {
-					specPointer, err := gojsonpointer.NewJsonPointer(path)
-					if err != nil {
-						return fmt.Errorf("Could not create JSON pointer %s: %s", path, err)
-					}
-					specValue, _, err := specPointer.Get(i.Config)
-					if err != nil {
-						return fmt.Errorf("Could not get value of %s: %s", path, err)
-					}
-					i.TailorAppliedConfigFields[path] = specValue.(string)
-
-				}
 			}
 		}
 	}
@@ -360,24 +288,6 @@ func (i *ResourceItem) handleKeyValue(k interface{}, v interface{}, pointer stri
 	}
 }
 
-func recreateChanges(templateItem, platformItem *ResourceItem) []*Change {
-	deleteChange := &Change{
-		Action:       "Delete",
-		Kind:         templateItem.Kind,
-		Name:         templateItem.Name,
-		CurrentState: platformItem.YamlConfig(),
-		DesiredState: "",
-	}
-	createChange := &Change{
-		Action:       "Create",
-		Kind:         templateItem.Kind,
-		Name:         templateItem.Name,
-		CurrentState: "",
-		DesiredState: templateItem.YamlConfig(),
-	}
-	return []*Change{deleteChange, createChange}
-}
-
 // prepareForComparisonWithPlatformItem massages template item in such a way
 // that it can be compared with the given platform item:
 // - copy value from platformItem to templateItem for externally modified paths
@@ -390,8 +300,7 @@ func (templateItem *ResourceItem) prepareForComparisonWithPlatformItem(platformI
 			cli.DebugMsg("No such path", path, "in platform item", platformItem.FullName())
 			// As the current state for this path is "undefined" we need to make
 			// sure that the desired state does not define any value for it,
-			// otherwise it will show in the diff even if no patchset is created
-			// for it.
+			// otherwise it will show in the diff.
 			_, _ = pathPointer.Delete(templateItem.Config)
 		} else {
 			_, err = pathPointer.Set(templateItem.Config, platformItemVal)
@@ -424,11 +333,19 @@ func (templateItem *ResourceItem) prepareForComparisonWithPlatformItem(platformI
 // - remove all annotations which are not managed
 func (platformItem *ResourceItem) prepareForComparisonWithTemplateItem(templateItem *ResourceItem) error {
 	unmanagedAnnotations := []string{}
+	lastAppliedAnnotations := []string{}
+	for a := range platformItem.LastAppliedAnnotations {
+		lastAppliedAnnotations = append(lastAppliedAnnotations, a)
+	}
+	desiredStateAnnotations := []string{}
+	for a := range templateItem.Annotations {
+		desiredStateAnnotations = append(desiredStateAnnotations, a)
+	}
 	for a := range platformItem.Annotations {
-		if utils.Includes(templateItem.TailorManagedAnnotations, a) {
+		if utils.Includes(desiredStateAnnotations, a) {
 			continue
 		}
-		if utils.Includes(platformItem.TailorManagedAnnotations, a) {
+		if utils.Includes(lastAppliedAnnotations, a) {
 			continue
 		}
 		unmanagedAnnotations = append(unmanagedAnnotations, a)
@@ -442,24 +359,6 @@ func (platformItem *ResourceItem) prepareForComparisonWithTemplateItem(templateI
 		}
 		platformItem.Paths = utils.Remove(platformItem.Paths, path)
 	}
-	return nil
-}
 
-func addInternalAnnotations(config map[string]interface{}, key string, val string) error {
-	annotationPointer, err := gojsonpointer.NewJsonPointer(annotationsPath)
-	if err != nil {
-		return fmt.Errorf("Could not get pointer to %s: %s", annotationsPath, err)
-	}
-	annotationsValue, _, err := annotationPointer.Get(config)
-	if err != nil {
-		// When annotations are not present, just assume an empty map.
-		annotationsValue = map[string]interface{}{}
-	}
-	annotationsValueMap := annotationsValue.(map[string]interface{})
-	annotationsValueMap[key] = val
-	_, err = annotationPointer.Set(config, annotationsValueMap)
-	if err != nil {
-		return fmt.Errorf("Could not set updated annotations map %#v : %s", annotationsValueMap, err)
-	}
 	return nil
 }

@@ -84,26 +84,6 @@ the param values so that you can see the clear text secrets.
 
 Finally, to ease PGP management, `secrets generate-key john.doe@domain.com` generates a PGP keypair, writing the public key to `john-doe.key` (which should be committed) and the private key to `private.key` (which MUST NOT be committed).
 
-### Working with annotations
-
-Annotations on OpenShift resources provide a means for tools to add additional
-information to resources. Often, those annotations cannot be known by the
-template author. Therefore, Tailor does not calculate drift for annotations by
-default.
-
-If you wish to control annotations via Tailor, you can use
-`export --with-annotations` to include annotations in the export, or, when you
-author templates, by simply adding individual annotations to your templates.
-
-Tailor will treat any annotations present in templates as being under Tailor's
-control, therefore e.g. changes in the annotation values will be seen as drift.
-
-To achieve this, Tailor itself uses an annotation to keep track of the
-annotation it controls. This annotation (and another annotation preserving the
-applied configuration for fields that are modified by OpenShift such as image
-reference) is hidden by default from drift reports but can be seen using the
-JSON patches diff view (`--diff=json`). 
-
 
 ### Permissions
 

@@ -3,8 +3,6 @@ kind: DeploymentConfig
 metadata:
   annotations:
     baz: qux
-    tailor.opendevstack.org/applied-config: '{"/spec/template/spec/containers/0/image":"foo-test/bar:latest"}'
-    tailor.opendevstack.org/managed-annotations: baz
   labels:
     app: foo-bar
   name: bar

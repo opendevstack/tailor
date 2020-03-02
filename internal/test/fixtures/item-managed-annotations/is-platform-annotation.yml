@@ -4,7 +4,8 @@ metadata:
   name: foo
   annotations:
     bar: baz
-    tailor.opendevstack.org/managed-annotations: bar
+    kubectl.kubernetes.io/last-applied-configuration: >
+      {"apiVersion":"v1","kind":"ImageStream","metadata":{"annotations":{"bar":"baz"}}}
 spec:
   dockerImageRepository: foo
   lookupPolicy:

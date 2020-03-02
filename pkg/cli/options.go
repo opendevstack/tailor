@@ -43,7 +43,6 @@ type CompareOptions struct {
 	Labels                  string
 	Params                  []string
 	ParamFiles              []string
-	Format                  string
 	PreservePaths           []string
 	PreserveImmutableFields bool
 	IgnoreUnknownParameters bool
@@ -159,7 +158,6 @@ func NewCompareOptions(
 	labelsFlag string,
 	paramFlag []string,
 	paramFileFlag []string,
-	formatFlag string,
 	preserveFlag []string,
 	preserveImmutableFieldsFlag bool,
 	ignoreUnknownParametersFlag bool,
@@ -263,12 +261,6 @@ func NewCompareOptions(
 		o.ParamFiles = paramFileFlag
 	} else if val, ok := fileFlags["param-file"]; ok {
 		o.ParamFiles = strings.Split(val, ",")
-	}
-
-	if len(formatFlag) > 0 {
-		o.Format = formatFlag
-	} else if val, ok := fileFlags["diff"]; ok {
-		o.Format = val
 	}
 
 	if len(preserveFlag) > 0 {
@@ -501,9 +493,6 @@ func (o *CompareOptions) check() error {
 		}
 	}
 
-	if o.Format != "text" && o.Format != "json" {
-		return errors.New("--diff must be either text or json")
-	}
 	if strings.Contains(o.Resource, "/") && len(o.Selector) > 0 {
 		DebugMsg("Ignoring selector", o.Selector, "as resource is given")
 		o.Selector = ""

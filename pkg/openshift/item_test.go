@@ -78,37 +78,6 @@ spec:
   - type: ConfigChange`)
 }
 
-func getChangedBuildConfig() []byte {
-	return []byte(
-		`apiVersion: v1
-kind: BuildConfig
-metadata:
-  annotations:
-    foo: bar
-  name: foo
-spec:
-  failedBuildsHistoryLimit: 8
-  nodeSelector: null
-  output:
-    to:
-      kind: ImageStreamTag
-      name: foo:experiment
-  postCommit: {}
-  resources: {}
-  runPolicy: Serial
-  source:
-    binary: {}
-    type: Binary
-  strategy:
-    dockerStrategy: {}
-    type: Docker
-  successfulBuildsHistoryLimit: 5
-  triggers:
-  - imageChange: {}
-    type: ImageChange
-  - type: ConfigChange`)
-}
-
 func getRoute(host []byte) []byte {
 	config := []byte(
 		`apiVersion: v1

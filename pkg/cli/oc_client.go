@@ -24,19 +24,14 @@ type OcClientExporter interface {
 	Export(target string, label string) ([]byte, error)
 }
 
-// OcClientPatcher allows to patch a resource.
-type OcClientPatcher interface {
-	Patch(target string, patches string) ([]byte, error)
-}
-
 // OcClientDeleter allows to delete a resource.
 type OcClientDeleter interface {
 	Delete(kind string, name string) ([]byte, error)
 }
 
-// OcClientCreator allows to create a resource.
-type OcClientCreator interface {
-	Create(config string, selector string) ([]byte, error)
+// OcClientApplier allows to create a resource.
+type OcClientApplier interface {
+	Apply(config string, selector string) ([]byte, error)
 }
 
 // OcClientVersioner allows to retrieve the OpenShift version..
@@ -118,21 +113,9 @@ func (c *OcClient) Export(target string, label string) ([]byte, error) {
 	return outBytes, nil
 }
 
-// Patch applies the given patch on the target.
-func (c *OcClient) Patch(target string, patches string) ([]byte, error) {
-	args := []string{"patch", target, "--type=json", "--patch", patches}
-	cmd := c.execOcCmd(
-		args,
-		c.namespace,
-		"", // empty as name and selector is not allowed
-	)
-	_, errBytes, err := c.runCmd(cmd)
-	return errBytes, err
-}
-
-// Create creates given resource configuration.
-func (c *OcClient) Create(config string, selector string) ([]byte, error) {
-	args := []string{"create", "-f", "-"}
+// Apply applies given resource configuration.
+func (c *OcClient) Apply(config string, selector string) ([]byte, error) {
+	args := []string{"apply", "-f", "-"}
 	cmd := c.execOcCmd(
 		args,
 		c.namespace,

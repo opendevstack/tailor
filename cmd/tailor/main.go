@@ -101,10 +101,6 @@ var (
 		"param-file",
 		"File(s) containing template parameter values to set/override in the template.",
 	).Strings()
-	diffFormatFlag = diffCommand.Flag(
-		"format",
-		"Whether to show textual diff (\"text\") or JSON patches (\"json\"). JSON patches might show secret values in clear text.",
-	).Default("text").String()
 	diffIgnorePathFlag = diffCommand.Flag(
 		"ignore-path",
 		"DEPRECATED! Use --preserve instead.",
@@ -153,10 +149,6 @@ var (
 		"param-file",
 		"File(s) containing template parameter values to set/override in the template.",
 	).Strings()
-	applyFormatFlag = applyCommand.Flag(
-		"format",
-		"Whether to show textual diff (\"text\") or JSON patches (\"json\"). JSON patches might show secret values in clear text.",
-	).Default("text").String()
 	applyIgnorePathFlag = applyCommand.Flag(
 		"ignore-path",
 		"DEPRECATED! Use --preserve instead.",
@@ -363,7 +355,6 @@ func main() {
 				*diffLabelsFlag,
 				*diffParamFlag,
 				*diffParamFileFlag,
-				*diffFormatFlag,
 				preservePathFlag,
 				*diffPreserveImmutableFieldsFlag,
 				*diffIgnoreUnknownParametersFlag,
@@ -405,7 +396,6 @@ func main() {
 				*applyLabelsFlag,
 				*applyParamFlag,
 				*applyParamFileFlag,
-				*applyFormatFlag,
 				preservePathFlag,
 				*applyPreserveImmutableFieldsFlag,
 				*applyIgnoreUnknownParametersFlag,
