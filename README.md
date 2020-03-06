@@ -53,7 +53,7 @@ state in the YAML templates. There are three main aspects to this:
 2. The desired state is computed by processing the local YAML templates. It is possible to pass `--labels`, `--param` and `--param-file` to the `diff` command to influence the generated config. Those 3 flags are passed as-is to the underlying `oc process` command. As Tailor allows you to work with multiple templates, there is an additional `--param-dir="<namespace>|."` flag, which you can use to point to a folder containing param files corresponding to each template (e.g. `foo.env` for template `foo.yml`).
 3. In order to calculate drift correctly, the whole OpenShift namespace is compared against your configuration. If you want to compare a subset only (e.g. all resources related to one microservice), it is possible to narrow the scope by passing `--selector/-l`, e.g. `-l app=foo` (multiple labels are comma-separated, and need to apply all). Further, you can specify an individual resource, e.g. `dc/foo`.
 
-### `update`
+### `apply`
 This command will compare current vs. desired state exactly like `diff` does,
 but if any drift is detected, it asks to apply the OpenShift namespace with your desired state. A subsequent run of either `diff` or `apply` should show no drift.
 
