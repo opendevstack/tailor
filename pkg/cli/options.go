@@ -11,6 +11,16 @@ import (
 	"github.com/opendevstack/tailor/pkg/utils"
 )
 
+// fileStater is a helper interface to allow testing.
+type fileStater interface {
+	Stat(name string) (os.FileInfo, error)
+}
+
+// osFS implements Stat() for local disk.
+type osFS struct{}
+
+func (osFS) Stat(name string) (os.FileInfo, error) { return os.Stat(name) }
+
 // GlobalOptions are app-wide that cannot be modified within a context.
 type GlobalOptions struct {
 	Verbose        bool
@@ -21,6 +31,7 @@ type GlobalOptions struct {
 	ContextDirs    []string
 	Force          bool
 	IsLoggedIn     bool
+	fs             fileStater
 }
 
 // NamespaceOptions are context-wide.
@@ -86,7 +97,7 @@ func NewGlobalOptions(
 	ocBinaryFlag string,
 	contextDirFlag []string,
 	forceFlag bool) (*GlobalOptions, error) {
-	o := &GlobalOptions{}
+	o := &GlobalOptions{fs: &osFS{}}
 
 	fileFlags, err := getFileFlags(fileFlag, verbose)
 	if err != nil {
@@ -170,7 +181,7 @@ func NewCompareOptions(
 		NamespaceOptions: &NamespaceOptions{},
 		ContextDir:       contextDir,
 	}
-	filename := utils.AbsoluteOrRelativePath(o.File, contextDir)
+	filename := utils.AbsoluteOrRelativePath(o.resolvedFile(namespaceFlag), contextDir)
 
 	fileFlags, err := getFileFlags(filename, verbose)
 	if err != nil {
@@ -328,7 +339,7 @@ func NewExportOptions(
 		NamespaceOptions: &NamespaceOptions{},
 		ContextDir:       contextDir,
 	}
-	filename := utils.AbsoluteOrRelativePath(o.File, contextDir)
+	filename := utils.AbsoluteOrRelativePath(o.resolvedFile(namespaceFlag), contextDir)
 
 	fileFlags, err := getFileFlags(filename, verbose)
 	if err != nil {
@@ -396,7 +407,8 @@ func NewSecretsOptions(
 		GlobalOptions: globalOptions,
 		ContextDir:    contextDir,
 	}
-	filename := utils.AbsoluteOrRelativePath(o.File, contextDir)
+	namespaceFlag := "" // namespace does not make sense for secrets
+	filename := utils.AbsoluteOrRelativePath(o.resolvedFile(namespaceFlag), contextDir)
 
 	fileFlags, err := getFileFlags(filename, verbose)
 	if err != nil {
@@ -427,6 +439,22 @@ func NewSecretsOptions(
 	DebugMsg(fmt.Sprintf("%#v", o))
 
 	return o, o.check()
+}
+
+// resolvedFile returns either the user-supplied value, or, if the default is used
+// AND a namespaceFlag is given, "Tailorfile.${NAMESPACE}" (if it exists).
+func (o *GlobalOptions) resolvedFile(namespaceFlag string) string {
+	if o.File != "Tailorfile" {
+		return o.File
+	}
+	if len(namespaceFlag) == 0 {
+		return o.File
+	}
+	namespacedFile := fmt.Sprintf("%s.%s", o.File, namespaceFlag)
+	if _, err := o.fs.Stat(namespacedFile); os.IsNotExist(err) {
+		return o.File
+	}
+	return namespacedFile
 }
 
 func (o *GlobalOptions) check(clusterRequired bool) error {
