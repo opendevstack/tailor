@@ -333,19 +333,11 @@ func (templateItem *ResourceItem) prepareForComparisonWithPlatformItem(platformI
 // - remove all annotations which are not managed
 func (platformItem *ResourceItem) prepareForComparisonWithTemplateItem(templateItem *ResourceItem) error {
 	unmanagedAnnotations := []string{}
-	lastAppliedAnnotations := []string{}
-	for a := range platformItem.LastAppliedAnnotations {
-		lastAppliedAnnotations = append(lastAppliedAnnotations, a)
-	}
-	desiredStateAnnotations := []string{}
-	for a := range templateItem.Annotations {
-		desiredStateAnnotations = append(desiredStateAnnotations, a)
-	}
 	for a := range platformItem.Annotations {
-		if utils.Includes(desiredStateAnnotations, a) {
+		if _, ok := templateItem.Annotations[a]; ok {
 			continue
 		}
-		if utils.Includes(lastAppliedAnnotations, a) {
+		if _, ok := platformItem.LastAppliedAnnotations[a]; ok {
 			continue
 		}
 		unmanagedAnnotations = append(unmanagedAnnotations, a)
