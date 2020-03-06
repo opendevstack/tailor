@@ -1,7 +1,8 @@
 # Tailor
 
 Tailor is a tool to drive the configuration of your OpenShift cluster via
-templates under version control. Any drift between your desired state (the YAML templates) and the current state (resources in the cluster) can be detected, reviewed and reconciled using a CLI interface. Tailor is required by other OpenDevStack repositories, but is fully standalone and may be used in completely different contexts.
+templates under version control. Any drift between your desired state (the YAML templates) and the current state (resources in the cluster) can be detected, reviewed and reconciled using a CLI interface. Tailor is required by other OpenDevStack repositories, but is fully standalone and may be used in completely different contexts. It uses `oc` commands under the hood, and is based on
+plain OpenShift templates.
 
 ## Benefits
 
@@ -9,7 +10,7 @@ templates under version control. Any drift between your desired state (the YAML 
 * If resources are (accidentally) removed from the OpenShift cluster, they can be recreated from config.
 * Rollback of changes in the cluster is easy as configuration is under version control.
 * Visibility into which changes were made and by whom.
-* Problems that arise from the fact that OpenShift combines configuration and state into one object (even in the export) are addressed by Tailor. E.g. annotation injected into resources or modification of image references are dealt with.
+* Review drift before applying the desired state.
 * Support for encrypted secrets to avoid storing credentials in clear text in your repository.
 
 ## Installation
