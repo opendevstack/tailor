@@ -12,6 +12,25 @@ templates under version control. Any drift between your desired state (the YAML 
 * Problems that arise from the fact that OpenShift combines configuration and state into one object (even in the export) are addressed by Tailor. E.g. annotation injected into resources or modification of image references are dealt with.
 * Support for encrypted secrets to avoid storing credentials in clear text in your repository.
 
+## Supported Openshift Object Types
+Currently Tailor supports the following openshift object types:
+
+|Object Type|Abbreviated Version|
+|----|------|
+|Service|svc|
+|Route|route|
+|DeploymentConfig|dc|
+|BuildConfig|bc|
+|ImageStream|is|
+|PersistentVolumeClaim|pvc|
+|Template|template|
+|ConfigMap|cm|
+|Secret|secret|
+|RoleBinding|rolebinding|
+|ServiceAccount|serviceaccount|
+|CronJob|cronjob|
+
+
 ## Installation
 
 The latest release is 0.12.0 and requires oc >= v3.9.0. OpenShift 4 is not supported yet.
