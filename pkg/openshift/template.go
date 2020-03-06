@@ -97,25 +97,8 @@ func ProcessTemplate(templateDir string, name string, paramDir string, compareOp
 		args = append(args, "--param=TAILOR_NAMESPACE="+compareOptions.Namespace)
 	}
 
-	actualParamFiles := compareOptions.ResolvedParamFiles()
-	// If param-file is not given, we assume a param-dir
-	if len(actualParamFiles) == 0 {
-		// Prefer <namespace> folder over current directory
-		if paramDir == "." {
-			if _, err := os.Stat(compareOptions.Namespace); err == nil {
-				paramDir = compareOptions.Namespace
-			}
-		}
+	actualParamFiles := calculateParamFiles(name, paramDir, compareOptions)
 
-		cli.DebugMsg(fmt.Sprintf("Looking for param files in '%s'", paramDir))
-
-		fileParts := strings.Split(name, ".")
-		fileParts[len(fileParts)-1] = "env"
-		f := paramDir + string(os.PathSeparator) + strings.Join(fileParts, ".")
-		if _, err := os.Stat(f); err == nil {
-			actualParamFiles = []string{f}
-		}
-	}
 	// Now turn the param files into arguments for the oc binary
 	if len(actualParamFiles) > 0 {
 		paramFileBytes := []byte{}
@@ -194,4 +177,40 @@ func templateContainsTailorNamespaceParam(filename string) (bool, error) {
 		}
 	}
 	return false, nil
+}
+
+func calculateParamFiles(name string, paramDir string, compareOptions *cli.CompareOptions) []string {
+	files := compareOptions.ResolvedParamFiles()
+	// If param-file is not given, we assume a param-dir
+	if len(files) == 0 {
+		// Prefer <namespace> folder over current directory
+		if paramDir == "." {
+			if _, err := os.Stat(compareOptions.Namespace); err == nil {
+				paramDir = compareOptions.Namespace
+			}
+		}
+
+		cli.DebugMsg(fmt.Sprintf("Looking for param files in '%s'", paramDir))
+
+		fileParts := strings.Split(name, ".")
+		fileParts[len(fileParts)-1] = "env"
+		f := strings.Join(fileParts, ".")
+		if paramDir != "." {
+			f = paramDir + string(os.PathSeparator) + f
+		}
+		contextualisedFile := utils.AbsoluteOrRelativePath(f, compareOptions.ContextDir)
+		if compareOptions.FileExists(contextualisedFile) {
+			files = []string{f}
+		}
+	}
+	// Add <namespace>.env file if it exists
+	namespaceDotEnvFilename := fmt.Sprintf("%s.env", compareOptions.Namespace)
+	namespaceDotEnvFile := utils.AbsoluteOrRelativePath(namespaceDotEnvFilename, compareOptions.ContextDir)
+	if !utils.Includes(files, namespaceDotEnvFile) {
+		if compareOptions.FileExists(namespaceDotEnvFile) {
+			cli.DebugMsg(fmt.Sprintf("Adding param file '%s' by convention", namespaceDotEnvFile))
+			files = append(files, namespaceDotEnvFile)
+		}
+	}
+	return files
 }

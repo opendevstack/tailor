@@ -3,10 +3,26 @@ package helper
 import (
 	"fmt"
 	"io/ioutil"
+	"os"
 	"path"
 	"runtime"
 	"testing"
 )
+
+// SomeFilesExistFS is a mock filesystem where some files exist.
+type SomeFilesExistFS struct {
+	Existing []string
+}
+
+// Stat always returns a nil error.
+func (fs SomeFilesExistFS) Stat(name string) (os.FileInfo, error) {
+	for _, ef := range fs.Existing {
+		if ef == name {
+			return nil, nil
+		}
+	}
+	return nil, os.ErrNotExist
+}
 
 // ReadFixtureFile returns the contents of the fixture file or fails.
 func ReadFixtureFile(t *testing.T, filename string) []byte {
