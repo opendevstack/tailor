@@ -58,7 +58,7 @@ func apply(compareOptions *cli.CompareOptions, c *openshift.Changeset) error {
 	)
 
 	for _, change := range c.Create {
-		err := ocCreate(change, compareOptions, ocClient)
+		err := ocApply("Creating", change, compareOptions, ocClient)
 		if err != nil {
 			return err
 		}
@@ -72,7 +72,7 @@ func apply(compareOptions *cli.CompareOptions, c *openshift.Changeset) error {
 	}
 
 	for _, change := range c.Update {
-		err := ocPatch(change, compareOptions, ocClient)
+		err := ocApply("Updating", change, compareOptions, ocClient)
 		if err != nil {
 			return err
 		}
@@ -93,9 +93,9 @@ func ocDelete(change *openshift.Change, compareOptions *cli.CompareOptions, ocCl
 	return nil
 }
 
-func ocCreate(change *openshift.Change, compareOptions *cli.CompareOptions, ocClient cli.OcClientCreator) error {
-	fmt.Printf("Creating %s ... ", change.ItemName())
-	errBytes, err := ocClient.Create(change.DesiredState, compareOptions.Selector)
+func ocApply(label string, change *openshift.Change, compareOptions *cli.CompareOptions, ocClient cli.OcClientApplier) error {
+	fmt.Printf("%s %s ... ", label, change.ItemName())
+	errBytes, err := ocClient.Apply(change.DesiredState, compareOptions.Selector)
 	if err == nil {
 		fmt.Println("done")
 	} else {
@@ -103,17 +103,5 @@ func ocCreate(change *openshift.Change, compareOptions *cli.CompareOptions, ocCl
 		return errors.New(string(errBytes))
 	}
 
-	return nil
-}
-
-func ocPatch(change *openshift.Change, compareOptions *cli.CompareOptions, ocClient cli.OcClientPatcher) error {
-	fmt.Printf("Patching %s ... ", change.ItemName())
-	errBytes, err := ocClient.Patch(change.ItemName(), change.JSONPatches())
-	if err == nil {
-		fmt.Println("done")
-	} else {
-		fmt.Println("failed")
-		return errors.New(string(errBytes))
-	}
 	return nil
 }

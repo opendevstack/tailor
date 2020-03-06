@@ -2,8 +2,6 @@ package openshift
 
 import (
 	"bytes"
-	"encoding/json"
-	"reflect"
 	"testing"
 )
 
@@ -15,14 +13,13 @@ func TestDiff(t *testing.T) {
 		desiredAnnotations []byte
 		desiredData        []byte
 		expectedDiff       string
-		expectedPatches    []*jsonPatch
 	}{
 		"Modifying a data field": {
-			[]byte("{}"),
-			[]byte("{foo: bar}"),
-			[]byte("{}"),
-			[]byte("{foo: baz}"),
-			`--- Current State (OpenShift cluster)
+			currentAnnotations: []byte("{}"),
+			currentData:        []byte("{foo: bar}"),
+			desiredAnnotations: []byte("{}"),
+			desiredData:        []byte("{foo: baz}"),
+			expectedDiff: `--- Current State (OpenShift cluster)
 +++ Desired State (Processed template)
 @@ -1,6 +1,6 @@
  apiVersion: v1
@@ -33,20 +30,13 @@ func TestDiff(t *testing.T) {
  metadata:
    annotations: {}
 `,
-			[]*jsonPatch{
-				&jsonPatch{
-					Op:    "replace",
-					Path:  "/data/foo",
-					Value: "baz",
-				},
-			},
 		},
 		"Adding a data field": {
-			[]byte("{}"),
-			[]byte("{foo: bar}"),
-			[]byte("{}"),
-			[]byte("{foo: bar, baz: qux}"),
-			`--- Current State (OpenShift cluster)
+			currentAnnotations: []byte("{}"),
+			currentData:        []byte("{foo: bar}"),
+			desiredAnnotations: []byte("{}"),
+			desiredData:        []byte("{foo: bar, baz: qux}"),
+			expectedDiff: `--- Current State (OpenShift cluster)
 +++ Desired State (Processed template)
 @@ -1,5 +1,6 @@
  apiVersion: v1
@@ -56,20 +46,13 @@ func TestDiff(t *testing.T) {
  kind: ConfigMap
  metadata:
 `,
-			[]*jsonPatch{
-				&jsonPatch{
-					Op:    "add",
-					Path:  "/data/baz",
-					Value: "qux",
-				},
-			},
 		},
 		"Removing a data field": {
-			[]byte("{}"),
-			[]byte("{foo: bar}"),
-			[]byte("{}"),
-			[]byte("{}"),
-			`--- Current State (OpenShift cluster)
+			currentAnnotations: []byte("{}"),
+			currentData:        []byte("{foo: bar}"),
+			desiredAnnotations: []byte("{}"),
+			desiredData:        []byte("{}"),
+			expectedDiff: `--- Current State (OpenShift cluster)
 +++ Desired State (Processed template)
 @@ -1,6 +1,5 @@
  apiVersion: v1
@@ -80,19 +63,13 @@ func TestDiff(t *testing.T) {
  metadata:
    annotations: {}
 `,
-			[]*jsonPatch{
-				&jsonPatch{
-					Op:   "remove",
-					Path: "/data/foo",
-				},
-			},
 		},
 		"Adding an annotation": {
-			[]byte("{}"),
-			[]byte("{}"),
-			[]byte("{foo: bar}"),
-			[]byte("{}"),
-			`--- Current State (OpenShift cluster)
+			currentAnnotations: []byte("{}"),
+			currentData:        []byte("{}"),
+			desiredAnnotations: []byte("{foo: bar}"),
+			desiredData:        []byte("{}"),
+			expectedDiff: `--- Current State (OpenShift cluster)
 +++ Desired State (Processed template)
 @@ -2,7 +2,8 @@
  data: {}
@@ -105,25 +82,13 @@ func TestDiff(t *testing.T) {
      app: bar
    name: bar
 `,
-			[]*jsonPatch{
-				&jsonPatch{
-					Op:    "add",
-					Path:  "/metadata/annotations/foo",
-					Value: "bar",
-				},
-				&jsonPatch{
-					Op:    "add",
-					Path:  "/metadata/annotations/tailor.opendevstack.org~1managed-annotations",
-					Value: "foo",
-				},
-			},
 		},
 		"Removing an annotation": {
-			[]byte("{foo: bar, tailor.opendevstack.org/managed-annotations: foo}"),
-			[]byte("{}"),
-			[]byte("{}"),
-			[]byte("{}"),
-			`--- Current State (OpenShift cluster)
+			currentAnnotations: []byte(`{foo: bar, kubectl.kubernetes.io/last-applied-configuration: '{"apiVersion":"v1","kind":"ConfigMap","metadata":{"annotations":{"foo":"bar"}}}'}`),
+			currentData:        []byte("{}"),
+			desiredAnnotations: []byte("{}"),
+			desiredData:        []byte("{}"),
+			expectedDiff: `--- Current State (OpenShift cluster)
 +++ Desired State (Processed template)
 @@ -2,8 +2,7 @@
  data: {}
@@ -136,23 +101,13 @@ func TestDiff(t *testing.T) {
      app: bar
    name: bar
 `,
-			[]*jsonPatch{
-				&jsonPatch{
-					Op:   "remove",
-					Path: "/metadata/annotations/foo",
-				},
-				&jsonPatch{
-					Op:   "remove",
-					Path: "/metadata/annotations/tailor.opendevstack.org~1managed-annotations",
-				},
-			},
 		},
 		"Modifying an annotation": {
-			[]byte("{foo: bar, tailor.opendevstack.org/managed-annotations: foo}"),
-			[]byte("{}"),
-			[]byte("{foo: baz}"),
-			[]byte("{}"),
-			`--- Current State (OpenShift cluster)
+			currentAnnotations: []byte(`{foo: bar, kubectl.kubernetes.io/last-applied-configuration: '{"apiVersion":"v1","kind":"ConfigMap","metadata":{"annotations":{"foo":"bar"}}}'}`),
+			currentData:        []byte("{}"),
+			desiredAnnotations: []byte("{foo: baz}"),
+			desiredData:        []byte("{}"),
+			expectedDiff: `--- Current State (OpenShift cluster)
 +++ Desired State (Processed template)
 @@ -3,7 +3,7 @@
  kind: ConfigMap
@@ -164,20 +119,13 @@ func TestDiff(t *testing.T) {
      app: bar
    name: bar
 `,
-			[]*jsonPatch{
-				&jsonPatch{
-					Op:    "replace",
-					Path:  "/metadata/annotations/foo",
-					Value: "baz",
-				},
-			},
 		},
 		"Modifying a non-managed annotation": {
-			[]byte("{foo: bar, baz: qux, tailor.opendevstack.org/managed-annotations: foo}"),
-			[]byte("{}"),
-			[]byte("{foo: bar, baz: zab}"),
-			[]byte("{}"),
-			`--- Current State (OpenShift cluster)
+			currentAnnotations: []byte(`{foo: bar, baz: qux, kubectl.kubernetes.io/last-applied-configuration: '{"apiVersion":"v1","kind":"ConfigMap","metadata":{"annotations":{"foo":"bar"}}}'}`),
+			currentData:        []byte("{}"),
+			desiredAnnotations: []byte("{foo: bar, baz: zab}"),
+			desiredData:        []byte("{}"),
+			expectedDiff: `--- Current State (OpenShift cluster)
 +++ Desired State (Processed template)
 @@ -3,7 +3,7 @@
  kind: ConfigMap
@@ -189,33 +137,6 @@ func TestDiff(t *testing.T) {
    labels:
      app: bar
 `,
-			[]*jsonPatch{
-				&jsonPatch{
-					Op:    "replace",
-					Path:  "/metadata/annotations/baz",
-					Value: "zab",
-				},
-				&jsonPatch{
-					Op:    "replace",
-					Path:  "/metadata/annotations/tailor.opendevstack.org~1managed-annotations",
-					Value: "baz,foo",
-				},
-			},
-		},
-		"Managing a non-managed annotation": {
-			[]byte("{foo: bar, baz: qux, tailor.opendevstack.org/managed-annotations: foo}"),
-			[]byte("{}"),
-			[]byte("{foo: bar, baz: qux}"),
-			[]byte("{}"),
-			`Only annotations used by Tailor internally differ. Updating the resource is recommended, but not required. Use --diff=json to see the exact changes.
-`,
-			[]*jsonPatch{
-				&jsonPatch{
-					Op:    "replace",
-					Path:  "/metadata/annotations/tailor.opendevstack.org~1managed-annotations",
-					Value: "baz,foo",
-				},
-			},
 		},
 	}
 
@@ -244,22 +165,8 @@ func TestDiff(t *testing.T) {
 					actualDiff,
 				)
 			}
-			actualPatches := change.Patches
-			if !reflect.DeepEqual(actualPatches, tt.expectedPatches) {
-				t.Fatalf(
-					"Patches()\n===== expected =====\n%s\n===== actual =====\n%s",
-					pretty(tt.expectedPatches),
-					pretty(actualPatches),
-				)
-			}
 		})
 	}
-}
-
-func pretty(jp []*jsonPatch) string {
-	var b []byte
-	b, _ = json.MarshalIndent(jp, "", "  ")
-	return string(b)
 }
 
 func getConfigMapForDiff(annotations, data []byte) []byte {
