@@ -13,7 +13,8 @@ echo "Running tests..."
 make test
 
 echo "Update version..."
-old_version=$(grep -o "[0-9]*\.[0-9]*\.[0-9]*" cmd/tailor/main.go)
+grepped_version=$(grep -o "[0-9]*\.[0-9]*\.[0-9]+" cmd/tailor/main.go)
+old_version=${grepped_version%?}
 sed -i.bak 's/fmt.Println("'$old_version'+master")/fmt.Println("'$version'")/' cmd/tailor/main.go
 sed -i.bak 's/'$old_version'/'$version'/' README.md
 
