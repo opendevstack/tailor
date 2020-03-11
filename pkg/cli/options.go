@@ -11,16 +11,6 @@ import (
 	"github.com/opendevstack/tailor/pkg/utils"
 )
 
-// fileStater is a helper interface to allow testing.
-type fileStater interface {
-	Stat(name string) (os.FileInfo, error)
-}
-
-// osFS implements Stat() for local disk.
-type osFS struct{}
-
-func (osFS) Stat(name string) (os.FileInfo, error) { return os.Stat(name) }
-
 // GlobalOptions are app-wide that cannot be modified within a context.
 type GlobalOptions struct {
 	Verbose        bool
@@ -31,7 +21,7 @@ type GlobalOptions struct {
 	ContextDirs    []string
 	Force          bool
 	IsLoggedIn     bool
-	fs             fileStater
+	fs             utils.FileStater
 }
 
 // NamespaceOptions are context-wide.
@@ -86,6 +76,11 @@ type SecretsOptions struct {
 	Passphrase   string
 }
 
+// InitGlobalOptions creates a new pointer to GlobalOptions with a given filesystem.
+func InitGlobalOptions(fs utils.FileStater) *GlobalOptions {
+	return &GlobalOptions{fs: fs}
+}
+
 // NewGlobalOptions returns new global options based on file/flags.
 // Those options are shared across all commands.
 func NewGlobalOptions(
@@ -97,7 +92,7 @@ func NewGlobalOptions(
 	ocBinaryFlag string,
 	contextDirFlag []string,
 	forceFlag bool) (*GlobalOptions, error) {
-	o := &GlobalOptions{fs: &osFS{}}
+	o := InitGlobalOptions(&utils.OsFS{})
 
 	fileFlags, err := getFileFlags(fileFlag, verbose)
 	if err != nil {
@@ -455,6 +450,12 @@ func (o *GlobalOptions) resolvedFile(namespaceFlag string) string {
 		return o.File
 	}
 	return namespacedFile
+}
+
+// FileExists checks whether given file exists.
+func (o *GlobalOptions) FileExists(file string) bool {
+	_, err := o.fs.Stat(file)
+	return !os.IsNotExist(err)
 }
 
 func (o *GlobalOptions) check(clusterRequired bool) error {

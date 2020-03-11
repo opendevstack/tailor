@@ -3,7 +3,10 @@ package openshift
 import (
 	"testing"
 
+	"github.com/google/go-cmp/cmp"
 	"github.com/opendevstack/tailor/internal/test/helper"
+	"github.com/opendevstack/tailor/pkg/cli"
+	"github.com/opendevstack/tailor/pkg/utils"
 )
 
 type mockOcExportClient struct {
@@ -67,5 +70,81 @@ func TestTemplateContainsTailorNamespaceParam(t *testing.T) {
 	}
 	if !contains {
 		t.Error("Template contains param, but it was not detected")
+	}
+}
+
+func TestCalculateParamFiles(t *testing.T) {
+	tests := map[string]struct {
+		namespace     string
+		templateName  string
+		paramDir      string
+		paramFileFlag []string
+		fs            utils.FileStater
+		expected      []string
+	}{
+		"template is foo.yml and corresponding param file exists": {
+			namespace:     "foo",
+			templateName:  "bar.yml",
+			paramDir:      ".", // default
+			paramFileFlag: []string{},
+			fs:            &helper.SomeFilesExistFS{Existing: []string{"bar.env", "foo.env"}},
+			expected:      []string{"bar.env", "foo.env"},
+		},
+		"template is bar.yml but corresponding param file does not exist": {
+			namespace:     "foo",
+			templateName:  "bar.yml",
+			paramDir:      ".", // default
+			paramFileFlag: []string{},
+			fs:            &helper.SomeFilesExistFS{Existing: []string{"foo.env"}},
+			expected:      []string{"foo.env"},
+		},
+		"template is bar.yml and no files exist": {
+			namespace:     "foo",
+			templateName:  "bar.yml",
+			paramDir:      ".", // default
+			paramFileFlag: []string{},
+			fs:            &helper.SomeFilesExistFS{},
+			expected:      []string{},
+		},
+		"template is foo.yml and corresponding param file exists in param dir": {
+			namespace:     "foo",
+			templateName:  "bar.yml",
+			paramDir:      "foo", // default
+			paramFileFlag: []string{},
+			fs:            &helper.SomeFilesExistFS{Existing: []string{"foo/bar.env", "foo.env"}},
+			expected:      []string{"foo/bar.env", "foo.env"},
+		},
+		"template is foo.yml but corresponding param file does not exist in param dir": {
+			namespace:     "foo",
+			templateName:  "bar.yml",
+			paramDir:      "foo", // default
+			paramFileFlag: []string{},
+			fs:            &helper.SomeFilesExistFS{Existing: []string{"foo", "foo.env"}},
+			expected:      []string{"foo.env"},
+		},
+		"param env file is given explicitly": {
+			namespace:     "foo",
+			templateName:  "bar.yml",
+			paramDir:      ".", // default
+			paramFileFlag: []string{"foo.env"},
+			fs:            &helper.SomeFilesExistFS{Existing: []string{"foo.env"}},
+			expected:      []string{"foo.env"},
+		},
+	}
+	for name, tc := range tests {
+		t.Run(name, func(t *testing.T) {
+			globalOptions := cli.InitGlobalOptions(tc.fs)
+			compareOptions := &cli.CompareOptions{
+				GlobalOptions:    globalOptions,
+				NamespaceOptions: &cli.NamespaceOptions{Namespace: tc.namespace},
+				ContextDir:       ".",
+				ParamFiles:       tc.paramFileFlag,
+			}
+
+			actual := calculateParamFiles(tc.templateName, tc.paramDir, compareOptions)
+			if diff := cmp.Diff(tc.expected, actual); diff != "" {
+				t.Fatalf("Desired state mismatch (-want +got):\n%s", diff)
+			}
+		})
 	}
 }
