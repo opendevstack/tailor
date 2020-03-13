@@ -118,7 +118,7 @@ func ProcessTemplate(templateDir string, name string, paramDir string, compareOp
 				if err != nil {
 					return []byte{}, err
 				}
-				encoded, err := EncodedParams(string(b), compareOptions.ResolvedPrivateKey(), compareOptions.Passphrase)
+				encoded, err := EncodedParams(string(b), compareOptions.PrivateKey, compareOptions.Passphrase)
 				if err != nil {
 					return []byte{}, err
 				}
@@ -180,7 +180,7 @@ func templateContainsTailorNamespaceParam(filename string) (bool, error) {
 }
 
 func calculateParamFiles(name string, paramDir string, compareOptions *cli.CompareOptions) []string {
-	files := compareOptions.ResolvedParamFiles()
+	files := compareOptions.ParamFiles
 	// If param-file is not given, we assume a param-dir
 	if len(files) == 0 {
 		// Prefer <namespace> folder over current directory
@@ -198,14 +198,12 @@ func calculateParamFiles(name string, paramDir string, compareOptions *cli.Compa
 		if paramDir != "." {
 			f = paramDir + string(os.PathSeparator) + f
 		}
-		contextualisedFile := utils.AbsoluteOrRelativePath(f, compareOptions.ContextDir)
-		if compareOptions.FileExists(contextualisedFile) {
+		if compareOptions.FileExists(f) {
 			files = []string{f}
 		}
 	}
 	// Add <namespace>.env file if it exists
-	namespaceDotEnvFilename := fmt.Sprintf("%s.env", compareOptions.Namespace)
-	namespaceDotEnvFile := utils.AbsoluteOrRelativePath(namespaceDotEnvFilename, compareOptions.ContextDir)
+	namespaceDotEnvFile := fmt.Sprintf("%s.env", compareOptions.Namespace)
 	if !utils.Includes(files, namespaceDotEnvFile) {
 		if compareOptions.FileExists(namespaceDotEnvFile) {
 			cli.DebugMsg(fmt.Sprintf("Adding param file '%s' by convention", namespaceDotEnvFile))

@@ -3,7 +3,6 @@ package utils
 import (
 	"io/ioutil"
 	"os"
-	"path"
 )
 
 // FileStater is a helper interface to allow testing.
@@ -27,16 +26,4 @@ func ReadFile(filename string) (string, error) {
 		return "", err
 	}
 	return string(bytes), nil
-}
-
-// AbsoluteOrRelativePath returns p if it is absolute,
-// otherwise returns p relative to contextDir.
-func AbsoluteOrRelativePath(p string, contextDir string) string {
-	if path.IsAbs(p) {
-		return p
-	}
-	if contextDir == "." {
-		return p
-	}
-	return contextDir + "/" + p
 }
