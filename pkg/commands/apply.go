@@ -1,6 +1,7 @@
 package commands
 
 import (
+	"bytes"
 	"errors"
 	"fmt"
 
@@ -12,7 +13,9 @@ import (
 // If there is any, it asks for confirmation and applies the changeset.
 func Apply(nonInteractive bool, compareOptions *cli.CompareOptions) (bool, error) {
 	ocClient := cli.NewOcClient(compareOptions.Namespace)
-	driftDetected, changeset, err := calculateChangeset(compareOptions, ocClient)
+	var buf bytes.Buffer
+	driftDetected, changeset, err := calculateChangeset(&buf, compareOptions, ocClient)
+	fmt.Print(buf.String())
 	if err != nil {
 		return driftDetected, err
 	}
