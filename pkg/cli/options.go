@@ -48,6 +48,7 @@ type CompareOptions struct {
 	UpsertOnly              bool
 	AllowRecreate           bool
 	RevealSecrets           bool
+	Verify                  bool
 	Resource                string
 }
 
@@ -157,6 +158,7 @@ func NewCompareOptions(
 	upsertOnlyFlag bool,
 	allowRecreateFlag bool,
 	revealSecretsFlag bool,
+	verifyFlag bool,
 	resourceArg string) (*CompareOptions, error) {
 	o := &CompareOptions{
 		GlobalOptions:    globalOptions,
@@ -291,6 +293,12 @@ func NewCompareOptions(
 		o.RevealSecrets = true
 	} else if fileFlags["reveal-secrets"] == "true" {
 		o.RevealSecrets = true
+	}
+
+	if verifyFlag {
+		o.Verify = true
+	} else if fileFlags["verify"] == "true" {
+		o.Verify = true
 	}
 
 	if len(resourceArg) > 0 {
