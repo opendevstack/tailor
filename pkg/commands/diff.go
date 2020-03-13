@@ -2,6 +2,7 @@ package commands
 
 import (
 	"bytes"
+	"errors"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -113,7 +114,7 @@ func calculateChangeset(w io.Writer, compareOptions *cli.CompareOptions, ocClien
 			}
 		}
 		fmt.Fprintln(w, "\nRefusing to continue without --force")
-		return updateRequired, &openshift.Changeset{}, nil
+		return updateRequired, &openshift.Changeset{}, errors.New("Diff not performed due to misconfiguration")
 	}
 
 	changeset, err := compare(
