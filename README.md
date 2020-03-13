@@ -16,7 +16,8 @@ plain OpenShift templates.
 * Display and review drift before applying the desired state.
 * Support for encrypted secrets to avoid storing credentials in clear text in your repository.
 * Preserving the values of certain paths in "live" resources (e.g. values of immutable fields or any other field controlled by other means).
-* Simple interface which avoids having to stitch multiple commands together and massage their output to achieve one logical action.
+* Simple interface which avoids having to stitch multiple commands together and massage their output to achieve the desired result.
+* Options can be stored in a `Tailorfile` to ease invocation and ensure consistency within teams.
 
 ## Installation
 
