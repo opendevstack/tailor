@@ -16,7 +16,7 @@ var (
 		"tailor",
 		"Tailor - Infrastructure as Code for OpenShift",
 	).DefaultEnvars()
-	// App-wide flags that cannot be changed in each context
+	// App-wide flags
 	verboseFlag = app.Flag(
 		"verbose",
 		"Enable verbose output.",
@@ -37,16 +37,10 @@ var (
 		"file",
 		"Tailorfile with flags.",
 	).Short('f').Default("Tailorfile").String()
-	contextDirFlag = app.Flag(
-		"context-dir",
-		"Path to local context directories in which Tailor will execute",
-	).Short('c').Default(".").Strings()
 	forceFlag = app.Flag(
 		"force",
 		"Force to continue despite warning (e.g. deleting all resources).",
 	).Bool()
-
-	// Context-wide flags which might differ between contexts
 	namespaceFlag = app.Flag(
 		"namespace",
 		"Namespace (omit to use current)",
@@ -264,7 +258,6 @@ func main() {
 		*debugFlag,
 		*nonInteractiveFlag,
 		*ocBinaryFlag,
-		*contextDirFlag,
 		*forceFlag,
 	)
 	if err != nil {
@@ -337,39 +330,34 @@ func main() {
 		}
 
 	case diffCommand.FullCommand():
-		optionSets := map[string]*cli.CompareOptions{}
 		preservePathFlag := *diffPreservePathFlag
 		preservePathFlag = append(preservePathFlag, *diffIgnorePathFlag...)
-		for _, contextDir := range globalOptions.ContextDirs {
-			opt, err := cli.NewCompareOptions(
-				globalOptions,
-				contextDir,
-				*namespaceFlag,
-				*selectorFlag,
-				*excludeFlag,
-				*templateDirFlag,
-				*paramDirFlag,
-				*publicKeyDirFlag,
-				*privateKeyFlag,
-				*passphraseFlag,
-				*diffLabelsFlag,
-				*diffParamFlag,
-				*diffParamFileFlag,
-				preservePathFlag,
-				*diffPreserveImmutableFieldsFlag,
-				*diffIgnoreUnknownParametersFlag,
-				*diffUpsertOnlyFlag,
-				*diffAllowRecreateFlag,
-				*diffRevealSecretsFlag,
-				*diffResourceArg,
-			)
-			if err != nil {
-				log.Fatalln("Options could not be processed:", err)
-			}
-			optionSets[contextDir] = opt
+		compareOptions, err := cli.NewCompareOptions(
+			globalOptions,
+			*namespaceFlag,
+			*selectorFlag,
+			*excludeFlag,
+			*templateDirFlag,
+			*paramDirFlag,
+			*publicKeyDirFlag,
+			*privateKeyFlag,
+			*passphraseFlag,
+			*diffLabelsFlag,
+			*diffParamFlag,
+			*diffParamFileFlag,
+			preservePathFlag,
+			*diffPreserveImmutableFieldsFlag,
+			*diffIgnoreUnknownParametersFlag,
+			*diffUpsertOnlyFlag,
+			*diffAllowRecreateFlag,
+			*diffRevealSecretsFlag,
+			*diffResourceArg,
+		)
+		if err != nil {
+			log.Fatalln("Options could not be processed:", err)
 		}
 
-		driftDectected, err := commands.Diff(optionSets)
+		driftDectected, err := commands.Diff(compareOptions)
 		if err != nil {
 			log.Fatalln(err)
 		}
@@ -378,39 +366,34 @@ func main() {
 		}
 
 	case applyCommand.FullCommand():
-		optionSets := map[string]*cli.CompareOptions{}
 		preservePathFlag := *applyPreservePathFlag
 		preservePathFlag = append(preservePathFlag, *applyIgnorePathFlag...)
-		for _, contextDir := range globalOptions.ContextDirs {
-			opt, err := cli.NewCompareOptions(
-				globalOptions,
-				contextDir,
-				*namespaceFlag,
-				*selectorFlag,
-				*excludeFlag,
-				*templateDirFlag,
-				*paramDirFlag,
-				*publicKeyDirFlag,
-				*privateKeyFlag,
-				*passphraseFlag,
-				*applyLabelsFlag,
-				*applyParamFlag,
-				*applyParamFileFlag,
-				preservePathFlag,
-				*applyPreserveImmutableFieldsFlag,
-				*applyIgnoreUnknownParametersFlag,
-				*applyUpsertOnlyFlag,
-				*applyAllowRecreateFlag,
-				*applyRevealSecretsFlag,
-				*applyResourceArg,
-			)
-			if err != nil {
-				log.Fatalln("Options could not be processed:", err)
-			}
-			optionSets[contextDir] = opt
+		compareOptions, err := cli.NewCompareOptions(
+			globalOptions,
+			*namespaceFlag,
+			*selectorFlag,
+			*excludeFlag,
+			*templateDirFlag,
+			*paramDirFlag,
+			*publicKeyDirFlag,
+			*privateKeyFlag,
+			*passphraseFlag,
+			*applyLabelsFlag,
+			*applyParamFlag,
+			*applyParamFileFlag,
+			preservePathFlag,
+			*applyPreserveImmutableFieldsFlag,
+			*applyIgnoreUnknownParametersFlag,
+			*applyUpsertOnlyFlag,
+			*applyAllowRecreateFlag,
+			*applyRevealSecretsFlag,
+			*applyResourceArg,
+		)
+		if err != nil {
+			log.Fatalln("Options could not be processed:", err)
 		}
 
-		driftDectected, err := commands.Apply(globalOptions.NonInteractive, optionSets)
+		driftDectected, err := commands.Apply(globalOptions.NonInteractive, compareOptions)
 		if err != nil {
 			log.Fatalln(err)
 		}
@@ -419,25 +402,20 @@ func main() {
 		}
 
 	case exportCommand.FullCommand():
-		optionSets := map[string]*cli.ExportOptions{}
-		for _, contextDir := range globalOptions.ContextDirs {
-			opt, err := cli.NewExportOptions(
-				globalOptions,
-				contextDir,
-				*namespaceFlag,
-				*selectorFlag,
-				*excludeFlag,
-				*templateDirFlag,
-				*paramDirFlag,
-				*exportWithAnnotationsFlag,
-				*exportResourceArg,
-			)
-			if err != nil {
-				log.Fatalln("Options could not be processed:", err)
-			}
-			optionSets[contextDir] = opt
+		exportOptions, err := cli.NewExportOptions(
+			globalOptions,
+			*namespaceFlag,
+			*selectorFlag,
+			*excludeFlag,
+			*templateDirFlag,
+			*paramDirFlag,
+			*exportWithAnnotationsFlag,
+			*exportResourceArg,
+		)
+		if err != nil {
+			log.Fatalln("Options could not be processed:", err)
 		}
-		err = commands.Export(optionSets)
+		err = commands.Export(exportOptions)
 		if err != nil {
 			log.Fatalln(err)
 		}

@@ -11,30 +11,28 @@ import (
 	"github.com/opendevstack/tailor/pkg/utils"
 )
 
-// GlobalOptions are app-wide that cannot be modified within a context.
+// GlobalOptions are app-wide.
 type GlobalOptions struct {
 	Verbose        bool
 	Debug          bool
 	NonInteractive bool
 	OcBinary       string
 	File           string
-	ContextDirs    []string
 	Force          bool
 	IsLoggedIn     bool
 	fs             utils.FileStater
 }
 
-// NamespaceOptions are context-wide.
+// NamespaceOptions define which namespace Tailor works against.
 type NamespaceOptions struct {
 	Namespace         string
 	CheckedNamespaces []string
 }
 
-// CompareOptions are context-wide.
+// CompareOptions define how to compare desired and current state.
 type CompareOptions struct {
 	*GlobalOptions
 	*NamespaceOptions
-	ContextDir              string
 	Selector                string
 	Exclude                 string
 	TemplateDir             string
@@ -53,11 +51,10 @@ type CompareOptions struct {
 	Resource                string
 }
 
-// ExportOptions are context-wide.
+// ExportOptions define how the export should be done.
 type ExportOptions struct {
 	*GlobalOptions
 	*NamespaceOptions
-	ContextDir      string
 	Selector        string
 	Exclude         string
 	TemplateDir     string
@@ -66,10 +63,9 @@ type ExportOptions struct {
 	Resource        string
 }
 
-// SecretsOptions are context-wide.
+// SecretsOptions define how to work with encrypted files.
 type SecretsOptions struct {
 	*GlobalOptions
-	ContextDir   string
 	ParamDir     string
 	PublicKeyDir string
 	PrivateKey   string
@@ -90,7 +86,6 @@ func NewGlobalOptions(
 	debugFlag bool,
 	nonInteractiveFlag bool,
 	ocBinaryFlag string,
-	contextDirFlag []string,
 	forceFlag bool) (*GlobalOptions, error) {
 	o := InitGlobalOptions(&utils.OsFS{})
 
@@ -133,13 +128,6 @@ func NewGlobalOptions(
 		o.Force = true
 	}
 
-	o.ContextDirs = contextDirFlag
-	if len(contextDirFlag) > 1 || contextDirFlag[0] != "." {
-		o.ContextDirs = contextDirFlag
-	} else if val, ok := fileFlags["context-dir"]; ok {
-		o.ContextDirs = strings.Split(val, ",")
-	}
-
 	verbose = o.Verbose || o.Debug
 	debug = o.Debug
 	ocBinary = o.OcBinary
@@ -152,7 +140,6 @@ func NewGlobalOptions(
 // NewCompareOptions returns new options for the diff/apply command based on file/flags.
 func NewCompareOptions(
 	globalOptions *GlobalOptions,
-	contextDir string,
 	namespaceFlag string,
 	selectorFlag string,
 	excludeFlag string,
@@ -174,9 +161,8 @@ func NewCompareOptions(
 	o := &CompareOptions{
 		GlobalOptions:    globalOptions,
 		NamespaceOptions: &NamespaceOptions{},
-		ContextDir:       contextDir,
 	}
-	filename := utils.AbsoluteOrRelativePath(o.resolvedFile(namespaceFlag), contextDir)
+	filename := o.resolvedFile(namespaceFlag)
 
 	fileFlags, err := getFileFlags(filename, verbose)
 	if err != nil {
@@ -321,7 +307,6 @@ func NewCompareOptions(
 // NewExportOptions returns new options for the export command based on file/flags.
 func NewExportOptions(
 	globalOptions *GlobalOptions,
-	contextDir string,
 	namespaceFlag string,
 	selectorFlag string,
 	excludeFlag string,
@@ -332,9 +317,8 @@ func NewExportOptions(
 	o := &ExportOptions{
 		GlobalOptions:    globalOptions,
 		NamespaceOptions: &NamespaceOptions{},
-		ContextDir:       contextDir,
 	}
-	filename := utils.AbsoluteOrRelativePath(o.resolvedFile(namespaceFlag), contextDir)
+	filename := o.resolvedFile(namespaceFlag)
 
 	fileFlags, err := getFileFlags(filename, verbose)
 	if err != nil {
@@ -397,13 +381,11 @@ func NewSecretsOptions(
 	publicKeyDirFlag string,
 	privateKeyFlag string,
 	passphraseFlag string) (*SecretsOptions, error) {
-	contextDir := globalOptions.ContextDirs[0]
 	o := &SecretsOptions{
 		GlobalOptions: globalOptions,
-		ContextDir:    contextDir,
 	}
 	namespaceFlag := "" // namespace does not make sense for secrets
-	filename := utils.AbsoluteOrRelativePath(o.resolvedFile(namespaceFlag), contextDir)
+	filename := o.resolvedFile(namespaceFlag)
 
 	fileFlags, err := getFileFlags(filename, verbose)
 	if err != nil {
@@ -502,23 +484,18 @@ func (o *GlobalOptions) checkOcBinary() bool {
 }
 
 func (o *CompareOptions) check() error {
-	if o.ContextDir != "." {
-		if _, err := os.Stat(o.ContextDir); os.IsNotExist(err) {
-			return fmt.Errorf("Context directory %s does not exist", o.ContextDir)
-		}
-	}
 	// Check if template dir exists
 	if o.TemplateDir != "." {
-		td := o.ResolvedTemplateDir()
+		td := o.TemplateDir
 		if _, err := os.Stat(td); os.IsNotExist(err) {
-			return fmt.Errorf("Template directory %s does not exist in context directory %s", td, o.ContextDir)
+			return fmt.Errorf("Template directory %s does not exist", td)
 		}
 	}
 	// Check if param dir exists
 	if o.ParamDir != "." {
-		pd := o.ResolvedParamDir()
+		pd := o.ParamDir
 		if _, err := os.Stat(pd); os.IsNotExist(err) {
-			return fmt.Errorf("Param directory %s does not exist in context directory %s", pd, o.ContextDir)
+			return fmt.Errorf("Param directory %s does not exist", pd)
 		}
 	}
 
@@ -528,30 +505,6 @@ func (o *CompareOptions) check() error {
 	}
 
 	return o.setNamespace()
-}
-
-// ResolvedTemplateDir returns template dir prefixed by the context dir.
-func (o *CompareOptions) ResolvedTemplateDir() string {
-	return utils.AbsoluteOrRelativePath(o.TemplateDir, o.ContextDir)
-}
-
-// ResolvedParamDir returns param dir prefixed by the context dir.
-func (o *CompareOptions) ResolvedParamDir() string {
-	return utils.AbsoluteOrRelativePath(o.ParamDir, o.ContextDir)
-}
-
-// ResolvedParamFiles returns param files prefixed by the context dir.
-func (o *CompareOptions) ResolvedParamFiles() []string {
-	files := []string{}
-	for _, f := range o.ParamFiles {
-		files = append(files, utils.AbsoluteOrRelativePath(f, o.ContextDir))
-	}
-	return files
-}
-
-// ResolvedPrivateKey returns private key prefixed by the context dir.
-func (o *CompareOptions) ResolvedPrivateKey() string {
-	return utils.AbsoluteOrRelativePath(o.PrivateKey, o.ContextDir)
 }
 
 func (o *CompareOptions) PathsToPreserve() []string {
@@ -579,15 +532,7 @@ func (o *ExportOptions) check() error {
 }
 
 func (o *SecretsOptions) check() error {
-	if len(o.ContextDirs) > 1 {
-		return errors.New("secrets subcommand does not support multiple context directories")
-	}
 	return nil
-}
-
-// ResolvedParamDir returns param dir prefixed by the context dir.
-func (o *SecretsOptions) ResolvedParamDir() string {
-	return utils.AbsoluteOrRelativePath(o.ParamDir, o.ContextDir)
 }
 
 func (o *NamespaceOptions) setNamespace() error {

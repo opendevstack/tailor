@@ -10,60 +10,16 @@ import (
 )
 
 // Diff prints the drift between desired and current state to STDOUT.
-func Diff(compareOptionSets map[string]*cli.CompareOptions) (bool, error) {
-	driftDetected, _, err := calculateChangesets(compareOptionSets)
+func Diff(compareOptions *cli.CompareOptions) (bool, error) {
+	ocClient := cli.NewOcClient(compareOptions.Namespace)
+	driftDetected, _, err := calculateChangeset(compareOptions, ocClient)
 	return driftDetected, err
-}
-
-func calculateChangesets(compareOptionSets map[string]*cli.CompareOptions) (bool, map[string]*openshift.Changeset, error) {
-	anyDriftDetected := false
-	changesets := map[string]*openshift.Changeset{}
-	for contextDir, compareOptions := range compareOptionSets {
-		ocClient := cli.NewOcClient(compareOptions.Namespace)
-		driftDetected, changeset, err := calculateChangeset(compareOptions, ocClient)
-		if driftDetected {
-			anyDriftDetected = true
-		}
-		if err != nil {
-			return anyDriftDetected, changesets, err
-		}
-		changesets[contextDir] = changeset
-	}
-
-	if len(changesets) > 1 {
-		inSync := 0
-		toCreate := 0
-		toUpdate := 0
-		toDelete := 0
-		for _, c := range changesets {
-			inSync = inSync + len(c.Noop)
-			toCreate = toCreate + len(c.Create)
-			toUpdate = toUpdate + len(c.Update)
-			toDelete = toDelete + len(c.Delete)
-		}
-
-		fmt.Printf("\n===== Combined Summary =====\n%d in sync, ", inSync)
-		cli.PrintGreenf("%d to create", toCreate)
-		fmt.Printf(", ")
-		cli.PrintYellowf("%d to update", toUpdate)
-		fmt.Printf(", ")
-		cli.PrintRedf("%d to delete\n\n", toDelete)
-	}
-
-	return anyDriftDetected, changesets, nil
 }
 
 func calculateChangeset(compareOptions *cli.CompareOptions, ocClient cli.ClientProcessorExporter) (bool, *openshift.Changeset, error) {
 	updateRequired := false
 
-	if len(compareOptions.ContextDirs) > 1 {
-		fmt.Printf(
-			"===== Working in context directory %s =====\n",
-			compareOptions.ContextDir,
-		)
-	}
-
-	where := compareOptions.ResolvedTemplateDir()
+	where := compareOptions.TemplateDir
 
 	fmt.Printf(
 		"Comparing templates in %s with OCP namespace %s.\n",
@@ -209,7 +165,7 @@ func compare(remoteResourceList *openshift.ResourceList, localResourceList *open
 func assembleTemplateBasedResourceList(filter *openshift.ResourceFilter, compareOptions *cli.CompareOptions, ocClient cli.OcClientProcessor) (*openshift.ResourceList, error) {
 	var inputs [][]byte
 
-	files, err := ioutil.ReadDir(compareOptions.ResolvedTemplateDir())
+	files, err := ioutil.ReadDir(compareOptions.TemplateDir)
 	if err != nil {
 		return nil, err
 	}
@@ -222,9 +178,9 @@ func assembleTemplateBasedResourceList(filter *openshift.ResourceFilter, compare
 		}
 		cli.DebugMsg("Reading template", file.Name())
 		processedOut, err := openshift.ProcessTemplate(
-			compareOptions.ResolvedTemplateDir(),
+			compareOptions.TemplateDir,
 			file.Name(),
-			compareOptions.ResolvedParamDir(),
+			compareOptions.ParamDir,
 			compareOptions,
 			ocClient,
 		)

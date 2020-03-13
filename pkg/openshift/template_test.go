@@ -137,7 +137,6 @@ func TestCalculateParamFiles(t *testing.T) {
 			compareOptions := &cli.CompareOptions{
 				GlobalOptions:    globalOptions,
 				NamespaceOptions: &cli.NamespaceOptions{Namespace: tc.namespace},
-				ContextDir:       ".",
 				ParamFiles:       tc.paramFileFlag,
 			}
 

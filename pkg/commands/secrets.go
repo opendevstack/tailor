@@ -67,7 +67,7 @@ func ReEncrypt(secretsOptions *cli.SecretsOptions, filename string) error {
 			return err
 		}
 	} else {
-		paramDir := secretsOptions.ResolvedParamDir()
+		paramDir := secretsOptions.ParamDir
 		files, err := ioutil.ReadDir(paramDir)
 		if err != nil {
 			return err
