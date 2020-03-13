@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"bytes"
 	"fmt"
+	"io"
 	"io/ioutil"
 	"log"
 	"os"
@@ -20,14 +21,26 @@ var ocBinary string
 // PrintGreenf prints in green.
 var PrintGreenf func(format string, a ...interface{})
 
+// FprintGreenf prints in green to w.
+var FprintGreenf func(w io.Writer, format string, a ...interface{})
+
 // PrintBluef prints in blue.
 var PrintBluef func(format string, a ...interface{})
+
+// FprintBluef prints in green to w.
+var FprintBluef func(w io.Writer, format string, a ...interface{})
 
 // PrintYellowf prints in yellow.
 var PrintYellowf func(format string, a ...interface{})
 
+// FprintYellowf prints in green to w.
+var FprintYellowf func(w io.Writer, format string, a ...interface{})
+
 // PrintRedf prints in red.
 var PrintRedf func(format string, a ...interface{})
+
+// FprintRedf prints in green to w.
+var FprintRedf func(w io.Writer, format string, a ...interface{})
 
 func init() {
 	color.Output = os.Stderr
@@ -35,6 +48,10 @@ func init() {
 	PrintBluef = color.New(color.FgBlue).PrintfFunc()
 	PrintYellowf = color.New(color.FgYellow).PrintfFunc()
 	PrintRedf = color.New(color.FgRed).PrintfFunc()
+	FprintGreenf = color.New(color.FgGreen).FprintfFunc()
+	FprintBluef = color.New(color.FgBlue).FprintfFunc()
+	FprintYellowf = color.New(color.FgYellow).FprintfFunc()
+	FprintRedf = color.New(color.FgRed).FprintfFunc()
 	verbose = false
 }
 
