@@ -26,6 +26,12 @@ func Apply(nonInteractive bool, compareOptions *cli.CompareOptions) (bool, error
 			if err != nil {
 				return driftDetected, fmt.Errorf("Apply aborted: %s", err)
 			}
+			if compareOptions.Verify {
+				err := performVerification(compareOptions, ocClient)
+				if err != nil {
+					return true, err
+				}
+			}
 			// As apply has run successfully, there should not be any drift
 			// anymore. Therefore we report driftDetected=false here.
 			return false, nil
@@ -37,6 +43,12 @@ func Apply(nonInteractive bool, compareOptions *cli.CompareOptions) (bool, error
 			err = apply(compareOptions, changeset)
 			if err != nil {
 				return driftDetected, fmt.Errorf("Apply aborted: %s", err)
+			}
+			if compareOptions.Verify {
+				err := performVerification(compareOptions, ocClient)
+				if err != nil {
+					return true, err
+				}
 			}
 			// As apply has run successfully, there should not be any drift
 			// anymore. Therefore we report driftDetected=false here.
@@ -99,5 +111,21 @@ func ocApply(label string, change *openshift.Change, compareOptions *cli.Compare
 		return errors.New(string(errBytes))
 	}
 
+	return nil
+}
+
+func performVerification(compareOptions *cli.CompareOptions, ocClient cli.ClientProcessorExporter) error {
+	var buf bytes.Buffer
+	fmt.Print("\nVerifying current state matches desired state ... ")
+	driftDetected, _, err := calculateChangeset(&buf, compareOptions, ocClient)
+	if err != nil {
+		return fmt.Errorf("Error: %s", err)
+	}
+	if driftDetected {
+		fmt.Print("failed! Detected drift:\n\n")
+		fmt.Println(buf.String())
+		return errors.New("Verification failed")
+	}
+	fmt.Println("successful")
 	return nil
 }

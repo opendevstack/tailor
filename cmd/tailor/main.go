@@ -171,6 +171,10 @@ var (
 		"reveal-secrets",
 		"Reveal drift of Secret resources (might show secret values in clear text).",
 	).Bool()
+	applyVerifyFlag = applyCommand.Flag(
+		"verify",
+		"Verify if resources are in sync after changes are applied.",
+	).Bool()
 	applyResourceArg = applyCommand.Arg(
 		"resource", "Remote resource (defaults to all)",
 	).String()
@@ -351,6 +355,7 @@ func main() {
 			*diffUpsertOnlyFlag,
 			*diffAllowRecreateFlag,
 			*diffRevealSecretsFlag,
+			false, // verification only when changes are applied
 			*diffResourceArg,
 		)
 		if err != nil {
@@ -387,6 +392,7 @@ func main() {
 			*applyUpsertOnlyFlag,
 			*applyAllowRecreateFlag,
 			*applyRevealSecretsFlag,
+			*applyVerifyFlag,
 			*applyResourceArg,
 		)
 		if err != nil {
