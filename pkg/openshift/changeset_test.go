@@ -256,19 +256,40 @@ func TestCalculateChangesOmittedFields(t *testing.T) {
 }
 
 func TestEmptyValuesDoNotCauseDrift(t *testing.T) {
-	platformItem := getPlatformItem(t, "empty-values/bc-platform.yml")
-	templateItem := getTemplateItem(t, "empty-values/bc-template.yml")
-	changes, err := calculateChanges(templateItem, platformItem, []string{}, true)
-	if err != nil {
-		t.Fatal(err)
+
+	tests := map[string]struct {
+		platformFixture string
+		templateFixture string
+		expectedAction  string
+	}{
+		"Field not defined in template": {
+			platformFixture: "bc-platform-defaulted.yml",
+			templateFixture: "bc-template-defaulted.yml",
+			expectedAction:  "Noop",
+		},
+		"Field not set in platform, and empty in template": {
+			platformFixture: "bc-platform-missing-env.yml",
+			templateFixture: "bc-template-empty-env.yml",
+			expectedAction:  "Noop",
+		},
 	}
-	if len(changes) != 1 {
-		t.Fatalf("Expected 1 change, got: %d", len(changes))
-	}
-	actualChange := changes[0]
-	expectedAction := "Noop"
-	if actualChange.Action != expectedAction {
-		t.Fatalf("Expected change action to be: %s, got: %s. Diff was: %s", expectedAction, actualChange.Action, actualChange.Diff(false))
+
+	for name, tc := range tests {
+		t.Run(name, func(t *testing.T) {
+			platformItem := getPlatformItem(t, "empty-values/"+tc.platformFixture)
+			templateItem := getTemplateItem(t, "empty-values/"+tc.templateFixture)
+			changes, err := calculateChanges(templateItem, platformItem, []string{}, true)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if len(changes) != 1 {
+				t.Fatalf("Expected 1 change, got: %d", len(changes))
+			}
+			actualChange := changes[0]
+			if actualChange.Action != tc.expectedAction {
+				t.Fatalf("Expected change action to be: %s, got: %s. Diff was: %s", tc.expectedAction, actualChange.Action, actualChange.Diff(false))
+			}
+		})
 	}
 }
 
