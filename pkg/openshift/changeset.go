@@ -160,7 +160,19 @@ func calculateChanges(templateItem *ResourceItem, platformItem *ResourceItem, pr
 
 			}
 			comparedPaths[path] = true
-			addedPaths = append(addedPaths, path)
+
+			// OpenShift sometimes removes the whole field when the value is an
+			// empty string. Therefore, we do not want to add the path in that
+			// case, otherwise we would cause endless drift. See
+			// https://github.com/opendevstack/tailor/issues/157.
+			if v, ok := templateItemVal.(string); ok && len(v) == 0 {
+				_, err := pathPointer.Delete(templateItem.Config)
+				if err != nil {
+					return nil, err
+				}
+			} else {
+				addedPaths = append(addedPaths, path)
+			}
 		} else {
 			// Pointer exists in both items
 			switch templateItemVal.(type) {

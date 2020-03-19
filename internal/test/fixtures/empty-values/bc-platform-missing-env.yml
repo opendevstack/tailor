@@ -1,0 +1,26 @@
+kind: BuildConfig
+apiVersion: v1
+metadata:
+  name: foo
+  labels:
+    app: foo
+spec:
+  nodeSelector: null
+  postCommit: {}
+  resources: {}
+  runPolicy: Serial
+  triggers: []
+  source:
+    binary: {}
+    type: Binary
+  strategy:
+    type: Docker
+    dockerStrategy:
+      env:
+        - name: FOO_BAR
+        - name: BAZ
+          value: qux
+  output:
+    to:
+      kind: ImageStreamTag
+      name: foo:latest
