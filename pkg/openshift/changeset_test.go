@@ -187,6 +187,11 @@ func TestCalculateChangesAppliedConfiguration(t *testing.T) {
 			templateFixture: "dc-template",
 			expectedAction:  "Noop",
 		},
+		"Old Tailor annotation present in platform": {
+			platformFixture: "dc-platform-annotation-tailor",
+			templateFixture: "dc-template",
+			expectedAction:  "Noop",
+		},
 		"Present in platform, changed in template": {
 			platformFixture: "dc-platform-annotation-applied",
 			templateFixture: "dc-template-changed",
@@ -207,7 +212,7 @@ func TestCalculateChangesAppliedConfiguration(t *testing.T) {
 			}
 			actualChange := changes[0]
 			if actualChange.Action != tc.expectedAction {
-				t.Fatalf("Expected change action to be: %s, got: %s", tc.expectedAction, actualChange.Action)
+				t.Fatalf("Expected change action to be: %s, got: %s. Diff:\n%s", tc.expectedAction, actualChange.Action, actualChange.Diff(true))
 			}
 		})
 	}

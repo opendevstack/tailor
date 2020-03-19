@@ -195,6 +195,39 @@ func (i *ResourceItem) parseConfig(m map[string]interface{}) error {
 					}
 				}
 			}
+		} else { // backwards compatibility for pre 0.13.0
+			tailorAppliedConfigAnnotation := "tailor.opendevstack.org/applied-config"
+			escapedTailorAppliedConfigAnnotation := strings.Replace(tailorAppliedConfigAnnotation, "/", "~1", -1)
+			tailorAppliedConfigAnnotationPath := annotationsPath + "/" + escapedTailorAppliedConfigAnnotation
+
+			tailorAppliedConfigAnnotationPointer, err := gojsonpointer.NewJsonPointer(tailorAppliedConfigAnnotationPath)
+			if err != nil {
+				return fmt.Errorf("Could not create JSON pointer %s: %s", tailorAppliedConfigAnnotationPath, err)
+			}
+			val, _, err := tailorAppliedConfigAnnotationPointer.Get(m)
+			if err == nil {
+				valBytes := []byte(val.(string))
+				tacFields := map[string]string{}
+				err = json.Unmarshal(valBytes, &tacFields)
+				if err != nil {
+					return fmt.Errorf("Could not unmarshal JSON %s: %s", tailorAppliedConfigAnnotationPath, val)
+				}
+				for k, v := range tacFields {
+					specPointer, err := gojsonpointer.NewJsonPointer(k)
+					if err != nil {
+						return fmt.Errorf("Could not create JSON pointer %s: %s", k, err)
+					}
+					_, err = specPointer.Set(m, v)
+					if err != nil {
+						return fmt.Errorf("Could not set %s: %s", k, err)
+					}
+				}
+				_, err = tailorAppliedConfigAnnotationPointer.Delete(m)
+				if err != nil {
+					return fmt.Errorf("Could not delete %s: %s", tailorAppliedConfigAnnotationPath, err)
+				}
+			}
+			delete(i.Annotations, tailorAppliedConfigAnnotation)
 		}
 	}
 
