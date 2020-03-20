@@ -2,6 +2,36 @@
 
 ## Unreleased
 
+### Added
+
+- Prefer `Tailorfile.NAMESPACE` over `Tailorfile`, see [#172](https://github.com/opendevstack/tailor/pull/172)
+
+- Add namespace env file if it exists, see [#173](https://github.com/opendevstack/tailor/pull/173)
+
+- Add --verify flag to check if any drift is present after applying ([#179](https://github.com/opendevstack/tailor/pull/179)).
+
+### Changed
+
+- Use `oc apply` instead of generating patches ([#168](https://github.com/opendevstack/tailor/pull/168)).
+  The change removes the custom Tailor annotations in favour of
+  the `kubectl.kubernetes.io/last-applied-configuration` annotation.
+  If there are any issues with unexpected drift or problems when reconciling,
+  please consult https://kubernetes.io/docs/tasks/manage-kubernetes-objects/declarative-config/.
+
+### Fixed
+
+- Exit with 1 when no diff is performed ([#175](https://github.com/opendevstack/tailor/issues/175))
+
+- Do not calculate drift when adding empty string to missing fields ([#180](https://github.com/opendevstack/tailor/pull/180)).
+
+- Patching of arrays can fail (see [#92](https://github.com/opendevstack/tailor/issues/92).
+  This was fixed by using `oc apply` as outlined above.
+
+### Removed
+
+- Remove --context-dir support ([#176](https://github.com/opendevstack/tailor/pull/176)).
+
+
 ## [0.12.0] - 2020-01-31
 
 ### Added
