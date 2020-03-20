@@ -4,9 +4,9 @@
 
 ### Added
 
-- Prefer `Tailorfile.NAMESPACE` over `Tailorfile`, see [#172](https://github.com/opendevstack/tailor/pull/172)
+- Prefer `Tailorfile.NAMESPACE` over `Tailorfile`, see [#172](https://github.com/opendevstack/tailor/pull/172).
 
-- Add namespace env file if it exists, see [#173](https://github.com/opendevstack/tailor/pull/173)
+- Add namespace env file if it exists, see [#173](https://github.com/opendevstack/tailor/pull/173).
 
 - Add --verify flag to check if any drift is present after applying ([#179](https://github.com/opendevstack/tailor/pull/179)).
 
@@ -20,7 +20,7 @@
 
 ### Fixed
 
-- Exit with 1 when no diff is performed ([#175](https://github.com/opendevstack/tailor/issues/175))
+- Exit with 1 when no diff is performed ([#175](https://github.com/opendevstack/tailor/issues/175)).
 
 - Do not calculate drift when adding empty string to missing fields ([#180](https://github.com/opendevstack/tailor/pull/180)).
 
