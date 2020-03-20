@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## [0.13.0] - 2020-03-20
+
 ### Added
 
 - Prefer `Tailorfile.NAMESPACE` over `Tailorfile`, see [#172](https://github.com/opendevstack/tailor/pull/172).
