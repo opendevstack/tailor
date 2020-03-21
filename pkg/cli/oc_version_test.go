@@ -34,7 +34,7 @@ func TestOcVersion(t *testing.T) {
 		},
 		"client=3.11 and server=?": {
 			fixture:        "client-3_11-and-server-unknown.txt",
-			expectedClient: "v3.9",
+			expectedClient: "v3.11",
 			expectedServer: "?",
 		},
 	}
