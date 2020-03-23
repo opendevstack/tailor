@@ -10,13 +10,13 @@ type openshiftVersion struct {
 	server string
 }
 
-// Matches is true when client and server version are equal.
-func (ov openshiftVersion) Matches() bool {
-	return ov.client == ov.server
+// ExactMatch is true when client and server version are known and equal.
+func (ov openshiftVersion) ExactMatch() bool {
+	return !ov.Incomplete() && ov.client == ov.server
 }
 
-// Unknown returns true if at least one version could not be detected properly.
-func (ov openshiftVersion) Unknown() bool {
+// Incomplete returns true if at least one version could not be detected properly.
+func (ov openshiftVersion) Incomplete() bool {
 	return ov.client == "?" || ov.server == "?"
 }
 
@@ -57,7 +57,7 @@ func ocVersion(ocClient OcClientVersioner) openshiftVersion {
 		ov.server = ocServerVersion
 	}
 
-	if ov.Unknown() {
+	if ov.Incomplete() {
 		VerboseMsg("Client and server version could not be detected properly, got:", output)
 		return ov
 	}

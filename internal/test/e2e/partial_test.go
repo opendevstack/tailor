@@ -108,7 +108,7 @@ objects:
 	}
 
 	// Status for app=foo -> expected to have drift (updated resource)
-	cmd := exec.Command(tailorBinary, []string{"diff", "--force", "-l", "app=foo"}...)
+	cmd := exec.Command(tailorBinary, []string{"diff", "-l", "app=foo"}...)
 	out, err := cmd.CombinedOutput()
 	if err == nil {
 		t.Fatalf("Status command should have exited with 3")
@@ -131,7 +131,7 @@ objects:
 }
 
 func partialStatusWithNoExpectedDrift(t *testing.T, tailorBinary string, label string) {
-	cmd := exec.Command(tailorBinary, []string{"diff", "--force", "-l", label}...)
+	cmd := exec.Command(tailorBinary, []string{"diff", "-l", label}...)
 	out, err := cmd.CombinedOutput()
 	if err != nil {
 		t.Fatalf("Could not get status for %s in test project", label)

@@ -457,14 +457,19 @@ func (o *GlobalOptions) check(clusterRequired bool) error {
 			return errors.New("You need to login with 'oc login' first")
 		}
 		c := NewOcClient("")
-		if v := ocVersion(c); !v.Matches() {
-			errorMsg := fmt.Sprintf("Version mismatch between client (%s) and server (%s) detected. "+
-				"This can lead to incorrect behaviour. "+
-				"Update your oc binary or point to an alternative binary with --oc-binary.", v.client, v.server)
-			if !o.Force {
-				return fmt.Errorf("%s\n\nRefusing to continue without --force", errorMsg)
+		if v := ocVersion(c); !v.ExactMatch() {
+			if v.Incomplete() {
+				VerboseMsg(fmt.Sprintf("Version information is incomplete: client (%s) and server (%s) detected. "+
+					"This is likely due to a local cluster setup. "+
+					"If not, this could lead to incorrect behaviour.", v.client, v.server))
+			} else {
+				errorMsg := fmt.Sprintf("Version mismatch between client (%s) and server (%s) detected. "+
+					"This can lead to incorrect behaviour. "+
+					"Update your oc binary or point to an alternative binary with --oc-binary.", v.client, v.server)
+				if !o.Force {
+					return fmt.Errorf("%s\n\nRefusing to continue without --force", errorMsg)
+				}
 			}
-			VerboseMsg(errorMsg)
 		}
 	}
 	return nil

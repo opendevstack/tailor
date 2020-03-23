@@ -1,4 +1,4 @@
-oc v3.9.0+191fece
-kubernetes v1.9.1+a0ce1bc657
+oc v3.11.0+0cbc58b
+kubernetes v1.11.0+d4cacc0
 features: Basic-Auth
 
