@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+### Fixed
+
+- Avoid --force flag when run against local cluster ([#182](https://github.com/opendevstack/tailor/pull/182)).
+
 ## [0.13.0] - 2020-03-20
 
 ### Added
