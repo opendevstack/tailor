@@ -1,6 +1,7 @@
 package openshift
 
 import (
+	"bytes"
 	"fmt"
 	"io/ioutil"
 	"os"
@@ -101,29 +102,13 @@ func ProcessTemplate(templateDir string, name string, paramDir string, compareOp
 
 	// Now turn the param files into arguments for the oc binary
 	if len(actualParamFiles) > 0 {
-		paramFileBytes := []byte{}
-		for _, f := range actualParamFiles {
-			cli.DebugMsg("Reading content of param file", f)
-			b, err := ioutil.ReadFile(f)
-			if err != nil {
-				return []byte{}, err
-			}
-			paramFileBytes = append(paramFileBytes, b...)
-			// Check if encrypted param file exists, and if so, decrypt and
-			// append its content
-			encFile := f + ".enc"
-			if _, err := os.Stat(encFile); err == nil {
-				cli.DebugMsg("Reading content of encrypted param file", encFile)
-				b, err := ioutil.ReadFile(encFile)
-				if err != nil {
-					return []byte{}, err
-				}
-				encoded, err := EncodedParams(string(b), compareOptions.PrivateKey, compareOptions.Passphrase)
-				if err != nil {
-					return []byte{}, err
-				}
-				paramFileBytes = append(paramFileBytes, []byte(encoded)...)
-			}
+		paramFileBytes, err := readParamFileBytes(
+			actualParamFiles,
+			compareOptions.PrivateKey,
+			compareOptions.Passphrase,
+		)
+		if err != nil {
+			return []byte{}, err
 		}
 		tempParamFile := ".combined.env"
 		defer os.Remove(tempParamFile)
@@ -211,4 +196,36 @@ func calculateParamFiles(name string, paramDir string, compareOptions *cli.Compa
 		}
 	}
 	return files
+}
+
+func readParamFileBytes(paramFiles []string, privateKey string, passphrase string) ([]byte, error) {
+	paramFileBytes := []byte{}
+	for _, f := range paramFiles {
+		cli.DebugMsg("Reading content of param file", f)
+		b, err := ioutil.ReadFile(f)
+		if err != nil {
+			return []byte{}, err
+		}
+		eol := []byte("\n")
+		if !bytes.HasSuffix(b, eol) {
+			b = append(b, eol...)
+		}
+		paramFileBytes = append(paramFileBytes, b...)
+		// Check if encrypted param file exists, and if so, decrypt and
+		// append its content
+		encFile := f + ".enc"
+		if _, err := os.Stat(encFile); err == nil {
+			cli.DebugMsg("Reading content of encrypted param file", encFile)
+			b, err := ioutil.ReadFile(encFile)
+			if err != nil {
+				return []byte{}, err
+			}
+			encoded, err := EncodedParams(string(b), privateKey, passphrase)
+			if err != nil {
+				return []byte{}, err
+			}
+			paramFileBytes = append(paramFileBytes, []byte(encoded)...)
+		}
+	}
+	return paramFileBytes, nil
 }
