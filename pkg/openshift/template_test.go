@@ -147,3 +147,35 @@ func TestCalculateParamFiles(t *testing.T) {
 		})
 	}
 }
+
+func TestReadParamFileBytes(t *testing.T) {
+	tests := map[string]struct {
+		paramFiles []string
+		expected   string
+	}{
+		"multiple files get concatenated": {
+			paramFiles: []string{"foo.env", "bar.env"},
+			expected:   "FOO=foo\nBAR=bar\n",
+		},
+		"missing EOL is handled in concatenation": {
+			paramFiles: []string{"baz-without-eol.env", "bar.env"},
+			expected:   "BAZ=baz\nBAR=bar\n",
+		},
+	}
+	for name, tc := range tests {
+		t.Run(name, func(t *testing.T) {
+			actualParamFiles := []string{}
+			for _, f := range tc.paramFiles {
+				actualParamFiles = append(actualParamFiles, "../../internal/test/fixtures/param-files/"+f)
+			}
+			b, err := readParamFileBytes(actualParamFiles, "", "")
+			if err != nil {
+				t.Fatal(err)
+			}
+			got := string(b)
+			if diff := cmp.Diff(tc.expected, got); diff != "" {
+				t.Fatalf("Result is not expected (-want +got):\n%s", diff)
+			}
+		})
+	}
+}
