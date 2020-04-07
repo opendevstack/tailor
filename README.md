@@ -123,6 +123,12 @@ BASH/ZSH completion is available. Add this into `.bash_profile` or equivalent:
 eval "$(tailor --completion-script-$(echo $SHELL | awk -F/ '{print $NF}'))"
 ```
 
+## Troubleshooting
+
+### Tailor does not recognize a certain resource kind
+
+Tailor currently supports `BuildConfig`, `CronJob`, `DeploymentConfig`, `ImageStream`, `PersistentVolumeClaim`, `RoleBinding`, `Route`, `Secret`, `Service`, `ServiceAccount`, `Template`. Some resources like `Build`, `Event`, `ImageStreamImage`, `ImageStreamTag`, `PersistentVolume`, `Pod`, `ReplicationController` are not supported by design as they are created and managed automatically by OpenShift. If you want to control a resource with Tailor that is not supported yet, but would be suitable, please [open an issue](https://github.com/opendevstack/tailor/issues/new).
+
 ---
 
 [![Build Status](https://travis-ci.com/opendevstack/tailor.svg?branch=master)](https://travis-ci.com/opendevstack/tailor)
