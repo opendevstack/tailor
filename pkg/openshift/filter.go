@@ -13,6 +13,7 @@ var availableKinds = []string{
 	"svc",
 	"route",
 	"dc",
+	"deployment",
 	"bc",
 	"is",
 	"pvc",

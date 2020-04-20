@@ -48,6 +48,7 @@ var (
 		"route":                 "Route",
 		"dc":                    "DeploymentConfig",
 		"deploymentconfig":      "DeploymentConfig",
+		"deployment":            "Deployment",
 		"bc":                    "BuildConfig",
 		"buildconfig":           "BuildConfig",
 		"is":                    "ImageStream",
@@ -365,6 +366,30 @@ func (templateItem *ResourceItem) prepareForComparisonWithPlatformItem(platformI
 // that it can be compared with the given template item:
 // - remove all annotations which are not managed
 func (platformItem *ResourceItem) prepareForComparisonWithTemplateItem(templateItem *ResourceItem) error {
+	// Fix apiVersion
+	// When running "oc process" on a template with a "Deployment" in
+	// "apps/v1", and then running "oc export", the export contains
+	// "apiVersion=extensions/v1beta1". If "oc process" is run *after*
+	// "oc export", this issue is not present. Tailor runs "oc process" first
+	// because it uncovers potential issues with local, desired state.
+	// Therefore, we use the last applied apiVersion if we find
+	// "apiVersion=extensions/v1beta1" so that no drift is reported.
+	apiVersionPath := "/apiVersion"
+	apiVersionPointer, _ := gojsonpointer.NewJsonPointer(apiVersionPath)
+	apiVersion, _, err := apiVersionPointer.Get(platformItem.Config)
+	if err == nil {
+		lastAppliedAPIVersion, _, err := apiVersionPointer.Get(platformItem.LastAppliedConfiguration)
+		if err == nil {
+			if apiVersion.(string) == "extensions/v1beta1" {
+				_, err := apiVersionPointer.Set(platformItem.Config, lastAppliedAPIVersion)
+				if err != nil {
+					cli.DebugMsg("could not set apiVersion:", err.Error())
+				}
+			}
+		}
+	}
+
+	// Annotations
 	unmanagedAnnotations := []string{}
 	for a := range platformItem.Annotations {
 		if _, ok := templateItem.Annotations[a]; ok {
