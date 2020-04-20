@@ -2,6 +2,14 @@
 
 ## Unreleased
 
+### Added
+
+- Support `Deployment` resource ([#189](https://github.com/opendevstack/tailor/pull/189)
+
+### Fixed
+
+- Handle missing EOL in params file ([#185](https://github.com/opendevstack/tailor/pull/185)
+
 ## [0.13.1] - 2020-03-23
 
 ### Fixed
