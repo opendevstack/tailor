@@ -9,6 +9,7 @@ var (
 		"Service":               "svc",
 		"Route":                 "route",
 		"DeploymentConfig":      "dc",
+		"Deployment":            "deployment",
 		"BuildConfig":           "bc",
 		"ImageStream":           "is",
 		"PersistentVolumeClaim": "pvc",

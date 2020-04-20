@@ -20,10 +20,11 @@ var (
 		"ImageStream":           "f",
 		"BuildConfig":           "g",
 		"DeploymentConfig":      "h",
-		"Service":               "i",
-		"Route":                 "j",
-		"ServiceAccount":        "k",
-		"RoleBinding":           "l",
+		"Deployment":            "i",
+		"Service":               "j",
+		"Route":                 "k",
+		"ServiceAccount":        "l",
+		"RoleBinding":           "m",
 	}
 )
 
