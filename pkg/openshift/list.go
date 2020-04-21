@@ -27,7 +27,7 @@ func NewTemplateBasedResourceList(filter *ResourceFilter, inputs ...[]byte) (*Re
 // treated as coming from an OpenShift cluster (current state).
 func NewPlatformBasedResourceList(filter *ResourceFilter, inputs ...[]byte) (*ResourceList, error) {
 	list := &ResourceList{Filter: filter}
-	err := list.appendItems("platform", "/objects", inputs...)
+	err := list.appendItems("platform", "/items", inputs...)
 	return list, err
 }
 
@@ -70,7 +70,7 @@ func (l *ResourceList) appendItems(source, itemsField string, inputs ...[]byte) 
 			if err != nil {
 				return err
 			}
-			if l.Filter.SatisfiedBy(item) {
+			if item.Comparable && l.Filter.SatisfiedBy(item) {
 				l.Items = append(l.Items, item)
 			}
 		}

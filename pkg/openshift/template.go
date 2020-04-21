@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"io/ioutil"
 	"os"
-	"strconv"
 	"strings"
 
 	"github.com/ghodss/yaml"
@@ -13,69 +12,6 @@ import (
 	"github.com/opendevstack/tailor/pkg/utils"
 	"github.com/xeipuuv/gojsonpointer"
 )
-
-// ExportAsTemplateFile exports resources in template format.
-func ExportAsTemplateFile(filter *ResourceFilter, withAnnotations bool, ocClient cli.OcClientExporter) (string, error) {
-	outBytes, err := ocClient.Export(filter.ConvertToKinds(), filter.Label)
-	if err != nil {
-		return "", err
-	}
-	if len(outBytes) == 0 {
-		return "", nil
-	}
-
-	var f interface{}
-	err = yaml.Unmarshal(outBytes, &f)
-	if err != nil {
-		err = utils.DisplaySyntaxError(outBytes, err)
-		return "", err
-	}
-	m := f.(map[string]interface{})
-
-	objectsPointer, _ := gojsonpointer.NewJsonPointer("/objects")
-	items, _, err := objectsPointer.Get(m)
-	if err != nil {
-		return "", fmt.Errorf(
-			"Could not get objects of exported template: %s", err,
-		)
-	}
-	for k, v := range items.([]interface{}) {
-		item, err := NewResourceItem(v.(map[string]interface{}), "platform")
-		if err != nil {
-			return "", fmt.Errorf(
-				"Could not parse object of exported template: %s", err,
-			)
-		}
-
-		if !withAnnotations {
-			cli.DebugMsg("Remove annotations from item")
-			annotationsPointer, _ := gojsonpointer.NewJsonPointer("/metadata/annotations")
-			_, err = annotationsPointer.Delete(item.Config)
-			if err != nil {
-				cli.DebugMsg("Could not delete annotations from item")
-			}
-		}
-
-		itemPointer, _ := gojsonpointer.NewJsonPointer("/objects/" + strconv.Itoa(k))
-		_, _ = itemPointer.Set(m, item.Config)
-	}
-
-	cli.DebugMsg("Remove metadata from template")
-	metadataPointer, _ := gojsonpointer.NewJsonPointer("/metadata")
-	_, err = metadataPointer.Delete(m)
-	if err != nil {
-		cli.DebugMsg("Could not delete metadata from template")
-	}
-
-	b, err := yaml.Marshal(m)
-	if err != nil {
-		return "", fmt.Errorf(
-			"Could not marshal modified template: %s", err,
-		)
-	}
-
-	return string(b), err
-}
 
 // ProcessTemplate processes template "name" in "templateDir".
 func ProcessTemplate(templateDir string, name string, paramDir string, compareOptions *cli.CompareOptions, ocClient cli.OcClientProcessor) ([]byte, error) {
