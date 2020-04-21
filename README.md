@@ -21,7 +21,7 @@ plain OpenShift templates.
 
 ## Installation
 
-The latest release is 0.13.1 and requires oc >= v3.9.0. OpenShift 4 is not supported yet.
+The latest release is 0.13.1 and requires oc >= v3.9.0. OpenShift 4 is not officially supported yet although builds from `master` should work.
 Please have a look at the [changelog](https://github.com/opendevstack/tailor/blob/master/CHANGELOG.md) when upgrading.
 
 MacOS:
