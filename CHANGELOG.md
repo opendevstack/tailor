@@ -4,11 +4,18 @@
 
 ### Added
 
-- Support `Deployment` resource ([#189](https://github.com/opendevstack/tailor/pull/189))
+- Support `Deployment` resource ([#189](https://github.com/opendevstack/tailor/pull/189)).
+
+### Changed
+
+- Use "oc get --export" instead of deprecated "oc export". This allows to use Tailor with OpenShift 4 - however there is no manual or automated test setup yet which means OpenShift 4 is not officially supported yet ([#160](https://github.com/opendevstack/tailor/pull/160)).
 
 ### Fixed
 
-- Handle missing EOL in params file ([#185](https://github.com/opendevstack/tailor/pull/185))
+- Handle missing EOL in params file ([#185](https://github.com/opendevstack/tailor/pull/185)).
+- Comparing `CronJob`s works now ([#158](https://github.com/opendevstack/tailor/issues/158)).
+- Respect `--exclude` flag when exporting ([#149](https://github.com/opendevstack/tailor/issues/149)).
+- Exporting just one resource works as expected now ([#188](https://github.com/opendevstack/tailor/issues/188)).
 
 ## [0.13.1] - 2020-03-23
 
