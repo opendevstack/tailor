@@ -123,6 +123,13 @@ BASH/ZSH completion is available. Add this into `.bash_profile` or equivalent:
 eval "$(tailor --completion-script-$(echo $SHELL | awk -F/ '{print $NF}'))"
 ```
 
+## Comparison to other tools
+
+### Tailor vs. Helm
+* Compared to Helm v2, Tailor does not need a highly privileged Tiller. Helm v3 does not need it either.
+* Tailor works with plain OpenShift templates instead of Helm charts, making it an easier adoption if you already have OpenShift templates, and an easier migration away from Tailor if need be.
+* Tailor has a smaller scope - it is only a wrapper around `oc`. Helm features like searching for charts etc. are not present.
+
 ## Troubleshooting
 
 ### Tailor does not recognize a certain resource kind
