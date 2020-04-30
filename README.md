@@ -19,6 +19,8 @@ plain OpenShift templates.
 * Simple interface which avoids having to stitch multiple commands together and massage their output to achieve the desired result.
 * Options can be stored in a `Tailorfile` to ease invocation and ensure consistency within teams.
 
+If you are interested how Tailor compares to other tools such as Helm, please see [comparison to other tools](https://github.com/opendevstack/tailor#comparison-to-other-tools).
+
 ## Installation
 
 The latest release is 0.13.1 and requires oc >= v3.9.0. OpenShift 4 is not officially supported yet although builds from `master` should work.
