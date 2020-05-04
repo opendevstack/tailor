@@ -132,6 +132,7 @@ eval "$(tailor --completion-script-$(echo $SHELL | awk -F/ '{print $NF}'))"
 * Tailor works with plain OpenShift templates instead of Helm charts. OpenShift templates are simpler, and can easily be generated from existing resources in OpenShift.
 * Tailor has a narrower scope - it is basically an "`oc` on steroids". Helm has more extensive features like searching for charts etc.
 * Tailor targets OpenShift, Helm targets Kubernetes. Using Helm for OpenShift has limitations / bugs around dealing with OpenShift resources such as `BuildConfig` or `Route`.
+* Tailor allows to check for drift, and allows to review the difference between live configuration and desired state before applying.
 
 ## Troubleshooting
 
