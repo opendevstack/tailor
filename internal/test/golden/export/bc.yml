@@ -1,0 +1,32 @@
+apiVersion: template.openshift.io/v1
+kind: Template
+objects:
+- apiVersion: build.openshift.io/v1
+  kind: BuildConfig
+  metadata:
+    name: bar
+  spec:
+    nodeSelector: null
+    output:
+      to:
+        kind: ImageStreamTag
+        name: bar:latest
+    postCommit: {}
+    resources: {}
+    runPolicy: Serial
+    source:
+      git:
+        ref: master
+        uri: https://github.com/foo/bar.git
+      type: Git
+    strategy:
+      dockerStrategy:
+        from:
+          kind: ImageStreamTag
+          name: base:latest
+          namespace: ${TAILOR_NAMESPACE}
+      type: Docker
+    triggers: []
+parameters:
+- name: TAILOR_NAMESPACE
+  required: true

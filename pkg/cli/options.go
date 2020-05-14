@@ -56,12 +56,13 @@ type CompareOptions struct {
 type ExportOptions struct {
 	*GlobalOptions
 	*NamespaceOptions
-	Selector        string
-	Exclude         string
-	TemplateDir     string
-	ParamDir        string
-	WithAnnotations bool
-	Resource        string
+	Selector               string
+	Exclude                string
+	TemplateDir            string
+	ParamDir               string
+	WithAnnotations        bool
+	WithHardcodedNamespace bool
+	Resource               string
 }
 
 // SecretsOptions define how to work with encrypted files.
@@ -321,6 +322,7 @@ func NewExportOptions(
 	templateDirFlag string,
 	paramDirFlag string,
 	withAnnotationsFlag bool,
+	withHardcodedNamespaceFlag bool,
 	resourceArg string) (*ExportOptions, error) {
 	o := &ExportOptions{
 		GlobalOptions:    globalOptions,
@@ -369,6 +371,12 @@ func NewExportOptions(
 		o.WithAnnotations = true
 	} else if fileFlags["with-annotations"] == "true" {
 		o.WithAnnotations = true
+	}
+
+	if withHardcodedNamespaceFlag {
+		o.WithHardcodedNamespace = true
+	} else if fileFlags["with-hardcoded-namespace"] == "true" {
+		o.WithHardcodedNamespace = true
 	}
 
 	if len(resourceArg) > 0 {

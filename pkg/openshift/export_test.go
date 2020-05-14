@@ -3,6 +3,7 @@ package openshift
 import (
 	"testing"
 
+	"github.com/google/go-cmp/cmp"
 	"github.com/opendevstack/tailor/internal/test/helper"
 )
 
@@ -25,49 +26,67 @@ func newResourceFilterOrFatal(t *testing.T, kindArg string, selectorFlag string,
 
 func TestExportAsTemplateFile(t *testing.T) {
 	tests := map[string]struct {
-		fixture         string
-		goldenTemplate  string
-		filter          *ResourceFilter
-		withAnnotations bool
+		fixture                string
+		goldenTemplate         string
+		filter                 *ResourceFilter
+		withAnnotations        bool
+		namespace              string
+		withHardcodedNamespace bool
 	}{
 		"Without annotations": {
-			fixture:         "is.yml",
-			goldenTemplate:  "is.yml",
-			filter:          newResourceFilterOrFatal(t, "is", "", ""),
-			withAnnotations: false,
+			fixture:                "is.yml",
+			goldenTemplate:         "is.yml",
+			filter:                 newResourceFilterOrFatal(t, "is", "", ""),
+			withAnnotations:        false,
+			namespace:              "foo",
+			withHardcodedNamespace: true,
 		},
 		"With annotations": {
-			fixture:         "is.yml",
-			goldenTemplate:  "is-annotation.yml",
-			filter:          newResourceFilterOrFatal(t, "is", "", ""),
-			withAnnotations: true,
+			fixture:                "is.yml",
+			goldenTemplate:         "is-annotation.yml",
+			filter:                 newResourceFilterOrFatal(t, "is", "", ""),
+			withAnnotations:        true,
+			namespace:              "foo",
+			withHardcodedNamespace: true,
+		},
+		"With TAILOR_NAMESPACE": {
+			fixture:                "bc.yml",
+			goldenTemplate:         "bc.yml",
+			filter:                 newResourceFilterOrFatal(t, "bc", "", ""),
+			withAnnotations:        false,
+			namespace:              "foo-dev",
+			withHardcodedNamespace: false,
 		},
 		"Works with generateName": {
-			fixture:         "rolebinding-generate-name.yml",
-			goldenTemplate:  "rolebinding-generate-name.yml",
-			filter:          newResourceFilterOrFatal(t, "rolebinding", "", ""),
-			withAnnotations: false,
+			fixture:                "rolebinding-generate-name.yml",
+			goldenTemplate:         "rolebinding-generate-name.yml",
+			filter:                 newResourceFilterOrFatal(t, "rolebinding", "", ""),
+			withAnnotations:        false,
+			namespace:              "foo",
+			withHardcodedNamespace: true,
 		},
 		"Respects filter": {
-			fixture:         "is.yml",
-			goldenTemplate:  "empty.yml",
-			filter:          newResourceFilterOrFatal(t, "bc", "", ""),
-			withAnnotations: false,
+			fixture:                "is.yml",
+			goldenTemplate:         "empty.yml",
+			filter:                 newResourceFilterOrFatal(t, "bc", "", ""),
+			withAnnotations:        false,
+			namespace:              "foo",
+			withHardcodedNamespace: true,
 		},
 	}
 
 	for name, tc := range tests {
 		t.Run(name, func(t *testing.T) {
 			c := &mockOcExportClient{t: t, fixture: tc.fixture}
-			actual, err := ExportAsTemplateFile(tc.filter, tc.withAnnotations, c)
+			actual, err := ExportAsTemplateFile(tc.filter, tc.withAnnotations, tc.namespace, tc.withHardcodedNamespace, c)
 			if err != nil {
 				t.Fatal(err)
 			}
 
 			expected := string(helper.ReadGoldenFile(t, "export/"+tc.goldenTemplate))
 
-			if expected != actual {
-				t.Fatalf("Expected template:\n%s\n--- Got template: --- \n%s", expected, actual)
+			if diff := cmp.Diff(expected, actual); diff != "" {
+				t.Fatalf("Expected template mismatch (-want +got):\n%s", diff)
 			}
 		})
 	}
