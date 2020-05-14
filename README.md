@@ -106,7 +106,7 @@ as it cannot compare some resources. To prevent this from happening, exclude the
 
 ### Tailorfile
 
-Since specifying all params correctly can be daunting, and it isn't easy to share how Tailor should be invoked, Tailor supports setting CLI flags via a `Tailorfile`. This is simply a line-delimited file, e.g.:
+Instead of passing flags ad-hoc to `tailor`, all options can be specified in a `Tailorfile`, which is a simple line-delimited file, e.g.:
 ```
 template-dir foo
 param-dir bar
@@ -117,6 +117,8 @@ param BAZ=qux
 bc,is,dc,svc
 ```
 Please note that boolean flags need to be specified with a value, e.g. `upsert-only true`.
+
+Tailor will automatically pick up any file named `Tailorfile.<namespace>` or `Tailorfile` in the working directory. Alternatively, a specific file can be selected via `tailor -f somefile`.
 
 ### Command Completion
 
