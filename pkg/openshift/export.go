@@ -1,6 +1,7 @@
 package openshift
 
 import (
+	"bytes"
 	"fmt"
 
 	"github.com/ghodss/yaml"
@@ -9,13 +10,17 @@ import (
 )
 
 // ExportAsTemplateFile exports resources in template format.
-func ExportAsTemplateFile(filter *ResourceFilter, withAnnotations bool, ocClient cli.OcClientExporter) (string, error) {
+func ExportAsTemplateFile(filter *ResourceFilter, withAnnotations bool, namespace string, withHardcodedNamespace bool, ocClient cli.OcClientExporter) (string, error) {
 	outBytes, err := ocClient.Export(filter.ConvertToKinds(), filter.Label)
 	if err != nil {
 		return "", fmt.Errorf("Could not export %s resources: %s", filter.String(), err)
 	}
 	if len(outBytes) == 0 {
 		return "", nil
+	}
+
+	if !withHardcodedNamespace {
+		outBytes = bytes.Replace(outBytes, []byte(namespace), []byte("${TAILOR_NAMESPACE}"), -1)
 	}
 
 	list, err := NewPlatformBasedResourceList(filter, outBytes)
@@ -40,6 +45,16 @@ func ExportAsTemplateFile(filter *ResourceFilter, withAnnotations bool, ocClient
 		"apiVersion": "template.openshift.io/v1",
 		"kind":       "Template",
 		"objects":    objects,
+	}
+
+	if !withHardcodedNamespace {
+		parameters := []map[string]interface{}{
+			{
+				"name":     "TAILOR_NAMESPACE",
+				"required": true,
+			},
+		}
+		t["parameters"] = parameters
 	}
 
 	b, err := yaml.Marshal(t)

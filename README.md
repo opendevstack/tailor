@@ -49,11 +49,9 @@ chmod +x tailor-windows-amd64.exe && mv tailor-windows-amd64.exe /mingw64/bin/ta
 
 ## Usage
 
-There are three main commands: `export`, `diff` and `apply`.
+There are three main commands: `diff`, `apply` and `export`.
 
-### `export`
-Export configuration of resources found in an OpenShift namespace to a cleaned
-YAML template, which is written to `STDOUT`.
+
 
 ### `diff`
 Show drift between the current state in the OpenShift cluster and the desired
@@ -66,15 +64,25 @@ state in the YAML templates. There are three main aspects to this:
 This command will compare current vs. desired state exactly like `diff` does,
 but if any drift is detected, it asks to apply the OpenShift namespace with your desired state. A subsequent run of either `diff` or `apply` should show no drift.
 
+### `export`
+Export configuration of resources found in an OpenShift namespace to a cleaned
+YAML template, which is written to `STDOUT`. Tailor applies three optimisations to the result:
+
+- All fields controlled by the cluster are removed, such as `/metadata/creationTimestamp`.
+- Unless `--with-annotations` is given, annotations are removed.
+- Hardcoded occurences of the namespace are replaced with an automatically supplied parameter `TAILOR_NAMESPACE` so that the exported template can be used against multiple OpenShift projects (can be disabled by passing `--with-hardcoded-namespace`).
+
 ### General Usage Notes
-All commands depend on a current OpenShift session and accept a `--namespace` flag (if none is given, the current one is used). To help with debugging (e.g. to see the commands which are executed in the background), use `--verbose`. More options can be displayed with `tailor help`.
+All commands depend on a current OpenShift session and accept a `--namespace` flag (if none is given, the current one is used). To help with debugging (e.g. to see the `oc` commands which are executed in the background), use `--verbose`. More options can be displayed with `tailor help`.
 
 
 ## How-To
 
 ### Template Authoring
 
-Please consult the [OpenShift Templates documentation](https://docs.openshift.com/container-platform/3.11/dev_guide/templates.html) on how to write templates to express the desired state. For in-depth knowledge about how the configuration in the templates get applied to the current state in the cluster, read [Declarative Management of Kubernetes Objects Using Configuration Files](https://kubernetes.io/docs/tasks/manage-kubernetes-objects/declarative-config/).
+Please consult the [OpenShift Templates documentation](https://docs.openshift.com/container-platform/3.11/dev_guide/templates.html) on how to write templates to express the desired state. Tailor processes the templates using standard `oc process`, with one addition: if the template specifies a parameter `TAILOR_NAMESPACE`, it is automatically filled based on the namespace against which Tailor is executed.
+
+For in-depth knowledge about how the configuration in the templates gets applied to the current state in the cluster, read [Declarative Management of Kubernetes Objects Using Configuration Files](https://kubernetes.io/docs/tasks/manage-kubernetes-objects/declarative-config/).
 
 ### Working with Secrets
 

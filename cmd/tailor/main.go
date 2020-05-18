@@ -187,6 +187,10 @@ var (
 		"with-annotations",
 		"Export annotations as well.",
 	).Bool()
+	exportWithHardcodedNamespaceFlag = exportCommand.Flag(
+		"with-hardcoded-namespace",
+		"Keep any occurences of hardcoded namespace instead of replacing with ${TAILOR_NAMESPACE} in template.",
+	).Bool()
 	exportResourceArg = exportCommand.Arg(
 		"resource", "Remote resource (defaults to all)",
 	).String()
@@ -416,6 +420,7 @@ func main() {
 			*templateDirFlag,
 			*paramDirFlag,
 			*exportWithAnnotationsFlag,
+			*exportWithHardcodedNamespaceFlag,
 			*exportResourceArg,
 		)
 		if err != nil {

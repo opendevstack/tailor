@@ -15,7 +15,13 @@ func Export(exportOptions *cli.ExportOptions) error {
 	}
 
 	c := cli.NewOcClient(exportOptions.Namespace)
-	out, err := openshift.ExportAsTemplateFile(filter, exportOptions.WithAnnotations, c)
+	out, err := openshift.ExportAsTemplateFile(
+		filter,
+		exportOptions.WithAnnotations,
+		exportOptions.Namespace,
+		exportOptions.WithHardcodedNamespace,
+		c,
+	)
 	if err != nil {
 		return fmt.Errorf(
 			"Could not export %s resources as template: %s",
