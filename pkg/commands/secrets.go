@@ -23,12 +23,18 @@ func GenerateKey(secretsOptions *cli.SecretsOptions, email, name string) error {
 		return fmt.Errorf("Failed to generate keypair: %s", err)
 	}
 	publicKeyFilename := strings.Replace(emailParts[0], ".", "-", -1) + ".key"
+	if _, err := os.Stat(publicKeyFilename); err == nil {
+		return fmt.Errorf("'%s' already exists", publicKeyFilename)
+	}
 	err = utils.PrintPublicKey(entity, publicKeyFilename)
 	if err != nil {
 		return err
 	}
 	fmt.Printf("Public Key written to %s. This file can be committed.\n", publicKeyFilename)
 	privateKeyFilename := secretsOptions.PrivateKey
+	if _, err := os.Stat(privateKeyFilename); err == nil {
+		return fmt.Errorf("'%s' already exists", privateKeyFilename)
+	}
 	err = utils.PrintPrivateKey(entity, privateKeyFilename)
 	if err != nil {
 		return err
