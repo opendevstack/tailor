@@ -5,7 +5,7 @@
 ### Added
 
 - Support `Deployment` resource ([#189](https://github.com/opendevstack/tailor/pull/189)).
-- Support LimitRange and ResourceQuota resources ([#194](https://github.com/opendevstack/tailor/pull/194)).
+- Support `LimitRange` and `ResourceQuota` resources ([#194](https://github.com/opendevstack/tailor/pull/194)).
 - Export with parameterised namespace by default ([#192](https://github.com/opendevstack/tailor/pull/192)).
 
 ### Changed
