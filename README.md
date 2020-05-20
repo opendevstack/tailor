@@ -23,7 +23,7 @@ If you are interested how Tailor compares to other tools such as Helm, please se
 
 ## Installation
 
-The latest release is 1.0.0 and requires oc >= v3.9.0. OpenShift 4 is not officially supported yet although builds from `master` should work.
+The latest release is 1.0.0 and requires oc >= v3.9.0. OpenShift 4 is not officially supported yet although 1.0.0 and above work in principle.
 Please have a look at the [changelog](https://github.com/opendevstack/tailor/blob/master/CHANGELOG.md) when upgrading.
 
 MacOS:
