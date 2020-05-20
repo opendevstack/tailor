@@ -88,14 +88,9 @@ For in-depth knowledge about how the configuration in the templates gets applied
 
 Keeping the OpenShift configuration under version control necessitates to store secrets. To this end Tailor comes with a `secrets` subcommand that allows to encrypt those secrets using PGP. The subcommands offers to `edit`, `re-encrypt` and `reveal` secrets, as well as adding new keypairs via `generate-key`.
 
-In general, secrets are just a special kind of params. Typically, params are
-located in `*.env` files, e.g. `FOO=bar`. Secrets an be kept in a `*.env.enc`
-file, where each line is e.g. `QUX=<encrypted content>`. When Tailor is
-processing templates, it merges `*.env` and `*.env.enc` files together. In order
-to create and edit `*.env.enc` files, Tailor offers an `edit` command.
+In general, secrets are just a special kind of params. Typically, params are located in `*.env` files, e.g. `FOO=bar`. Secrets an be kept in a `*.env.enc` file, where each line is e.g. `QUX=<encrypted content>`. When Tailor is processing templates, it merges `*.env` and `*.env.enc` files together. All params in `.env.enc` files are base64-encoded automatically by Tailor so that they can be used directly in OpenShift `Secret` resources. If you have a secret value that is a multiline string (such as a certificate), you can base64-encode it (e.g. `cat cert | base64`) and add the encoded string as a parameter into the `.env.enc` file like this: `FOO.B64=abc...`. The `.B64` suffix tells Tailor that the value is already in base64 encoding.
 
-`secrets edit foo.env.enc` opens a terminal editor, in which you can enter the
-params in plain, e.g. `PASSWORD=s3cr3t`. When saved, every aram value will be encrypted for all public keys in `--public-key-dir="public-keys|."`. To read a file with encrypted params (e.g. to edit the secrets or compare the diff between desired and current state), you need your private key available at `--private-key="private.key"`.
+In order to create and edit `*.env.enc` files, Tailor offers an `edit` command. `secrets edit foo.env.enc` opens a terminal editor, in which you can enter the params in plain, e.g. `PASSWORD=s3cr3t`. When saved, every param value will be encrypted for all public keys in `--public-key-dir="public-keys|."`. To read a file with encrypted params (e.g. to edit the secrets or compare the diff between desired and current state), you need your private key available at `--private-key="private.key"`.
 
 When a public key is added or removed, it is required to run `secrets re-encrypt`.
 This decrypts all params in `*.env.enc` files and writes them again using the provided public keys.
