@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## [1.0.0] - 2020-05-20
+
 ### Added
 
 - Support `Deployment` resource ([#189](https://github.com/opendevstack/tailor/pull/189)).
