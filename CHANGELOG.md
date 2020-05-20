@@ -5,6 +5,8 @@
 ### Added
 
 - Support `Deployment` resource ([#189](https://github.com/opendevstack/tailor/pull/189)).
+- Support LimitRange and ResourceQuota resources ([#194](https://github.com/opendevstack/tailor/pull/194)).
+- Export with parameterised namespace by default ([#192](https://github.com/opendevstack/tailor/pull/192)).
 
 ### Changed
 
@@ -16,6 +18,7 @@
 - Comparing `CronJob`s works now ([#158](https://github.com/opendevstack/tailor/issues/158)).
 - Respect `--exclude` flag when exporting ([#149](https://github.com/opendevstack/tailor/issues/149)).
 - Exporting just one resource works as expected now ([#188](https://github.com/opendevstack/tailor/issues/188)).
+- Abort generating keys if files are already present ([#193](https://github.com/opendevstack/tailor/pull/193)).
 
 ## [0.13.1] - 2020-03-23
 
