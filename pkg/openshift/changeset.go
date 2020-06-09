@@ -278,10 +278,17 @@ func calculateChanges(templateItem *ResourceItem, platformItem *ResourceItem, pr
 	return []*Change{c}, nil
 }
 
+// Blank is true when there is no change across Create, Update, Delete.
 func (c *Changeset) Blank() bool {
 	return len(c.Create) == 0 && len(c.Update) == 0 && len(c.Delete) == 0
 }
 
+// ExactlyOne is true when there is just a single change across Create, Update, Delete.
+func (c *Changeset) ExactlyOne() bool {
+	return len(c.Create)+len(c.Update)+len(c.Delete) == 1
+}
+
+// Add adds given changes to the changeset.
 func (c *Changeset) Add(changes ...*Change) {
 	for _, change := range changes {
 		switch change.Action {

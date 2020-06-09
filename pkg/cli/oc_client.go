@@ -14,6 +14,12 @@ type ClientProcessorExporter interface {
 	OcClientExporter
 }
 
+// ClientModifier allows to delete and create/update resources.
+type ClientModifier interface {
+	OcClientApplier
+	OcClientDeleter
+}
+
 // OcClientProcessor is a stop-gap solution only ... should have a better API.
 type OcClientProcessor interface {
 	Process(args []string) ([]byte, []byte, error)
@@ -29,7 +35,7 @@ type OcClientDeleter interface {
 	Delete(kind string, name string) ([]byte, error)
 }
 
-// OcClientApplier allows to create a resource.
+// OcClientApplier allows to create/update a resource.
 type OcClientApplier interface {
 	Apply(config string, selector string) ([]byte, error)
 }
