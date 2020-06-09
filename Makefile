@@ -36,15 +36,15 @@ build: imports build-linux build-darwin build-windows
 .PHONY: build
 
 build-linux: imports
-	cd cmd/tailor && GOOS=linux GOARCH=amd64 CGO_ENABLED=0 go build -o tailor-linux-amd64
+	cd cmd/tailor && GOOS=linux GOARCH=amd64 CGO_ENABLED=0 go build -gcflags "all=-trimpath=$(CURDIR);$(shell go env GOPATH)" -o tailor-linux-amd64
 .PHONY: build-linux
 
 build-darwin: imports
-	cd cmd/tailor && GOOS=darwin GOARCH=amd64 CGO_ENABLED=0 go build -o tailor-darwin-amd64
+	cd cmd/tailor && GOOS=darwin GOARCH=amd64 CGO_ENABLED=0 go build -gcflags "all=-trimpath=$(CURDIR);$(shell go env GOPATH)" -o tailor-darwin-amd64
 .PHONY: build-darwin
 
 build-windows: imports
-	cd cmd/tailor && GOOS=windows GOARCH=amd64 CGO_ENABLED=0 go build -o tailor-windows-amd64.exe
+	cd cmd/tailor && GOOS=windows GOARCH=amd64 CGO_ENABLED=0 go build -gcflags "all=-trimpath=$(CURDIR);$(shell go env GOPATH)" -o tailor-windows-amd64.exe
 .PHONY: build-windows
 
 internal/test/e2e/tailor-test: cmd/tailor/main.go go.mod go.sum pkg/cli/* pkg/commands/* pkg/openshift/* pkg/utils/*
