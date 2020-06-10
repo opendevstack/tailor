@@ -403,7 +403,13 @@ func main() {
 			log.Fatalln("Options could not be processed:", err)
 		}
 
-		driftDectected, err := commands.Apply(globalOptions.NonInteractive, compareOptions)
+		ocClient := cli.NewOcClient(compareOptions.Namespace)
+		driftDectected, err := commands.Apply(
+			globalOptions.NonInteractive,
+			compareOptions,
+			ocClient,
+			os.Stdin,
+		)
 		if err != nil {
 			log.Fatalln(err)
 		}

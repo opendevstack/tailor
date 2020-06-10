@@ -8,10 +8,21 @@ import (
 	"strings"
 )
 
+type ClientApplier interface {
+	ClientProcessorExporter
+	ClientModifier
+}
+
 // ClientProcessorExporter allows to process templates and export resources.
 type ClientProcessorExporter interface {
 	OcClientProcessor
 	OcClientExporter
+}
+
+// ClientModifier allows to delete and create/update resources.
+type ClientModifier interface {
+	OcClientApplier
+	OcClientDeleter
 }
 
 // OcClientProcessor is a stop-gap solution only ... should have a better API.
@@ -29,7 +40,7 @@ type OcClientDeleter interface {
 	Delete(kind string, name string) ([]byte, error)
 }
 
-// OcClientApplier allows to create a resource.
+// OcClientApplier allows to create/update a resource.
 type OcClientApplier interface {
 	Apply(config string, selector string) ([]byte, error)
 }

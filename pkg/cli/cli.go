@@ -102,27 +102,34 @@ func execCmd(executable string, args []string) *exec.Cmd {
 	return exec.Command(executable, args...)
 }
 
-// AskForConfirmation asks the user for confirmation. A user must type in "yes" or "no" and
-// then press enter. It has fuzzy matching, so "y", "Y", "yes", "YES", and "Yes" all count as
-// confirmations. If the input is not recognized, it will ask again. The function does not return
+// AskForAction asks the user the given question. A user must type in one of the presented options and
+// then press enter.If the input is not recognized, it will ask again. The function does not return
 // until it gets a valid response from the user.
-func AskForConfirmation(s string) bool {
-	reader := bufio.NewReader(os.Stdin)
+// Options are of form "y=yes". The matching is fuzzy, which means allowed values are
+// "y", "Y", "yes", "YES", "Yes" and so on. The returned value is always the "key" ("y" in this case),
+// regardless if the input was "y" or "yes" etc.
+func AskForAction(question string, options []string, reader *bufio.Reader) string {
+	validAnswers := map[string]string{}
+	for _, v := range options {
+		p := strings.Split(v, "=")
+		validAnswers[p[0]] = p[0]
+		validAnswers[p[1]] = p[0]
+	}
 
 	for {
-		fmt.Printf("%s [y/n]: ", s)
+		fmt.Printf("%s [%s]: ", question, strings.Join(options, ", "))
 
-		response, err := reader.ReadString('\n')
+		answer, err := reader.ReadString('\n')
 		if err != nil {
 			log.Fatal(err)
 		}
 
-		response = strings.ToLower(strings.TrimSpace(response))
+		answer = strings.ToLower(strings.TrimSpace(answer))
 
-		if response == "y" || response == "yes" {
-			return true
-		} else if response == "n" || response == "no" {
-			return false
+		if v, ok := validAnswers[answer]; !ok {
+			fmt.Printf("'%s' is not a valid option. Please try again.\n", answer)
+		} else {
+			return v
 		}
 	}
 }

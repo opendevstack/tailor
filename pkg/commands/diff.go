@@ -144,18 +144,15 @@ func compare(w io.Writer, remoteResourceList *openshift.ResourceList, localResou
 	}
 
 	for _, change := range changeset.Delete {
-		cli.FprintRedf(w, "- %s to delete\n", change.ItemName())
-		fmt.Fprint(w, change.Diff(revealSecrets))
+		printDeleteChange(w, change, revealSecrets)
 	}
 
 	for _, change := range changeset.Create {
-		cli.FprintGreenf(w, "+ %s to create\n", change.ItemName())
-		fmt.Fprint(w, change.Diff(revealSecrets))
+		printCreateChange(w, change, revealSecrets)
 	}
 
 	for _, change := range changeset.Update {
-		cli.FprintYellowf(w, "~ %s to update\n", change.ItemName())
-		fmt.Fprint(w, change.Diff(revealSecrets))
+		printUpdateChange(w, change, revealSecrets)
 	}
 
 	fmt.Fprintf(w, "\nSummary: %d in sync, ", len(changeset.Noop))
@@ -168,12 +165,27 @@ func compare(w io.Writer, remoteResourceList *openshift.ResourceList, localResou
 	return changeset, nil
 }
 
+func printDeleteChange(w io.Writer, change *openshift.Change, revealSecrets bool) {
+	cli.FprintRedf(w, "- %s to delete\n", change.ItemName())
+	fmt.Fprint(w, change.Diff(revealSecrets))
+}
+
+func printCreateChange(w io.Writer, change *openshift.Change, revealSecrets bool) {
+	cli.FprintGreenf(w, "+ %s to create\n", change.ItemName())
+	fmt.Fprint(w, change.Diff(revealSecrets))
+}
+
+func printUpdateChange(w io.Writer, change *openshift.Change, revealSecrets bool) {
+	cli.FprintYellowf(w, "~ %s to update\n", change.ItemName())
+	fmt.Fprint(w, change.Diff(revealSecrets))
+}
+
 func assembleTemplateBasedResourceList(filter *openshift.ResourceFilter, compareOptions *cli.CompareOptions, ocClient cli.OcClientProcessor) (*openshift.ResourceList, error) {
 	var inputs [][]byte
 
 	files, err := ioutil.ReadDir(compareOptions.TemplateDir)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("Cannot get files in template directory '%s': %s", compareOptions.TemplateDir, err)
 	}
 	filePattern := ".*\\.ya?ml$"
 	re := regexp.MustCompile(filePattern)
