@@ -2,6 +2,7 @@ package openshift
 
 import (
 	"bytes"
+	"errors"
 	"fmt"
 	"io/ioutil"
 	"os"
@@ -92,6 +93,9 @@ func templateContainsTailorNamespaceParam(filename string) (bool, error) {
 	}
 	for _, v := range items.([]interface{}) {
 		nameVal := v.(map[string]interface{})["name"]
+		if nameVal == nil {
+			return false, errors.New("Template parameter without 'name' property found")
+		}
 		paramName := strings.TrimSpace(nameVal.(string))
 		if paramName == "TAILOR_NAMESPACE" {
 			return true, nil
