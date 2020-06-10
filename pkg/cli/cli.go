@@ -108,9 +108,7 @@ func execCmd(executable string, args []string) *exec.Cmd {
 // Options are of form "y=yes". The matching is fuzzy, which means allowed values are
 // "y", "Y", "yes", "YES", "Yes" and so on. The returned value is always the "key" ("y" in this case),
 // regardless if the input was "y" or "yes" etc.
-func AskForAction(question string, options []string, stdin io.Reader) string {
-	reader := bufio.NewReader(stdin)
-
+func AskForAction(question string, options []string, reader *bufio.Reader) string {
 	validAnswers := map[string]string{}
 	for _, v := range options {
 		p := strings.Split(v, "=")

@@ -1,11 +1,11 @@
 package commands
 
 import (
+	"bufio"
 	"bytes"
 	"errors"
 	"fmt"
 	"io"
-	"os"
 
 	"github.com/opendevstack/tailor/pkg/cli"
 	"github.com/opendevstack/tailor/pkg/openshift"
@@ -16,8 +16,9 @@ type handleChange func(label string, change *openshift.Change, compareOptions *c
 
 // Apply prints the drift between desired and current state to STDOUT.
 // If there is any, it asks for confirmation and applies the changeset.
-func Apply(nonInteractive bool, compareOptions *cli.CompareOptions) (bool, error) {
-	ocClient := cli.NewOcClient(compareOptions.Namespace)
+func Apply(nonInteractive bool, compareOptions *cli.CompareOptions, ocClient cli.ClientApplier, stdin io.Reader) (bool, error) {
+	stdinReader := bufio.NewReader(stdin)
+
 	var buf bytes.Buffer
 	driftDetected, changeset, err := calculateChangeset(&buf, compareOptions, ocClient)
 	fmt.Print(buf.String())
@@ -27,7 +28,7 @@ func Apply(nonInteractive bool, compareOptions *cli.CompareOptions) (bool, error
 
 	if driftDetected {
 		if nonInteractive {
-			err = apply(compareOptions, changeset)
+			err = apply(compareOptions, changeset, ocClient)
 			if err != nil {
 				return true, fmt.Errorf("Apply aborted: %s", err)
 			}
@@ -50,10 +51,10 @@ func Apply(nonInteractive bool, compareOptions *cli.CompareOptions) (bool, error
 		if allowSelecting {
 			options = append(options, "s=select")
 		}
-		a := cli.AskForAction("Apply all changes?", options, os.Stdin)
+		a := cli.AskForAction("Apply all changes?", options, stdinReader)
 		if a == "y" {
 			fmt.Println("")
-			err = apply(compareOptions, changeset)
+			err = apply(compareOptions, changeset, ocClient)
 			if err != nil {
 				return true, fmt.Errorf("Apply aborted: %s", err)
 			}
@@ -69,19 +70,19 @@ func Apply(nonInteractive bool, compareOptions *cli.CompareOptions) (bool, error
 		} else if allowSelecting && a == "s" {
 			anyChangeSkipped := false
 
-			anyDeleteChangeSkipped, err := askAndApply(compareOptions, ocClient, changeset.Delete, printDeleteChange, "Deleting", ocDelete)
+			anyDeleteChangeSkipped, err := askAndApply(compareOptions, ocClient, stdinReader, changeset.Delete, printDeleteChange, "Deleting", ocDelete)
 			if err != nil {
 				return true, fmt.Errorf("Apply aborted: %s", err)
 			} else if anyDeleteChangeSkipped {
 				anyChangeSkipped = true
 			}
-			anyCreateChangeSkipped, err := askAndApply(compareOptions, ocClient, changeset.Create, printCreateChange, "Creating", ocApply)
+			anyCreateChangeSkipped, err := askAndApply(compareOptions, ocClient, stdinReader, changeset.Create, printCreateChange, "Creating", ocApply)
 			if err != nil {
 				return true, fmt.Errorf("Apply aborted: %s", err)
 			} else if anyCreateChangeSkipped {
 				anyChangeSkipped = true
 			}
-			anyUpdateChangeSkipped, err := askAndApply(compareOptions, ocClient, changeset.Update, printUpdateChange, "Updating", ocApply)
+			anyUpdateChangeSkipped, err := askAndApply(compareOptions, ocClient, stdinReader, changeset.Update, printUpdateChange, "Updating", ocApply)
 			if err != nil {
 				return true, fmt.Errorf("Apply aborted: %s", err)
 			} else if anyUpdateChangeSkipped {
@@ -99,7 +100,7 @@ func Apply(nonInteractive bool, compareOptions *cli.CompareOptions) (bool, error
 	return false, nil
 }
 
-func askAndApply(compareOptions *cli.CompareOptions, ocClient *cli.OcClient, changes []*openshift.Change, changePrinter printChange, label string, changeHandler handleChange) (bool, error) {
+func askAndApply(compareOptions *cli.CompareOptions, ocClient cli.ClientApplier, stdinReader *bufio.Reader, changes []*openshift.Change, changePrinter printChange, label string, changeHandler handleChange) (bool, error) {
 	anyChangeSkipped := false
 
 	for _, change := range changes {
@@ -110,7 +111,7 @@ func askAndApply(compareOptions *cli.CompareOptions, ocClient *cli.OcClient, cha
 		a := cli.AskForAction(
 			fmt.Sprintf("Apply change to %s?", change.ItemName()),
 			[]string{"y=yes", "n=no"},
-			os.Stdin,
+			stdinReader,
 		)
 		if a == "y" {
 			fmt.Println("")
@@ -125,8 +126,7 @@ func askAndApply(compareOptions *cli.CompareOptions, ocClient *cli.OcClient, cha
 	return anyChangeSkipped, nil
 }
 
-func apply(compareOptions *cli.CompareOptions, c *openshift.Changeset) error {
-	ocClient := cli.NewOcClient(compareOptions.Namespace)
+func apply(compareOptions *cli.CompareOptions, c *openshift.Changeset, ocClient cli.ClientModifier) error {
 
 	for _, change := range c.Create {
 		err := ocApply("Creating", change, compareOptions, ocClient)

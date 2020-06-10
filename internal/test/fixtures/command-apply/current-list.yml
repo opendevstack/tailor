@@ -1,0 +1,68 @@
+apiVersion: v1
+items:
+- apiVersion: build.openshift.io/v1
+  kind: BuildConfig
+  metadata:
+    creationTimestamp: "2020-05-05T11:25:28Z"
+    name: foo
+    namespace: ods
+    resourceVersion: "375626209"
+    selfLink: /apis/build.openshift.io/v1/namespaces/ods/buildconfigs/foo
+    uid: 1fafe5ac-8ec3-11ea-a8a2-0aad3153d0e6
+  spec:
+    failedBuildsHistoryLimit: 5
+    nodeSelector: null
+    output:
+      to:
+        kind: ImageStreamTag
+        name: foo:latest
+    postCommit: {}
+    resources:
+      limits:
+        cpu: "1"
+        memory: 1Gi
+      requests:
+        cpu: 200m
+        memory: 512Mi
+    runPolicy: Serial
+    source:
+      git:
+        ref: master
+        uri: https://example.com/example/foo.git
+      sourceSecret:
+        name: user-credentials
+      type: Git
+    strategy:
+      dockerStrategy: {}
+      type: Docker
+    successfulBuildsHistoryLimit: 5
+    triggers: []
+  status:
+    lastVersion: 3
+- apiVersion: image.openshift.io/v1
+  kind: ImageStream
+  metadata:
+    creationTimestamp: "2020-05-05T11:25:26Z"
+    generation: 1
+    name: foo
+    namespace: ods
+    resourceVersion: "385616336"
+    selfLink: /apis/image.openshift.io/v1/namespaces/ods/imagestreams/foo
+    uid: 1e735d57-8ec3-11ea-94ce-0a30b7cbe558
+  spec:
+    dockerImageRepository: foo
+    lookupPolicy:
+      local: false
+  status:
+    dockerImageRepository: 172.30.21.196:5000/ods/foo
+    tags:
+    - items:
+      - created: "2020-05-15T12:21:25Z"
+        dockerImageReference: 172.30.21.196:5000/ods/foo@sha256:a15e0927a9f50c162b20e5632119e785977f364b1558c1e9d666caaab595307a
+        generation: 1
+        image: sha256:a15e0927a9f50c162b20e5632119e785977f364b1558c1e9d666caaab595307a
+      tag: latest
+kind: List
+metadata:
+  resourceVersion: ""
+  selfLink: ""

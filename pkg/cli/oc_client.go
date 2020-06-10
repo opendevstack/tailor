@@ -8,6 +8,11 @@ import (
 	"strings"
 )
 
+type ClientApplier interface {
+	ClientProcessorExporter
+	ClientModifier
+}
+
 // ClientProcessorExporter allows to process templates and export resources.
 type ClientProcessorExporter interface {
 	OcClientProcessor

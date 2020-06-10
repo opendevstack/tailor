@@ -185,7 +185,7 @@ func assembleTemplateBasedResourceList(filter *openshift.ResourceFilter, compare
 
 	files, err := ioutil.ReadDir(compareOptions.TemplateDir)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("Cannot get files in template directory '%s': %s", compareOptions.TemplateDir, err)
 	}
 	filePattern := ".*\\.ya?ml$"
 	re := regexp.MustCompile(filePattern)

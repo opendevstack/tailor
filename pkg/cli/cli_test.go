@@ -1,6 +1,7 @@
 package cli
 
 import (
+	"bufio"
 	"bytes"
 	"testing"
 )
@@ -52,7 +53,8 @@ func TestAskForAction(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			var stdin bytes.Buffer
 			stdin.Write([]byte(tc.input))
-			a := AskForAction("What?", tc.options, &stdin)
+			stdinReader := bufio.NewReader(&stdin)
+			a := AskForAction("What?", tc.options, stdinReader)
 			if a != tc.expectedAnswer {
 				t.Fatalf("Want: '%s', got: '%s'", tc.expectedAnswer, a)
 			}

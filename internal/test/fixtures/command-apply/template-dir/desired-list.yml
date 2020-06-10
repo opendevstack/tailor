@@ -1,0 +1,44 @@
+apiVersion: v1
+items:
+- apiVersion: build.openshift.io/v1
+  kind: BuildConfig
+  metadata:
+    name: foo
+  spec:
+    failedBuildsHistoryLimit: 5
+    nodeSelector: null
+    output:
+      to:
+        kind: ImageStreamTag
+        name: foo:v1
+    postCommit: {}
+    resources:
+      limits:
+        cpu: "1"
+        memory: 1Gi
+      requests:
+        cpu: 200m
+        memory: 512Mi
+    runPolicy: Serial
+    source:
+      git:
+        ref: master
+        uri: https://example.com/example/foo.git
+      sourceSecret:
+        name: user-credentials
+      type: Git
+    strategy:
+      dockerStrategy: {}
+      type: Docker
+    successfulBuildsHistoryLimit: 5
+    triggers: []
+- apiVersion: image.openshift.io/v1
+  kind: ImageStream
+  metadata:
+    name: foo
+  spec:
+    dockerImageRepository: foo
+    lookupPolicy:
+      local: true
+kind: List
+metadata: {}
