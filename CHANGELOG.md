@@ -2,6 +2,15 @@
 
 ## Unreleased
 
+### Added
+
+- Allow users to selectively apply changes ([#198](https://github.com/opendevstack/tailor/pull/198)).
+
+### Changed
+
+- Use Go 1.14 ([#196](https://github.com/opendevstack/tailor/pull/196)).
+- Trim host paths from executable ([#196](https://github.com/opendevstack/tailor/pull/196)).
+
 ### Fixed
 
 - Fail with proper error when template parameter does not have `name` property ([#197](https://github.com/opendevstack/tailor/pull/197)).
@@ -16,7 +25,7 @@
 
 ### Changed
 
-- Use "oc get --export" instead of deprecated "oc export". This allows to use Tailor with OpenShift 4 - however there is no manual or automated test setup yet which means OpenShift 4 is not officially supported yet ([#160](https://github.com/opendevstack/tailor/pull/160)).
+- Use `oc get --export` instead of deprecated `oc export`. This allows to use Tailor with OpenShift 4 - however there is no manual or automated test setup yet which means OpenShift 4 is not officially supported yet ([#160](https://github.com/opendevstack/tailor/pull/160)).
 
 ### Fixed
 
@@ -30,7 +39,7 @@
 
 ### Fixed
 
-- Avoid --force flag when run against local cluster ([#182](https://github.com/opendevstack/tailor/pull/182)).
+- Avoid `--force` flag when run against local cluster ([#182](https://github.com/opendevstack/tailor/pull/182)).
 
 ## [0.13.0] - 2020-03-20
 
@@ -40,7 +49,7 @@
 
 - Add namespace env file if it exists, see [#173](https://github.com/opendevstack/tailor/pull/173).
 
-- Add --verify flag to check if any drift is present after applying ([#179](https://github.com/opendevstack/tailor/pull/179)).
+- Add `--verify` flag to check if any drift is present after applying ([#179](https://github.com/opendevstack/tailor/pull/179)).
 
 ### Changed
 
