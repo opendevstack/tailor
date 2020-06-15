@@ -1,0 +1,22 @@
+apiVersion: v1
+kind: Template
+objects:
+- apiVersion: v1
+  kind: Route
+  metadata:
+    labels:
+      app: foo
+    name: foo
+  spec:
+    host: foo-${NAMESPACE}.domain.com
+    tls:
+      insecureEdgeTerminationPolicy: Redirect
+      termination: edge
+    to:
+      kind: Service
+      name: foo
+      weight: 100
+    wildcardPolicy: None
+parameters:
+- name: NAMESPACE
+  required: true

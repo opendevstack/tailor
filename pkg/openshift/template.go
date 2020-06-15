@@ -77,7 +77,7 @@ func ProcessTemplate(templateDir string, name string, paramDir string, compareOp
 func templateContainsTailorNamespaceParam(filename string) (bool, error) {
 	b, err := ioutil.ReadFile(filename)
 	if err != nil {
-		return false, nil
+		return false, fmt.Errorf("Could not read file '%s': %s", filename, err)
 	}
 	var f interface{}
 	err = yaml.Unmarshal(b, &f)
