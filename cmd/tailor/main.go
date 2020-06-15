@@ -240,7 +240,7 @@ func main() {
 	defer func() {
 		err := recover()
 		if err != nil {
-			log.Fatalf("Fatal error: %s - %s.", err, debug.Stack())
+			log.Fatalf("ERROR: An unexpected error occured. Please file a bug on GitHub (https://github.com/opendevstack/tailor/issues/new) with the following stack trace:\n\n%s\n\n%s", err, debug.Stack())
 		}
 	}()
 

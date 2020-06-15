@@ -77,7 +77,7 @@ func ProcessTemplate(templateDir string, name string, paramDir string, compareOp
 func templateContainsTailorNamespaceParam(filename string) (bool, error) {
 	b, err := ioutil.ReadFile(filename)
 	if err != nil {
-		return false, nil
+		return false, fmt.Errorf("Could not read file '%s': %s", filename, err)
 	}
 	var f interface{}
 	err = yaml.Unmarshal(b, &f)
@@ -85,7 +85,15 @@ func templateContainsTailorNamespaceParam(filename string) (bool, error) {
 		err = utils.DisplaySyntaxError(b, err)
 		return false, err
 	}
-	m := f.(map[string]interface{})
+	var m map[string]interface{}
+	switch f.(type) {
+	case map[string]interface{}:
+		m = f.(map[string]interface{})
+	case []interface{}:
+		return false, errors.New("Not a valid template. Did you forget to add the template header?\n\napiVersion: v1\nkind: Template\nobjects: [...]")
+	default:
+		return false, errors.New("Not a valid template. Please see https://github.com/opendevstack/tailor#template-authoring")
+	}
 	objectsPointer, _ := gojsonpointer.NewJsonPointer("/parameters")
 	items, _, err := objectsPointer.Get(m)
 	if err != nil {

@@ -10,12 +10,53 @@ import (
 )
 
 func TestTemplateContainsTailorNamespaceParam(t *testing.T) {
-	contains, err := templateContainsTailorNamespaceParam("../../internal/test/fixtures/template-with-tailor-namespace-param.yml")
-	if err != nil {
-		t.Errorf("Could not determine if the template contains the param: %s", err)
+	tests := map[string]struct {
+		filename     string
+		wantContains bool
+		wantError    string
+	}{
+		"contains param": {
+			filename:     "with-tailor-namespace-param.yml",
+			wantContains: true,
+			wantError:    "",
+		},
+		"without param": {
+			filename:     "without-tailor-namespace-param.yml",
+			wantContains: false,
+			wantError:    "",
+		},
+		"invalid template": {
+			filename:     "invalid-template.yml",
+			wantContains: false,
+			wantError:    "Not a valid template. Did you forget to add the template header?\n\napiVersion: v1\nkind: Template\nobjects: [...]",
+		},
+		"garbage": {
+			filename:     "garbage.yml",
+			wantContains: false,
+			wantError:    "Not a valid template. Please see https://github.com/opendevstack/tailor#template-authoring",
+		},
 	}
-	if !contains {
-		t.Error("Template contains param, but it was not detected")
+	for name, tc := range tests {
+		t.Run(name, func(t *testing.T) {
+			contains, err := templateContainsTailorNamespaceParam(
+				"../../internal/test/fixtures/template-param-detection/" + tc.filename,
+			)
+			if len(tc.wantError) == 0 {
+				if err != nil {
+					t.Fatalf("Could not determine if the template contains the param: %s", err)
+				}
+			} else {
+				if err == nil {
+					t.Fatalf("Want error '%s', but no error occured", tc.wantError)
+				}
+				if tc.wantError != err.Error() {
+					t.Fatalf("Want error '%s', got '%s'", tc.wantError, err)
+				}
+			}
+			if tc.wantContains != contains {
+				t.Fatalf("Want template containing param '%t', got '%t'", tc.wantContains, contains)
+			}
+		})
 	}
 }
 
