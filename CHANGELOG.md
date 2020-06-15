@@ -14,6 +14,7 @@
 ### Fixed
 
 - Fail with proper error when template parameter does not have `name` property ([#197](https://github.com/opendevstack/tailor/pull/197)).
+- Fix panic on invalid template ([#200](https://github.com/opendevstack/tailor/pull/200)).
 
 ## [1.0.0] - 2020-05-20
 
