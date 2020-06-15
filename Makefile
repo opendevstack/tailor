@@ -29,7 +29,7 @@ lint:
 .PHONY: lint
 
 install: imports
-	@(cd cmd/tailor && go install)
+	@(cd cmd/tailor && go install -gcflags "all=-trimpath=$(CURDIR);$(shell go env GOPATH)")
 .PHONY: install
 
 build: imports build-linux build-darwin build-windows
