@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## [1.1.0] - 2020-06-16
+
 ### Added
 
 - Allow users to selectively apply changes ([#198](https://github.com/opendevstack/tailor/pull/198)).
