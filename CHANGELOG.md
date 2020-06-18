@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+### Fixed
+
+- Create `ServiceAccount` and `RoleBinding` resources before e.g. `DeploymentConfig` resources to avoid pod startup failure due to missing service accounts ([#202](https://github.com/opendevstack/tailor/pull/202))
+
 ## [1.1.0] - 2020-06-16
 
 ### Added
