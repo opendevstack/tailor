@@ -299,51 +299,51 @@ func TestEmptyValuesDoNotCauseDrift(t *testing.T) {
 }
 
 func TestAddCreateOrder(t *testing.T) {
-	cs := &Changeset{}
-	cDC := &Change{
-		Action: "Create",
-		Kind:   "DeploymentConfig",
+	cs := fillChangeset("Create")
+	if cs.Create[0].Kind != "ServiceAccount" {
+		t.Errorf("SA needs to be created before PVC")
 	}
-	cPVC := &Change{
-		Action: "Create",
-		Kind:   "PersistentVolumeClaim",
-	}
-	cs.Add(cPVC, cDC)
-	if cs.Create[0].Kind != "PersistentVolumeClaim" {
+	if cs.Create[1].Kind != "PersistentVolumeClaim" {
 		t.Errorf("PVC needs to be created before DC")
 	}
 }
 
 func TestAddUpdateOrder(t *testing.T) {
-	cs := &Changeset{}
-	cDC := &Change{
-		Action: "Update",
-		Kind:   "DeploymentConfig",
+	cs := fillChangeset("Update")
+	if cs.Update[0].Kind != "ServiceAccount" {
+		t.Errorf("SA needs to be created before PVC")
 	}
-	cPVC := &Change{
-		Action: "Update",
-		Kind:   "PersistentVolumeClaim",
-	}
-	cs.Add(cPVC, cDC)
-	if cs.Update[0].Kind != "PersistentVolumeClaim" {
+	if cs.Update[1].Kind != "PersistentVolumeClaim" {
 		t.Errorf("PVC needs to be updated before DC")
 	}
 }
 
 func TestAddDeleteOrder(t *testing.T) {
-	cs := &Changeset{}
-	cDC := &Change{
-		Action: "Delete",
-		Kind:   "DeploymentConfig",
-	}
-	cPVC := &Change{
-		Action: "Delete",
-		Kind:   "PersistentVolumeClaim",
-	}
-	cs.Add(cPVC, cDC)
+	cs := fillChangeset("Delete")
 	if cs.Delete[0].Kind != "DeploymentConfig" {
 		t.Errorf("DC needs to be deleted before PVC")
 	}
+	if cs.Delete[1].Kind != "PersistentVolumeClaim" {
+		t.Errorf("PVC needs to be deleted before SA")
+	}
+}
+
+func fillChangeset(action string) *Changeset {
+	cs := &Changeset{}
+	cDC := &Change{
+		Action: action,
+		Kind:   "DeploymentConfig",
+	}
+	cPVC := &Change{
+		Action: action,
+		Kind:   "PersistentVolumeClaim",
+	}
+	cSA := &Change{
+		Action: action,
+		Kind:   "ServiceAccount",
+	}
+	cs.Add(cPVC, cDC, cSA)
+	return cs
 }
 
 func TestConfigNoop(t *testing.T) {
