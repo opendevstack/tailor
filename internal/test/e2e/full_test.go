@@ -10,14 +10,14 @@ import (
 )
 
 func TestFullScope(t *testing.T) {
-	defer teardown(t)
-	setup(t)
+	testProjectName := setup(t)
+	defer teardown(t, testProjectName)
 
 	tailorBinary := getTailorBinary()
 
-	runExport(t, tailorBinary)
+	runExport(t, tailorBinary, testProjectName)
 
-	diffWithNoExpectedDrift(t, tailorBinary)
+	diffWithNoExpectedDrift(t, tailorBinary, testProjectName, []string{})
 
 	// Create new resource
 	t.Log("Create new template with one resource")
@@ -40,7 +40,7 @@ objects:
 	}
 
 	// Status -> expected to have one created resource
-	cmd := exec.Command(tailorBinary, []string{"diff"}...)
+	cmd := exec.Command(tailorBinary, []string{"-n", testProjectName, "diff"}...)
 	out, err := cmd.CombinedOutput()
 	if err == nil {
 		t.Fatalf("Status command should have exited with 3")
@@ -60,11 +60,11 @@ objects:
 		t.Fatalf("Some resources should be in synce")
 	}
 
-	runApply(t, tailorBinary)
-	diffWithNoExpectedDrift(t, tailorBinary)
+	runApply(t, tailorBinary, testProjectName, []string{})
+	diffWithNoExpectedDrift(t, tailorBinary, testProjectName, []string{})
 
 	// Check content of config map
-	cmd = exec.Command("oc", []string{"get", "cm/foo", "-oyaml"}...)
+	cmd = exec.Command("oc", []string{"-n", testProjectName, "get", "cm/foo", "-oyaml"}...)
 	out, err = cmd.CombinedOutput()
 	if err != nil {
 		t.Fatalf("Could not get content of ConfigMap")
@@ -83,12 +83,12 @@ objects:
 	}
 
 	// Status -> expected to have drift (updated resource)
-	cmd = exec.Command(tailorBinary, []string{"diff"}...)
+	cmd = exec.Command(tailorBinary, []string{"-n", testProjectName, "diff"}...)
 	out, err = cmd.CombinedOutput()
 	if err == nil {
 		t.Fatalf("Status command should have exited with 3")
 	}
-	t.Log("Got status in test project (should show updated resource)")
+	t.Log("Got status in", testProjectName, "project (should show updated resource)")
 	if !strings.Contains(string(out), "0 to create") {
 		t.Fatalf("No resource should be to create")
 	}
@@ -102,11 +102,11 @@ objects:
 		t.Fatalf("Some resources should be in synce")
 	}
 
-	runApply(t, tailorBinary)
-	diffWithNoExpectedDrift(t, tailorBinary)
+	runApply(t, tailorBinary, testProjectName, []string{})
+	diffWithNoExpectedDrift(t, tailorBinary, testProjectName, []string{})
 
 	// Simulate manual change in cluster
-	cmd = exec.Command("oc", []string{"patch", "cm/foo", "-p", "{\"data\": {\"bar\": \"baz\"}}"}...)
+	cmd = exec.Command("oc", []string{"-n", testProjectName, "patch", "cm/foo", "-p", "{\"data\": {\"bar\": \"baz\"}}"}...)
 	_, err = cmd.CombinedOutput()
 	if err != nil {
 		t.Fatalf("Could not patch content of ConfigMap")
@@ -114,7 +114,7 @@ objects:
 	t.Log("Patched content of ConfigMap")
 
 	// Status -> expected to have drift (updated resource)
-	cmd = exec.Command(tailorBinary, []string{"diff"}...)
+	cmd = exec.Command(tailorBinary, []string{"-n", testProjectName, "diff"}...)
 	out, err = cmd.CombinedOutput()
 	if err == nil {
 		t.Fatalf("Status command should have exited with 3")
@@ -132,19 +132,19 @@ objects:
 		t.Fatalf("Some resources should be in synce")
 	}
 
-	runApply(t, tailorBinary)
-	diffWithNoExpectedDrift(t, tailorBinary)
+	runApply(t, tailorBinary, testProjectName, []string{})
+	diffWithNoExpectedDrift(t, tailorBinary, testProjectName, []string{})
 
 	t.Log("Remove ConfigMap template")
 	os.Remove("cm-template.yml")
 
 	// Status -> expected to have drift (deleted resource)
-	cmd = exec.Command(tailorBinary, []string{"diff"}...)
+	cmd = exec.Command(tailorBinary, []string{"-n", testProjectName, "diff"}...)
 	out, err = cmd.CombinedOutput()
 	if err == nil {
 		t.Fatalf("Status command should have exited with 3")
 	}
-	t.Log("Got status in test project (should show deleted resource)")
+	t.Log("Got status in", testProjectName, "project (should show deleted resource)")
 	if !strings.Contains(string(out), "0 to create") {
 		t.Fatalf("No resource should be to create")
 	}
@@ -158,143 +158,6 @@ objects:
 		t.Fatalf("Some resources should be in synce")
 	}
 
-	runApply(t, tailorBinary)
-	diffWithNoExpectedDrift(t, tailorBinary)
-}
-
-func runApply(t *testing.T, tailorBinary string) {
-	t.Log("Updating test project")
-	cmd := exec.Command(tailorBinary, []string{"apply", "--non-interactive"}...)
-	out, err := cmd.CombinedOutput()
-	if err != nil {
-		t.Fatalf("Could not update test project: %s", out)
-	}
-	t.Log("Updated test project")
-}
-
-func diffWithNoExpectedDrift(t *testing.T, tailorBinary string) {
-	t.Log("Calculating diff ...")
-	cmd := exec.Command(tailorBinary, []string{"diff"}...)
-	out, err := cmd.CombinedOutput()
-	if err != nil {
-		t.Fatalf("Could not get status in test project: %s", out)
-	}
-	t.Log("Got status in test project (should have no drift)")
-	if !strings.Contains(string(out), "0 to create") {
-		t.Fatalf("No resource should be to create. Got: %s", out)
-	}
-	if !strings.Contains(string(out), "0 to update") {
-		t.Fatalf("No resource should be to update. Got: %s", out)
-	}
-	if !strings.Contains(string(out), "0 to delete") {
-		t.Fatalf("No resource should be to delete. Got: %s", out)
-	}
-	if !strings.Contains(string(out), "in sync") {
-		t.Fatalf("Some resources should be in sync. Got: %s", out)
-	}
-}
-
-func runExport(t *testing.T, tailorBinary string) {
-	cmd := exec.Command(tailorBinary, []string{"export"}...)
-	out, err := cmd.CombinedOutput()
-	if err != nil {
-		t.Fatalf("Could not export resources in test project: %s", out)
-	}
-	err = ioutil.WriteFile("test-template.yml", out, 0644)
-	if err != nil {
-		t.Fatalf("Fail to write file cm-template.yml: %s", err)
-	}
-	t.Log("Resources in test project exported")
-}
-
-var shutdownLater bool
-
-func setup(t *testing.T) {
-	t.Log("SETUP: Checking for local cluster ...")
-	cmd := exec.Command("oc", []string{"whoami"}...)
-	_, err := cmd.CombinedOutput()
-	if err == nil {
-		t.Log("SETUP: Local cluster running ...")
-		shutdownLater = false
-	} else {
-		shutdownLater = true
-		launchLocalCluster(t)
-	}
-	makeTestProject(t)
-	makeTemplateFolder(t)
-}
-
-func teardown(t *testing.T) {
-	deleteTestProject(t)
-	shutdownLocalCluster(t)
-	cleanupTemplateFolder(t)
-}
-
-func getTailorBinary() string {
-	dir, _ := os.Getwd()
-	return dir + "/../tailor-test"
-}
-
-func launchLocalCluster(t *testing.T) {
-	t.Log("SETUP: Launching local cluster ...")
-	cmd := exec.Command("oc", []string{"cluster", "up"}...)
-	out, err := cmd.CombinedOutput()
-	if err != nil {
-		t.Fatalf("SETUP: Could not launch local cluster: %s", out)
-	}
-	t.Log("SETUP: Local cluster launched")
-}
-
-func shutdownLocalCluster(t *testing.T) {
-	if shutdownLater {
-		cmd := exec.Command("oc", []string{"cluster", "down"}...)
-		out, err := cmd.CombinedOutput()
-		if err != nil {
-			t.Fatalf("TEARDOWN: Could not shutdown local cluster: %s", out)
-		}
-		t.Log("TEARDOWN: Local cluster shut down")
-	}
-}
-
-func deleteTestProject(t *testing.T) {
-	cmd := exec.Command("oc", []string{"delete", "project", "test"}...)
-	out, err := cmd.CombinedOutput()
-	if err != nil {
-		t.Fatalf("TEARDOWN: Could not delete test project: %s", out)
-	}
-	t.Log("TEARDOWN: Test project deleted")
-}
-
-func makeTestProject(t *testing.T) {
-	cmd := exec.Command("oc", []string{"new-project", "test"}...)
-	out, err := cmd.CombinedOutput()
-	if err != nil {
-		t.Fatalf("SETUP: Could not create test project: %s", out)
-	}
-	t.Log("SETUP: Test project created")
-}
-
-func makeTemplateFolder(t *testing.T) {
-	err := os.MkdirAll("templates", os.ModePerm)
-	if err != nil {
-		t.Fatalf("SETUP: Fail to mkdir templates: %s", err)
-	}
-	err = os.Chdir("templates")
-	if err != nil {
-		t.Fatalf("SETUP: Fail to chdir templates: %s", err)
-	}
-	t.Log("SETUP: templates folder created")
-}
-
-func cleanupTemplateFolder(t *testing.T) {
-	dir, _ := os.Getwd()
-	err := os.Chdir(strings.TrimSuffix(dir, "/templates"))
-	if err != nil {
-		t.Fatalf("TEARDOWN: Fail to chdir templates: %s", err)
-	}
-	err = os.RemoveAll(dir)
-	if err != nil {
-		t.Fatalf("TEARDOWN: Could not remove templates folder: %s", err)
-	}
-	t.Log("TEARDOWN: templates folder removed")
+	runApply(t, tailorBinary, testProjectName, []string{})
+	diffWithNoExpectedDrift(t, tailorBinary, testProjectName, []string{})
 }

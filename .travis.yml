@@ -16,4 +16,5 @@ before_install:
 
 script:
   - env GO111MODULE=on make lint
+  - export LAUNCH_LOCAL_CLUSTER=yes
   - env GO111MODULE=on make test

@@ -10,14 +10,14 @@ import (
 )
 
 func TestPartialScope(t *testing.T) {
-	defer teardown(t)
-	setup(t)
+	testProjectName := setup(t)
+	defer teardown(t, testProjectName)
 
 	tailorBinary := getTailorBinary()
 
-	runExport(t, tailorBinary)
+	runExport(t, tailorBinary, testProjectName)
 
-	diffWithNoExpectedDrift(t, tailorBinary)
+	diffWithNoExpectedDrift(t, tailorBinary, testProjectName, []string{})
 
 	fmt.Println("Create new template with label app=foo")
 	fooBytes := []byte(
@@ -93,11 +93,11 @@ objects:
 		t.Fatalf("Fail to write file bar-template.yml: %s", err)
 	}
 
-	runApply(t, tailorBinary)
-	diffWithNoExpectedDrift(t, tailorBinary)
+	runApply(t, tailorBinary, testProjectName, []string{})
+	diffWithNoExpectedDrift(t, tailorBinary, testProjectName, []string{})
 
-	partialStatusWithNoExpectedDrift(t, tailorBinary, "app=foo")
-	partialStatusWithNoExpectedDrift(t, tailorBinary, "app=bar")
+	diffWithNoExpectedDrift(t, tailorBinary, testProjectName, []string{"-l", "app=foo"})
+	diffWithNoExpectedDrift(t, tailorBinary, testProjectName, []string{"-l", "app=bar"})
 
 	// Change content of local template
 	fmt.Println("Change content of ConfigMap template")
@@ -108,7 +108,7 @@ objects:
 	}
 
 	// Status for app=foo -> expected to have drift (updated resource)
-	cmd := exec.Command(tailorBinary, []string{"diff", "-l", "app=foo"}...)
+	cmd := exec.Command(tailorBinary, []string{"-n", testProjectName, "diff", "-l", "app=foo"}...)
 	out, err := cmd.CombinedOutput()
 	if err == nil {
 		t.Fatalf("Status command should have exited with 3")
@@ -127,26 +127,5 @@ objects:
 		t.Fatalf("Some resources should be in sync")
 	}
 
-	partialStatusWithNoExpectedDrift(t, tailorBinary, "app=bar")
-}
-
-func partialStatusWithNoExpectedDrift(t *testing.T, tailorBinary string, label string) {
-	cmd := exec.Command(tailorBinary, []string{"diff", "-l", label}...)
-	out, err := cmd.CombinedOutput()
-	if err != nil {
-		t.Fatalf("Could not get status for %s in test project", label)
-	}
-	fmt.Println("Got status for", label, "in test project (should have no drift)")
-	if !strings.Contains(string(out), "0 to create") {
-		t.Fatalf("No resource should be to create")
-	}
-	if !strings.Contains(string(out), "0 to update") {
-		t.Fatalf("No resource should be to update")
-	}
-	if !strings.Contains(string(out), "0 to delete") {
-		t.Fatalf("No resource should be to delete")
-	}
-	if !strings.Contains(string(out), "in sync") {
-		t.Fatalf("Some resources should be in sync")
-	}
+	diffWithNoExpectedDrift(t, tailorBinary, testProjectName, []string{"-l", "app=bar"})
 }
