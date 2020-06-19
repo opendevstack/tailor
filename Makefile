@@ -4,6 +4,9 @@ SHELL = /bin/bash
 MAKEFLAGS += --warn-undefined-variables
 MAKEFLAGS += --no-builtin-rules
 
+prepare-test:
+	@(oc whoami &> /dev/null || oc cluster up)
+.PHONY: prepare-test
 
 test-unit: imports
 	@(go list ./... | grep -v "vendor/" | grep -v "e2e" | xargs -n1 go test -cover)
@@ -49,4 +52,4 @@ build-windows: imports
 
 internal/test/e2e/tailor-test: cmd/tailor/main.go go.mod go.sum pkg/cli/* pkg/commands/* pkg/openshift/* pkg/utils/*
 	@(echo "Generating E2E test binary ...")
-	@(cd cmd/tailor && go build -o ../../internal/test/e2e/tailor-test)
+	@(cd cmd/tailor && go build -gcflags "all=-trimpath=$(CURDIR);$(shell go env GOPATH)" -o ../../internal/test/e2e/tailor-test)
