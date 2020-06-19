@@ -191,6 +191,10 @@ var (
 		"with-hardcoded-namespace",
 		"Keep any occurences of hardcoded namespace instead of replacing with ${TAILOR_NAMESPACE} in template.",
 	).Bool()
+	exportTrimAnnotationFlag = exportCommand.Flag(
+		"trim-annotation",
+		"Annotation (prefix) to trim on top of annotations trimmed by default. ",
+	).PlaceHolder("template.openshift.io/").Strings()
 	exportResourceArg = exportCommand.Arg(
 		"resource", "Remote resource (defaults to all)",
 	).String()
@@ -427,6 +431,7 @@ func main() {
 			*paramDirFlag,
 			*exportWithAnnotationsFlag,
 			*exportWithHardcodedNamespaceFlag,
+			*exportTrimAnnotationFlag,
 			*exportResourceArg,
 		)
 		if err != nil {

@@ -30,22 +30,43 @@ func TestExportAsTemplateFile(t *testing.T) {
 		goldenTemplate         string
 		filter                 *ResourceFilter
 		withAnnotations        bool
+		trimAnnotations        []string
 		namespace              string
 		withHardcodedNamespace bool
 	}{
-		"Without annotations": {
+		"Without all annotations": {
 			fixture:                "is.yml",
 			goldenTemplate:         "is.yml",
 			filter:                 newResourceFilterOrFatal(t, "is", "", ""),
 			withAnnotations:        false,
+			trimAnnotations:        []string{},
 			namespace:              "foo",
 			withHardcodedNamespace: true,
 		},
-		"With annotations": {
+		"With all annotations": {
 			fixture:                "is.yml",
 			goldenTemplate:         "is-annotation.yml",
 			filter:                 newResourceFilterOrFatal(t, "is", "", ""),
 			withAnnotations:        true,
+			trimAnnotations:        []string{},
+			namespace:              "foo",
+			withHardcodedNamespace: true,
+		},
+		"With trimmed annotation": {
+			fixture:                "is.yml",
+			goldenTemplate:         "is-trimmed-annotation.yml",
+			filter:                 newResourceFilterOrFatal(t, "is", "", ""),
+			withAnnotations:        false,
+			trimAnnotations:        []string{"description"},
+			namespace:              "foo",
+			withHardcodedNamespace: true,
+		},
+		"With trimmed annotation prefix": {
+			fixture:                "is.yml",
+			goldenTemplate:         "is-trimmed-annotation-prefix.yml",
+			filter:                 newResourceFilterOrFatal(t, "is", "", ""),
+			withAnnotations:        false,
+			trimAnnotations:        []string{"openshift.io/"},
 			namespace:              "foo",
 			withHardcodedNamespace: true,
 		},
@@ -54,6 +75,7 @@ func TestExportAsTemplateFile(t *testing.T) {
 			goldenTemplate:         "bc.yml",
 			filter:                 newResourceFilterOrFatal(t, "bc", "", ""),
 			withAnnotations:        false,
+			trimAnnotations:        []string{},
 			namespace:              "foo-dev",
 			withHardcodedNamespace: false,
 		},
@@ -62,6 +84,7 @@ func TestExportAsTemplateFile(t *testing.T) {
 			goldenTemplate:         "rolebinding-generate-name.yml",
 			filter:                 newResourceFilterOrFatal(t, "rolebinding", "", ""),
 			withAnnotations:        false,
+			trimAnnotations:        []string{},
 			namespace:              "foo",
 			withHardcodedNamespace: true,
 		},
@@ -78,7 +101,7 @@ func TestExportAsTemplateFile(t *testing.T) {
 	for name, tc := range tests {
 		t.Run(name, func(t *testing.T) {
 			c := &mockOcExportClient{t: t, fixture: tc.fixture}
-			actual, err := ExportAsTemplateFile(tc.filter, tc.withAnnotations, tc.namespace, tc.withHardcodedNamespace, c)
+			actual, err := ExportAsTemplateFile(tc.filter, tc.withAnnotations, tc.namespace, tc.withHardcodedNamespace, tc.trimAnnotations, c)
 			if err != nil {
 				t.Fatal(err)
 			}

@@ -6,9 +6,6 @@ objects:
   metadata:
     annotations:
       description: Keeps track of changes in the application image
-      kubectl.kubernetes.io/last-applied-configuration: '{"apiVersion":"v1","kind":"ImageStream","metadata":{"annotations":{"foo":"bar"}}}'
-      openshift.io/generated-by: OpenShiftNewApp
-      openshift.io/image.dockerRepositoryCheck: "2018-08-07T12:32:24Z"
     labels:
       app: foo-bar
     name: bar

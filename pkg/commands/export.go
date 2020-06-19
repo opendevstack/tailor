@@ -20,6 +20,7 @@ func Export(exportOptions *cli.ExportOptions) error {
 		exportOptions.WithAnnotations,
 		exportOptions.Namespace,
 		exportOptions.WithHardcodedNamespace,
+		exportOptions.TrimAnnotations,
 		c,
 	)
 	if err != nil {
