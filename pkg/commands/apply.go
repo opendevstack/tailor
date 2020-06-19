@@ -128,15 +128,15 @@ func askAndApply(compareOptions *cli.CompareOptions, ocClient cli.ClientApplier,
 
 func apply(compareOptions *cli.CompareOptions, c *openshift.Changeset, ocClient cli.ClientModifier) error {
 
-	for _, change := range c.Create {
-		err := ocApply("Creating", change, compareOptions, ocClient)
+	for _, change := range c.Delete {
+		err := ocDelete("Deleting", change, compareOptions, ocClient)
 		if err != nil {
 			return err
 		}
 	}
 
-	for _, change := range c.Delete {
-		err := ocDelete("Deleting", change, compareOptions, ocClient)
+	for _, change := range c.Create {
+		err := ocApply("Creating", change, compareOptions, ocClient)
 		if err != nil {
 			return err
 		}
