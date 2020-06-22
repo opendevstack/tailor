@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## [1.1.2] - 2020-06-22
+
 ### Fixed
 
 - Do not trim all annotations during export by default. Instead, only a few known annotations are removed (`kubectl.kubernetes.io/last-applied-configuration`, `openshift.io/image.dockerRepositoryCheck`). If you want to trim other annotations, there is a new flag `--trim-annotation`. The flag can be repeated, and allows either exact match or prefix match (e.g. `openshift.io/`). ([#207](https://github.com/opendevstack/tailor/pull/207)).
