@@ -62,6 +62,7 @@ type ExportOptions struct {
 	ParamDir               string
 	WithAnnotations        bool
 	WithHardcodedNamespace bool
+	TrimAnnotations        []string
 	Resource               string
 }
 
@@ -323,6 +324,7 @@ func NewExportOptions(
 	paramDirFlag string,
 	withAnnotationsFlag bool,
 	withHardcodedNamespaceFlag bool,
+	trimAnnotationsFlag []string,
 	resourceArg string) (*ExportOptions, error) {
 	o := &ExportOptions{
 		GlobalOptions:    globalOptions,
@@ -377,6 +379,12 @@ func NewExportOptions(
 		o.WithHardcodedNamespace = true
 	} else if fileFlags["with-hardcoded-namespace"] == "true" {
 		o.WithHardcodedNamespace = true
+	}
+
+	if len(trimAnnotationsFlag) > 0 {
+		o.TrimAnnotations = trimAnnotationsFlag
+	} else if val, ok := fileFlags["trim-annotation"]; ok {
+		o.TrimAnnotations = strings.Split(val, ",")
 	}
 
 	if len(resourceArg) > 0 {

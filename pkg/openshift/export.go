@@ -3,14 +3,21 @@ package openshift
 import (
 	"bytes"
 	"fmt"
+	"strings"
 
 	"github.com/ghodss/yaml"
 	"github.com/opendevstack/tailor/pkg/cli"
-	"github.com/xeipuuv/gojsonpointer"
+)
+
+var (
+	trimAnnotationsDefault = []string{
+		"kubectl.kubernetes.io/last-applied-configuration",
+		"openshift.io/image.dockerRepositoryCheck",
+	}
 )
 
 // ExportAsTemplateFile exports resources in template format.
-func ExportAsTemplateFile(filter *ResourceFilter, withAnnotations bool, namespace string, withHardcodedNamespace bool, ocClient cli.OcClientExporter) (string, error) {
+func ExportAsTemplateFile(filter *ResourceFilter, withAnnotations bool, namespace string, withHardcodedNamespace bool, trimAnnotations []string, ocClient cli.OcClientExporter) (string, error) {
 	outBytes, err := ocClient.Export(filter.ConvertToKinds(), filter.Label)
 	if err != nil {
 		return "", fmt.Errorf("Could not export %s resources: %s", filter.String(), err)
@@ -30,12 +37,19 @@ func ExportAsTemplateFile(filter *ResourceFilter, withAnnotations bool, namespac
 
 	objects := []map[string]interface{}{}
 	for _, i := range list.Items {
-		if !withAnnotations {
-			cli.DebugMsg("Remove annotations from item")
-			annotationsPointer, _ := gojsonpointer.NewJsonPointer("/metadata/annotations")
-			_, err = annotationsPointer.Delete(i.Config)
-			if err != nil {
-				cli.DebugMsg("Could not delete annotations from item")
+		if withAnnotations {
+			cli.DebugMsg("All annotations will be kept in template item")
+		} else {
+			trimAnnotations = append(trimAnnotations, trimAnnotationsDefault...)
+			cli.DebugMsg("Trim annotations from template item")
+			for ia := range i.Annotations {
+				for _, ta := range trimAnnotations {
+					if strings.HasSuffix(ta, "/") && strings.HasPrefix(ia, ta) {
+						i.removeAnnotion(ia)
+					} else if ta == ia {
+						i.removeAnnotion(ia)
+					}
+				}
 			}
 		}
 		objects = append(objects, i.Config)

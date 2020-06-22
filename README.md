@@ -69,7 +69,7 @@ Export configuration of resources found in an OpenShift namespace to a cleaned
 YAML template, which is written to `STDOUT`. Tailor applies three optimisations to the result:
 
 - All fields controlled by the cluster are removed, such as `/metadata/creationTimestamp`.
-- Unless `--with-annotations` is given, annotations are removed.
+- Unless `--with-annotations` is given, some annotations (`kubectl.kubernetes.io/last-applied-configuration`, `openshift.io/image.dockerRepositoryCheck`) are removed. It is possible to remove further annotation(s) via `--trim-annotation`, either by exact match or by prefix match (e.g. `oenshift.io/`).
 - Hardcoded occurences of the namespace are replaced with an automatically supplied parameter `TAILOR_NAMESPACE` so that the exported template can be used against multiple OpenShift projects (can be disabled by passing `--with-hardcoded-namespace`).
 
 ### General Usage Notes

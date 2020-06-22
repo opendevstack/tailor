@@ -365,6 +365,15 @@ func (i *ResourceItem) handleKeyValue(k interface{}, v interface{}, pointer stri
 	}
 }
 
+func (i *ResourceItem) removeAnnotion(annotation string) {
+	path := "/metadata/annotations/" + utils.JSONPointerPath(annotation)
+	deletePointer, _ := gojsonpointer.NewJsonPointer(path)
+	_, err := deletePointer.Delete(i.Config)
+	if err != nil {
+		cli.DebugMsg(fmt.Sprintf("Could not remove annotation %s from item", annotation))
+	}
+}
+
 // prepareForComparisonWithPlatformItem massages template item in such a way
 // that it can be compared with the given platform item:
 // - copy value from platformItem to templateItem for externally modified paths
