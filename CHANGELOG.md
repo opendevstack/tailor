@@ -2,11 +2,16 @@
 
 ## Unreleased
 
+### Fixed
+
+- Do not trim all annotations during export by default. Instead, only a few known annotations are removed (`kubectl.kubernetes.io/last-applied-configuration`, `openshift.io/image.dockerRepositoryCheck`). If you want to trim other annotations, there is a new flag `--trim-annotation`. The flag can be repeated, and allows either exact match or prefix match (e.g. `openshift.io/`). ([#207](https://github.com/opendevstack/tailor/pull/207)).
+- Recreate may fail ([#204](https://github.com/opendevstack/tailor/pull/204)).
+
 ## [1.1.1] - 2020-06-18
 
 ### Fixed
 
-- Create `ServiceAccount` and `RoleBinding` resources before e.g. `DeploymentConfig` resources to avoid pod startup failure due to missing service accounts ([#202](https://github.com/opendevstack/tailor/pull/202))
+- Create `ServiceAccount` and `RoleBinding` resources before e.g. `DeploymentConfig` resources to avoid pod startup failure due to missing service accounts ([#202](https://github.com/opendevstack/tailor/pull/202)).
 
 ## [1.1.0] - 2020-06-16
 
