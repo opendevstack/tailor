@@ -13,14 +13,15 @@ import (
 
 // GlobalOptions are app-wide.
 type GlobalOptions struct {
-	Verbose        bool
-	Debug          bool
-	NonInteractive bool
-	OcBinary       string
-	File           string
-	Force          bool
-	IsLoggedIn     bool
-	fs             utils.FileStater
+	Verbose         bool
+	Debug           bool
+	NonInteractive  bool
+	OcBinary        string
+	File            string
+	Force           bool
+	IsLoggedIn      bool
+	ClusterRequired bool
+	fs              utils.FileStater
 }
 
 // NamespaceOptions define which namespace Tailor works against.
@@ -91,6 +92,7 @@ func NewGlobalOptions(
 	ocBinaryFlag string,
 	forceFlag bool) (*GlobalOptions, error) {
 	o := InitGlobalOptions(&utils.OsFS{})
+	o.ClusterRequired = clusterRequired
 
 	fileFlags, err := getFileFlags(fileFlag, verbose)
 	if err != nil {
@@ -314,7 +316,7 @@ func NewCompareOptions(
 
 	DebugMsg(fmt.Sprintf("%#v", o))
 
-	return o, o.check()
+	return o, o.check(o.ClusterRequired)
 }
 
 // NewExportOptions returns new options for the export command based on file/flags.
@@ -518,7 +520,7 @@ func (o *GlobalOptions) checkOcBinary() bool {
 	return !os.IsNotExist(err)
 }
 
-func (o *CompareOptions) check() error {
+func (o *CompareOptions) check(clusterRequired bool) error {
 	// Check if template dir exists
 	if o.TemplateDir != "." {
 		td := o.TemplateDir
@@ -539,7 +541,7 @@ func (o *CompareOptions) check() error {
 		o.Selector = ""
 	}
 
-	return o.setNamespace()
+	return o.setNamespace(clusterRequired)
 }
 
 func (o *CompareOptions) PathsToPreserve() []string {
@@ -563,24 +565,26 @@ func (o *ExportOptions) check() error {
 		o.Selector = ""
 	}
 
-	return o.setNamespace()
+	return o.setNamespace(o.ClusterRequired)
 }
 
 func (o *SecretsOptions) check() error {
 	return nil
 }
 
-func (o *NamespaceOptions) setNamespace() error {
-	if len(o.Namespace) == 0 {
-		n, err := getOcNamespace()
-		if err != nil {
-			return err
-		}
-		o.Namespace = n
-	} else {
-		err := o.checkOcNamespace(o.Namespace)
-		if err != nil {
-			return fmt.Errorf("No such project: %s", o.Namespace)
+func (o *NamespaceOptions) setNamespace(clusterRequired bool) error {
+	if clusterRequired {
+		if len(o.Namespace) == 0 {
+			n, err := getOcNamespace()
+			if err != nil {
+				return err
+			}
+			o.Namespace = n
+		} else {
+			err := o.checkOcNamespace(o.Namespace)
+			if err != nil {
+				return fmt.Errorf("No such project: %s", o.Namespace)
+			}
 		}
 	}
 	return nil
