@@ -49,31 +49,37 @@ chmod +x tailor-windows-amd64.exe && mv tailor-windows-amd64.exe /mingw64/bin/ta
 
 ## Usage
 
-There are three main commands: `diff`, `apply` and `export`.
+There are three main commands: `diff`, `apply` and `export`. All commands depend on a current OpenShift session. To help with debugging (e.g. to see the `oc` commands which are executed in the background), use `--verbose`. More commands and options can be discovered via `tailor help`. All options can also be read from a file to ease usage, see section [Tailorfile](#tailorfile).
 
+### `tailor diff / apply`
+`diff` compares the current state of a namespace with its desired state, and shows the resulting drift. The current state is determined by exporting the resources in the OpenShift cluster (via `oc get --export`). The desired state is computed by processing local OpenShift templates (via `oc process`), using any parameters given via the CLI or param files.
 
+`apply` does exactly the same as `diff`, but then asks whether to reconcile the drift, which can be done as a whole or on a per-resource basis.
 
-### `diff`
-Show drift between the current state in the OpenShift cluster and the desired
-state in the YAML templates. There are three main aspects to this:
-1. By default, all resource types are compared, but you can limit to specific ones, e.g. `diff pvc,dc`.
-2. The desired state is computed by processing the local YAML templates. It is possible to pass `--labels`, `--param` and `--param-file` to the `diff` command to influence the generated config. Those 3 flags are passed as-is to the underlying `oc process` command. If a file named `<namespace>.env` exists in the working directory, it is automatically passed as `--param-file`. Additionally, as Tailor allows you to work with multiple templates, there is a `--param-dir="<namespace>|."` flag, which you can use to point to a folder containing param files corresponding to each template (e.g. `foo.env` for template `foo.yml`).
-3. In order to calculate drift correctly, the whole OpenShift namespace is compared against your configuration. If you want to compare a subset only (e.g. all resources related to one microservice), it is possible to narrow the scope by passing `--selector/-l`, e.g. `-l app=foo` (multiple labels are comma-separated, and need to apply all). Further, you can specify an individual resource, e.g. `dc/foo`.
+There are many options to control how the comparison is performed:
 
-### `apply`
-This command will compare current vs. desired state exactly like `diff` does,
-but if any drift is detected, it asks to apply the OpenShift namespace with your desired state. A subsequent run of either `diff` or `apply` should show no drift.
+* The namespace which is compared can be specificed via `--namespace|-n`. If not given, it defaults to the active namespace of the session.
+* Templates (`*.yml` files) are taken from `--template-dir|-t` (defaulting to the working dir).
+* Param files (`*.env` files) are taken from `--param-dir|-p` (defaulting to a directory with the same name as the target namespace in the current working dir; otherwise the working dir itself). Each param file is then used when processing the "corresponding" template (e.g. `foo.env` for template `foo.yml`).
+* Param files can also be referenced via `--param-file`. If a file named `<namespace>.env` exists in the working dir, it is automatically passed as `--param-file`.
+* Parameters can also be specified directly via `--param FOO=bar`.
+* If at least one of the processed templates does not consume all given parameters, `oc process` will fail to highlight this problem. To squelch this message, use `--ignore-unknown-parameters`.
+* By default, all resources in the namespace are compared, but you can adjust this by:
+  * adding specific types as arguments to the command, e.g. `tailor diff pvc,dc`
+  * passing `--selector/-l`, e.g. `-l app=foo` (multiple labels are comma-separated, and need to apply all)
+  * specifying an individual resource, e.g. `dc/foo`
+  * excluding resources via `--exclude|-e` (targeting types, resources or labels; e.g. `-e bc`, `-e dc/foo`, `-e app=foo`)
+* Sometimes there is state in the OpenShift cluster which is difficult to "know" in the templates. Tailor allows to keep the state of a field in OpenShift via `--preserve` (e.g. `--preserve bc`, `--preserve bc:foobar`, `--preserve bc:/spec/output/to/name`).
+* Changing the value of some fields (such as the `host` of a `Route`) is not allowed in OpenShift. Tailor detects if you do so and displays a warning that it would need to recreate the resource to apply the change. You may then permit this via `--allow-recreate` or avoid drift on such fields via `--preserve-immutable-fields`.
+* Drift on `Secret` resources is hidden by default for security reasons, and may be shown by passing `--reveal-secrets`.
 
-### `export`
+### `tailor export`
 Export configuration of resources found in an OpenShift namespace to a cleaned
 YAML template, which is written to `STDOUT`. Tailor applies three optimisations to the result:
 
 - All fields controlled by the cluster are removed, such as `/metadata/creationTimestamp`.
-- Unless `--with-annotations` is given, some annotations (`kubectl.kubernetes.io/last-applied-configuration`, `openshift.io/image.dockerRepositoryCheck`) are removed. It is possible to remove further annotation(s) via `--trim-annotation`, either by exact match or by prefix match (e.g. `oenshift.io/`).
+- Unless `--with-annotations` is given, some annotations (`kubectl.kubernetes.io/last-applied-configuration`, `openshift.io/image.dockerRepositoryCheck`) are removed. It is possible to remove further annotation(s) via `--trim-annotation`, either by exact match or by prefix match (e.g. `openshift.io/`).
 - Hardcoded occurences of the namespace are replaced with an automatically supplied parameter `TAILOR_NAMESPACE` so that the exported template can be used against multiple OpenShift projects (can be disabled by passing `--with-hardcoded-namespace`).
-
-### General Usage Notes
-All commands depend on a current OpenShift session and accept a `--namespace` flag (if none is given, the current one is used). To help with debugging (e.g. to see the `oc` commands which are executed in the background), use `--verbose`. More options can be displayed with `tailor help`.
 
 
 ## How-To
