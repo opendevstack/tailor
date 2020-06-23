@@ -2,6 +2,14 @@
 
 ## Unreleased
 
+### Added
+
+- Allow `--exclude` to be repeated ([#208](https://github.com/opendevstack/tailor/pull/208)).
+
+### Changed
+
+- Improve hint when recreation is prevented ([4e2d04a](https://github.com/opendevstack/tailor/commit/4e2d04a402acb74e925c129dd55b3f31bf2d92e5)).
+
 ## [1.1.2] - 2020-06-22
 
 ### Fixed
