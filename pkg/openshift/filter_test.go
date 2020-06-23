@@ -8,7 +8,7 @@ import (
 )
 
 func TestNewResourceFilter(t *testing.T) {
-	actual, err := NewResourceFilter("pvc", "", "")
+	actual, err := NewResourceFilter("pvc", "", []string{})
 	expected := &ResourceFilter{
 		Kinds: []string{"PersistentVolumeClaim"},
 		Name:  "",
@@ -18,7 +18,7 @@ func TestNewResourceFilter(t *testing.T) {
 		t.Errorf("Kinds incorrect, got: %v, want: %v.", actual, expected)
 	}
 
-	actual, err = NewResourceFilter("pvc,dc", "", "")
+	actual, err = NewResourceFilter("pvc,dc", "", []string{})
 	expected = &ResourceFilter{
 		Kinds: []string{"DeploymentConfig", "PersistentVolumeClaim"},
 		Name:  "",
@@ -28,7 +28,7 @@ func TestNewResourceFilter(t *testing.T) {
 		t.Errorf("Kinds incorrect, got: %v, want: %v.", actual, expected)
 	}
 
-	actual, err = NewResourceFilter("pvc,persistentvolumeclaim,PersistentVolumeClaim", "", "")
+	actual, err = NewResourceFilter("pvc,persistentvolumeclaim,PersistentVolumeClaim", "", []string{})
 	expected = &ResourceFilter{
 		Kinds: []string{"PersistentVolumeClaim"},
 		Name:  "",
@@ -38,12 +38,12 @@ func TestNewResourceFilter(t *testing.T) {
 		t.Errorf("Kinds incorrect, got: %v, want: %v.", actual, expected)
 	}
 
-	_, err = NewResourceFilter("pvb", "", "")
+	_, err = NewResourceFilter("pvb", "", []string{})
 	if err == nil {
 		t.Errorf("Expected to detect unknown kind pvb.")
 	}
 
-	actual, err = NewResourceFilter("dc/foo", "", "")
+	actual, err = NewResourceFilter("dc/foo", "", []string{})
 	expected = &ResourceFilter{
 		Kinds: []string{},
 		Name:  "DeploymentConfig/foo",
@@ -53,7 +53,7 @@ func TestNewResourceFilter(t *testing.T) {
 		t.Errorf("Kinds incorrect, got: %v, want: %v.", actual, expected)
 	}
 
-	actual, err = NewResourceFilter("pvc", "name=foo", "")
+	actual, err = NewResourceFilter("pvc", "name=foo", []string{})
 	expected = &ResourceFilter{
 		Kinds: []string{"PersistentVolumeClaim"},
 		Name:  "",
@@ -63,7 +63,7 @@ func TestNewResourceFilter(t *testing.T) {
 		t.Errorf("Kinds incorrect, got: %v, want: %v.", actual, expected)
 	}
 
-	actual, err = NewResourceFilter("pvc,dc", "name=foo", "")
+	actual, err = NewResourceFilter("pvc,dc", "name=foo", []string{})
 	expected = &ResourceFilter{
 		Kinds: []string{"DeploymentConfig", "PersistentVolumeClaim"},
 		Name:  "",
@@ -84,84 +84,84 @@ metadata:
 	tests := map[string]struct {
 		kindArg      string
 		selectorFlag string
-		excludeFlag  string
+		excludes     []string
 		config       []byte
 		expected     bool
 	}{
 		"item is included when no constraints are specified": {
 			kindArg:      "",
 			selectorFlag: "",
-			excludeFlag:  "",
+			excludes:     []string{},
 			config:       bc,
 			expected:     true,
 		},
 		"item is included when kind is specified": {
 			kindArg:      "bc",
 			selectorFlag: "",
-			excludeFlag:  "",
+			excludes:     []string{},
 			config:       bc,
 			expected:     true,
 		},
 		"item is included when name is specified": {
 			kindArg:      "bc/foo",
 			selectorFlag: "",
-			excludeFlag:  "",
+			excludes:     []string{},
 			config:       bc,
 			expected:     true,
 		},
 		"item is included when label is specified": {
 			kindArg:      "",
 			selectorFlag: "app=foo",
-			excludeFlag:  "",
+			excludes:     []string{},
 			config:       bc,
 			expected:     true,
 		},
 		"item is excluded when only some other kind is specified": {
 			kindArg:      "is",
 			selectorFlag: "",
-			excludeFlag:  "",
+			excludes:     []string{},
 			config:       bc,
 			expected:     false,
 		},
 		"item is excluded when kind is excluded": {
 			kindArg:      "",
 			selectorFlag: "",
-			excludeFlag:  "bc",
+			excludes:     []string{"bc"},
 			config:       bc,
 			expected:     false,
 		},
 		"item is excluded when name is excluded": {
 			kindArg:      "",
 			selectorFlag: "",
-			excludeFlag:  "bc/foo",
+			excludes:     []string{"bc/foo"},
 			config:       bc,
 			expected:     false,
 		},
 		"item is excluded when label is excluded": {
 			kindArg:      "",
 			selectorFlag: "",
-			excludeFlag:  "app=foo",
+			excludes:     []string{"app=foo"},
 			config:       bc,
 			expected:     false,
 		},
 		"item is excluded when multiple excludes are given that match": {
 			kindArg:      "",
 			selectorFlag: "",
-			excludeFlag:  "app=foo,bc/foo",
+			excludes:     []string{"app=foo", "bc/foo"},
 			config:       bc,
 			expected:     false,
 		},
 		"item is excluded when multiple excludes are given that partially match": {
 			kindArg:      "",
 			selectorFlag: "",
-			excludeFlag:  "app=foobar,bc/foo",
+			excludes:     []string{"app=foobar", "bc/foo"},
 			config:       bc,
 			expected:     false,
 		},
 		"item is not excluded when multiple excludes are given that do not match": {
 			kindArg:      "",
 			selectorFlag: "",
-			excludeFlag:  "app=foobar,dc/foo",
+			excludes:     []string{"app=foobar", "dc/foo"},
 			config:       bc,
 			expected:     true,
 		},
@@ -173,7 +173,7 @@ metadata:
 			if err != nil {
 				t.Fatal(err)
 			}
-			filter, err := NewResourceFilter(tc.kindArg, tc.selectorFlag, tc.excludeFlag)
+			filter, err := NewResourceFilter(tc.kindArg, tc.selectorFlag, tc.excludes)
 			if err != nil {
 				t.Fatal(err)
 			}

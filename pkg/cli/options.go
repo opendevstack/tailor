@@ -13,14 +13,15 @@ import (
 
 // GlobalOptions are app-wide.
 type GlobalOptions struct {
-	Verbose        bool
-	Debug          bool
-	NonInteractive bool
-	OcBinary       string
-	File           string
-	Force          bool
-	IsLoggedIn     bool
-	fs             utils.FileStater
+	Verbose         bool
+	Debug           bool
+	NonInteractive  bool
+	OcBinary        string
+	File            string
+	Force           bool
+	IsLoggedIn      bool
+	ClusterRequired bool
+	fs              utils.FileStater
 }
 
 // NamespaceOptions define which namespace Tailor works against.
@@ -34,7 +35,7 @@ type CompareOptions struct {
 	*GlobalOptions
 	*NamespaceOptions
 	Selector                string
-	Exclude                 string
+	Excludes                []string
 	TemplateDir             string
 	ParamDir                string
 	PrivateKey              string
@@ -57,7 +58,7 @@ type ExportOptions struct {
 	*GlobalOptions
 	*NamespaceOptions
 	Selector               string
-	Exclude                string
+	Excludes               []string
 	TemplateDir            string
 	ParamDir               string
 	WithAnnotations        bool
@@ -91,6 +92,7 @@ func NewGlobalOptions(
 	ocBinaryFlag string,
 	forceFlag bool) (*GlobalOptions, error) {
 	o := InitGlobalOptions(&utils.OsFS{})
+	o.ClusterRequired = clusterRequired
 
 	fileFlags, err := getFileFlags(fileFlag, verbose)
 	if err != nil {
@@ -145,7 +147,7 @@ func NewCompareOptions(
 	globalOptions *GlobalOptions,
 	namespaceFlag string,
 	selectorFlag string,
-	excludeFlag string,
+	excludeFlag []string,
 	templateDirFlag string,
 	paramDirFlag string,
 	publicKeyDirFlag string,
@@ -170,7 +172,7 @@ func NewCompareOptions(
 
 	fileFlags, err := getFileFlags(filename, verbose)
 	if err != nil {
-		return o, fmt.Errorf("Could not read %s: %s", filename, err)
+		return o, fmt.Errorf("Could not read '%s': %s", filename, err)
 	}
 
 	if len(namespaceFlag) > 0 {
@@ -185,10 +187,13 @@ func NewCompareOptions(
 		o.Selector = val
 	}
 
+	o.Excludes = []string{}
 	if len(excludeFlag) > 0 {
-		o.Exclude = excludeFlag
+		for _, val := range excludeFlag {
+			o.Excludes = append(o.Excludes, strings.Split(val, ",")...)
+		}
 	} else if val, ok := fileFlags["exclude"]; ok {
-		o.Exclude = val
+		o.Excludes = strings.Split(val, ",")
 	}
 
 	o.TemplateDir = "."
@@ -311,7 +316,7 @@ func NewCompareOptions(
 
 	DebugMsg(fmt.Sprintf("%#v", o))
 
-	return o, o.check()
+	return o, o.check(o.ClusterRequired)
 }
 
 // NewExportOptions returns new options for the export command based on file/flags.
@@ -319,7 +324,7 @@ func NewExportOptions(
 	globalOptions *GlobalOptions,
 	namespaceFlag string,
 	selectorFlag string,
-	excludeFlag string,
+	excludeFlag []string,
 	templateDirFlag string,
 	paramDirFlag string,
 	withAnnotationsFlag bool,
@@ -349,10 +354,13 @@ func NewExportOptions(
 		o.Selector = val
 	}
 
+	o.Excludes = []string{}
 	if len(excludeFlag) > 0 {
-		o.Exclude = excludeFlag
+		for _, val := range excludeFlag {
+			o.Excludes = append(o.Excludes, strings.Split(val, ",")...)
+		}
 	} else if val, ok := fileFlags["exclude"]; ok {
-		o.Exclude = val
+		o.Excludes = strings.Split(val, ",")
 	}
 
 	o.TemplateDir = "."
@@ -512,19 +520,19 @@ func (o *GlobalOptions) checkOcBinary() bool {
 	return !os.IsNotExist(err)
 }
 
-func (o *CompareOptions) check() error {
+func (o *CompareOptions) check(clusterRequired bool) error {
 	// Check if template dir exists
 	if o.TemplateDir != "." {
 		td := o.TemplateDir
 		if _, err := os.Stat(td); os.IsNotExist(err) {
-			return fmt.Errorf("Template directory %s does not exist", td)
+			return fmt.Errorf("Template directory '%s' does not exist", td)
 		}
 	}
 	// Check if param dir exists
 	if o.ParamDir != "." {
 		pd := o.ParamDir
 		if _, err := os.Stat(pd); os.IsNotExist(err) {
-			return fmt.Errorf("Param directory %s does not exist", pd)
+			return fmt.Errorf("Param directory '%s' does not exist", pd)
 		}
 	}
 
@@ -533,7 +541,7 @@ func (o *CompareOptions) check() error {
 		o.Selector = ""
 	}
 
-	return o.setNamespace()
+	return o.setNamespace(clusterRequired)
 }
 
 func (o *CompareOptions) PathsToPreserve() []string {
@@ -557,24 +565,26 @@ func (o *ExportOptions) check() error {
 		o.Selector = ""
 	}
 
-	return o.setNamespace()
+	return o.setNamespace(o.ClusterRequired)
 }
 
 func (o *SecretsOptions) check() error {
 	return nil
 }
 
-func (o *NamespaceOptions) setNamespace() error {
-	if len(o.Namespace) == 0 {
-		n, err := getOcNamespace()
-		if err != nil {
-			return err
-		}
-		o.Namespace = n
-	} else {
-		err := o.checkOcNamespace(o.Namespace)
-		if err != nil {
-			return fmt.Errorf("No such project: %s", o.Namespace)
+func (o *NamespaceOptions) setNamespace(clusterRequired bool) error {
+	if clusterRequired {
+		if len(o.Namespace) == 0 {
+			n, err := getOcNamespace()
+			if err != nil {
+				return err
+			}
+			o.Namespace = n
+		} else {
+			err := o.checkOcNamespace(o.Namespace)
+			if err != nil {
+				return fmt.Errorf("No such project: %s", o.Namespace)
+			}
 		}
 	}
 	return nil

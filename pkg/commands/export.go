@@ -9,7 +9,7 @@ import (
 
 // Export prints an export of targeted resources to STDOUT.
 func Export(exportOptions *cli.ExportOptions) error {
-	filter, err := openshift.NewResourceFilter(exportOptions.Resource, exportOptions.Selector, exportOptions.Exclude)
+	filter, err := openshift.NewResourceFilter(exportOptions.Resource, exportOptions.Selector, exportOptions.Excludes)
 	if err != nil {
 		return err
 	}

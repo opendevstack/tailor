@@ -37,7 +37,7 @@ type ResourceFilter struct {
 // kindArg might be blank, or a list of kinds (e.g. 'pvc,dc') or
 // a kind/name combination (e.g. 'dc/foo').
 // selectorFlag might be blank or a key and a label, e.g. 'name=foo'.
-func NewResourceFilter(kindArg string, selectorFlag string, excludeFlag string) (*ResourceFilter, error) {
+func NewResourceFilter(kindArg string, selectorFlag string, excludes []string) (*ResourceFilter, error) {
 	filter := &ResourceFilter{
 		Kinds: []string{},
 		Name:  "",
@@ -83,36 +83,33 @@ func NewResourceFilter(kindArg string, selectorFlag string, excludeFlag string) 
 		sort.Strings(filter.Kinds)
 	}
 
-	if len(excludeFlag) > 0 {
-		unknownKinds := []string{}
-		excludes := strings.Split(excludeFlag, ",")
-		for _, v := range excludes {
-			v = strings.ToLower(v)
-			if strings.Contains(v, "/") { // Name
-				nameParts := strings.Split(v, "/")
-				k := nameParts[0]
-				if _, ok := KindMapping[k]; !ok {
-					unknownKinds = append(unknownKinds, k)
-				} else {
-					filter.ExcludedNames = append(filter.ExcludedNames, KindMapping[k]+"/"+nameParts[1])
-				}
-			} else if strings.Contains(v, "=") { // Label
-				filter.ExcludedLabels = append(filter.ExcludedLabels, v)
-			} else { // Kind
-				if _, ok := KindMapping[v]; !ok {
-					unknownKinds = append(unknownKinds, v)
-				} else {
-					filter.ExcludedKinds = append(filter.ExcludedKinds, KindMapping[v])
-				}
+	unknownKinds := []string{}
+	for _, v := range excludes {
+		v = strings.ToLower(v)
+		if strings.Contains(v, "/") { // Name
+			nameParts := strings.Split(v, "/")
+			k := nameParts[0]
+			if _, ok := KindMapping[k]; !ok {
+				unknownKinds = append(unknownKinds, k)
+			} else {
+				filter.ExcludedNames = append(filter.ExcludedNames, KindMapping[k]+"/"+nameParts[1])
+			}
+		} else if strings.Contains(v, "=") { // Label
+			filter.ExcludedLabels = append(filter.ExcludedLabels, v)
+		} else { // Kind
+			if _, ok := KindMapping[v]; !ok {
+				unknownKinds = append(unknownKinds, v)
+			} else {
+				filter.ExcludedKinds = append(filter.ExcludedKinds, KindMapping[v])
 			}
 		}
+	}
 
-		if len(unknownKinds) > 0 {
-			return nil, fmt.Errorf(
-				"Unknown excluded resource kinds: %s",
-				strings.Join(unknownKinds, ","),
-			)
-		}
+	if len(unknownKinds) > 0 {
+		return nil, fmt.Errorf(
+			"Unknown excluded resource kinds: %s",
+			strings.Join(unknownKinds, ","),
+		)
 	}
 
 	return filter, nil

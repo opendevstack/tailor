@@ -33,7 +33,7 @@ func TestNewChangesetCreationOfResources(t *testing.T) {
 
 	for name, tc := range tests {
 		t.Run(name, func(t *testing.T) {
-			filter, err := NewResourceFilter("", "", "")
+			filter, err := NewResourceFilter("", "", []string{})
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -73,7 +73,7 @@ func TestNewChangesetCreationOfResources(t *testing.T) {
 			want := string(helper.ReadGoldenFile(t, "desired-state/"+tc.expectedGolden))
 			got := createChange.DesiredState
 			if diff := cmp.Diff(want, got); diff != "" {
-				t.Errorf("Desired state mismatch (-want +got):\n%s", diff)
+				t.Fatalf("Desired state mismatch (-want +got):\n%s", diff)
 			}
 		})
 	}

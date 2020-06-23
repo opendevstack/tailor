@@ -86,9 +86,9 @@ func templateContainsTailorNamespaceParam(filename string) (bool, error) {
 		return false, err
 	}
 	var m map[string]interface{}
-	switch f.(type) {
+	switch f := f.(type) {
 	case map[string]interface{}:
-		m = f.(map[string]interface{})
+		m = f
 	case []interface{}:
 		return false, errors.New("Not a valid template. Did you forget to add the template header?\n\napiVersion: v1\nkind: Template\nobjects: [...]")
 	default:
