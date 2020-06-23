@@ -34,7 +34,7 @@ type CompareOptions struct {
 	*GlobalOptions
 	*NamespaceOptions
 	Selector                string
-	Exclude                 string
+	Excludes                []string
 	TemplateDir             string
 	ParamDir                string
 	PrivateKey              string
@@ -57,7 +57,7 @@ type ExportOptions struct {
 	*GlobalOptions
 	*NamespaceOptions
 	Selector               string
-	Exclude                string
+	Excludes               []string
 	TemplateDir            string
 	ParamDir               string
 	WithAnnotations        bool
@@ -145,7 +145,7 @@ func NewCompareOptions(
 	globalOptions *GlobalOptions,
 	namespaceFlag string,
 	selectorFlag string,
-	excludeFlag string,
+	excludeFlag []string,
 	templateDirFlag string,
 	paramDirFlag string,
 	publicKeyDirFlag string,
@@ -170,7 +170,7 @@ func NewCompareOptions(
 
 	fileFlags, err := getFileFlags(filename, verbose)
 	if err != nil {
-		return o, fmt.Errorf("Could not read %s: %s", filename, err)
+		return o, fmt.Errorf("Could not read '%s': %s", filename, err)
 	}
 
 	if len(namespaceFlag) > 0 {
@@ -185,10 +185,13 @@ func NewCompareOptions(
 		o.Selector = val
 	}
 
+	o.Excludes = []string{}
 	if len(excludeFlag) > 0 {
-		o.Exclude = excludeFlag
+		for _, val := range excludeFlag {
+			o.Excludes = append(o.Excludes, strings.Split(val, ",")...)
+		}
 	} else if val, ok := fileFlags["exclude"]; ok {
-		o.Exclude = val
+		o.Excludes = strings.Split(val, ",")
 	}
 
 	o.TemplateDir = "."
@@ -319,7 +322,7 @@ func NewExportOptions(
 	globalOptions *GlobalOptions,
 	namespaceFlag string,
 	selectorFlag string,
-	excludeFlag string,
+	excludeFlag []string,
 	templateDirFlag string,
 	paramDirFlag string,
 	withAnnotationsFlag bool,
@@ -349,10 +352,13 @@ func NewExportOptions(
 		o.Selector = val
 	}
 
+	o.Excludes = []string{}
 	if len(excludeFlag) > 0 {
-		o.Exclude = excludeFlag
+		for _, val := range excludeFlag {
+			o.Excludes = append(o.Excludes, strings.Split(val, ",")...)
+		}
 	} else if val, ok := fileFlags["exclude"]; ok {
-		o.Exclude = val
+		o.Excludes = strings.Split(val, ",")
 	}
 
 	o.TemplateDir = "."
@@ -517,14 +523,14 @@ func (o *CompareOptions) check() error {
 	if o.TemplateDir != "." {
 		td := o.TemplateDir
 		if _, err := os.Stat(td); os.IsNotExist(err) {
-			return fmt.Errorf("Template directory %s does not exist", td)
+			return fmt.Errorf("Template directory '%s' does not exist", td)
 		}
 	}
 	// Check if param dir exists
 	if o.ParamDir != "." {
 		pd := o.ParamDir
 		if _, err := os.Stat(pd); os.IsNotExist(err) {
-			return fmt.Errorf("Param directory %s does not exist", pd)
+			return fmt.Errorf("Param directory '%s' does not exist", pd)
 		}
 	}
 

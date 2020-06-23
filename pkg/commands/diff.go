@@ -52,7 +52,7 @@ func calculateChangeset(w io.Writer, compareOptions *cli.CompareOptions, ocClien
 
 	resource := compareOptions.Resource
 
-	filter, err := openshift.NewResourceFilter(resource, compareOptions.Selector, compareOptions.Exclude)
+	filter, err := openshift.NewResourceFilter(resource, compareOptions.Selector, compareOptions.Excludes)
 	if err != nil {
 		return updateRequired, &openshift.Changeset{}, err
 	}

@@ -51,8 +51,8 @@ var (
 	).Short('l').String()
 	excludeFlag = app.Flag(
 		"exclude",
-		"Exclude kinds, names and labels (comma separated)",
-	).Short('e').String()
+		"Exclude kinds, names and labels (repeatable or comma-separated)",
+	).Short('e').Strings()
 	templateDirFlag = app.Flag(
 		"template-dir",
 		"Path to local templates",
