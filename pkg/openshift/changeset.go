@@ -158,7 +158,7 @@ func calculateChanges(templateItem *ResourceItem, platformItem *ResourceItem, pr
 				if allowRecreate {
 					return recreateChanges(templateItem, platformItem), nil
 				} else {
-					return nil, fmt.Errorf("Path %s is immutable. Changing its value requires to delete and re-create the whole resource, which is only done when --allow-recreate is present", path)
+					return nil, recreateProtectionError(path, platformItem.ShortName())
 				}
 
 			}
@@ -196,7 +196,7 @@ func calculateChanges(templateItem *ResourceItem, platformItem *ResourceItem, pr
 						if allowRecreate {
 							return recreateChanges(templateItem, platformItem), nil
 						} else {
-							return nil, fmt.Errorf("Path %s is immutable. Changing its value requires to delete and re-create the whole resource, which is only done when --allow-recreate is present", path)
+							return nil, recreateProtectionError(path, platformItem.ShortName())
 						}
 					}
 					comparedPaths[path] = true
@@ -311,4 +311,20 @@ func (c *Changeset) Add(changes ...*Change) {
 			c.Noop = append(c.Noop, change)
 		}
 	}
+}
+
+func recreateProtectionError(path string, itemName string) error {
+	return fmt.Errorf(
+		"Path '%s' of '%s' is immutable.\n"+
+			"Changing its value would require to delete "+
+			"and re-create the whole resource, which Tailor prevents by default.\n\n"+
+			"You may pick one of the following options to resolve this:\n\n"+
+			"* pass --allow-recreate to give permission to recreate the resource\n"+
+			"* use --preserve-immutable-fields to keep the cluster state for all immutable paths\n"+
+			"* change the template to be in sync with the cluster state\n"+
+			"* exclude the resource from comparison via --exclude %s",
+		path,
+		itemName,
+		itemName,
+	)
 }

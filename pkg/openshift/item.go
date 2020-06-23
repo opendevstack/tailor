@@ -98,8 +98,15 @@ func NewResourceItem(m map[string]interface{}, source string) (*ResourceItem, er
 	return item, err
 }
 
+// FullName returns kind/name, with kind being the long form (e.g. "DeploymentConfig").
 func (i *ResourceItem) FullName() string {
 	return i.Kind + "/" + i.Name
+}
+
+// ShortName returns kind/name, with kind being the shortest possible
+// reference of kind (e.g. "dc" for "DeploymentConfig").
+func (i *ResourceItem) ShortName() string {
+	return kindToShortMapping[i.Kind] + "/" + i.Name
 }
 
 func (i *ResourceItem) HasLabel(label string) bool {
