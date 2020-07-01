@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## [1.1.3] - 2020-07-01
+
 ### Added
 
 - Allow `--exclude` to be repeated ([#208](https://github.com/opendevstack/tailor/pull/208)).
