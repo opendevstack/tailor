@@ -4,6 +4,10 @@ objects:
 - apiVersion: build.openshift.io/v1
   kind: BuildConfig
   metadata:
+    labels:
+      app: foo-deviations
+      component: foo-dev-monitoring
+      dotted: some.${TAILOR_NAMESPACE}.thing
     name: bar
   spec:
     nodeSelector: null
@@ -17,7 +21,7 @@ objects:
     source:
       git:
         ref: master
-        uri: https://github.com/foo/bar.git
+        uri: https://github.com/${TAILOR_NAMESPACE}/bar.git
       type: Git
     strategy:
       dockerStrategy:

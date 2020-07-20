@@ -3,6 +3,7 @@ package openshift
 import (
 	"bytes"
 	"fmt"
+	"regexp"
 	"strings"
 
 	"github.com/ghodss/yaml"
@@ -27,7 +28,13 @@ func ExportAsTemplateFile(filter *ResourceFilter, withAnnotations bool, namespac
 	}
 
 	if !withHardcodedNamespace {
-		outBytes = bytes.Replace(outBytes, []byte(namespace), []byte("${TAILOR_NAMESPACE}"), -1)
+		namespaceRegex := regexp.MustCompile(`.?\b` + namespace + `\b.?`)
+		outBytes = namespaceRegex.ReplaceAllFunc(outBytes, func(b []byte) []byte {
+			if bytes.HasPrefix(b, []byte("-")) || bytes.HasSuffix(b, []byte("-")) {
+				return b
+			}
+			return bytes.Replace(b, []byte(namespace), []byte("${TAILOR_NAMESPACE}"), -1)
+		})
 	}
 
 	list, err := NewPlatformBasedResourceList(filter, outBytes)
