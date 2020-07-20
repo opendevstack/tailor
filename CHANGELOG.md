@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+### Fixed
+
+- Replace only whole words with `${TAILOR_NAMESPACE}` ([#211](https://github.com/opendevstack/tailor/pull/211)). Note that while this should yield better results than the previous behaviour, there might be rare situations where Tailor misses to replace the namespace now.
+
 ## [1.1.3] - 2020-07-01
 
 ### Added
