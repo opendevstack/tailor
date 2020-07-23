@@ -19,6 +19,7 @@ var (
 		"RoleBinding":           "rolebinding",
 		"ServiceAccount":        "serviceaccount",
 		"CronJob":               "cronjob",
+		"Job":                   "job",
 		"LimitRange":            "limitrange",
 		"ResourceQuota":         "quota",
 	}

@@ -27,6 +27,7 @@ var (
 		"Deployment":            "m",
 		"Service":               "n",
 		"Route":                 "o",
+		"Job":                   "p",
 	}
 )
 
