@@ -72,6 +72,7 @@ var (
 		"serviceaccount":        "ServiceAccount",
 		"cronjob":               "CronJob",
 		"cj":                    "CronJob",
+		"job":                   "Job",
 		"limitrange":            "LimitRange",
 		"resourcequota":         "ResourceQuota",
 		"quota":                 "ResourceQuota",

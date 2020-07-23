@@ -21,12 +21,13 @@ var (
 		"ResourceQuota":         "g",
 		"PersistentVolumeClaim": "h",
 		"CronJob":               "i",
-		"ImageStream":           "j",
-		"BuildConfig":           "k",
-		"DeploymentConfig":      "l",
-		"Deployment":            "m",
-		"Service":               "n",
-		"Route":                 "o",
+		"Job":                   "j",
+		"ImageStream":           "k",
+		"BuildConfig":           "l",
+		"DeploymentConfig":      "m",
+		"Deployment":            "n",
+		"Service":               "o",
+		"Route":                 "p",
 	}
 )
 
