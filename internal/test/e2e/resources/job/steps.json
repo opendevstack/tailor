@@ -1,0 +1,41 @@
+[
+    {
+        "command": "apply job",
+        "wantStdout": true,
+        "wantResources": {
+            "job/pi": true
+        },
+        "wantFields": {
+            "job/pi": {
+                ".spec.backoffLimit": "6"
+            }
+        }
+    },
+    {
+        "command": "apply job",
+        "wantStdout": true,
+        "wantResources": {
+            "job/pi": true
+        },
+        "wantFields": {
+            "job/pi": {
+                ".spec.backoffLimit": "5"
+            }
+        }
+    },
+    {
+        "command": "apply job",
+        "wantStdout": true,
+        "wantErr": true,
+        "wantResources": {
+            "job/pi": true
+        }
+    },
+    {
+        "command": "apply job --force",
+        "wantStdout": true,
+        "wantResources": {
+            "job/pi": false
+        }
+    }
+]

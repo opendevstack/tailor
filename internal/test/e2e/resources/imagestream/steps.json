@@ -1,0 +1,41 @@
+[
+    {
+        "command": "apply is",
+        "wantStdout": true,
+        "wantResources": {
+            "is/foo": true
+        },
+        "wantFields": {
+            "is/foo": {
+                ".metadata.name": "foo"
+            }
+        }
+    },
+    {
+        "command": "apply is",
+        "wantStdout": true,
+        "wantResources": {
+            "is/foo": true
+        },
+        "wantFields": {
+            "is/foo": {
+                ".metadata.labels.app": "foo"
+            }
+        }
+    },
+    {
+        "command": "apply is",
+        "wantStdout": true,
+        "wantErr": true,
+        "wantResources": {
+            "is/foo": true
+        }
+    },
+    {
+        "command": "apply is --force",
+        "wantStdout": true,
+        "wantResources": {
+            "is/foo": false
+        }
+    }
+]

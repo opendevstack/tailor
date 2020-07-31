@@ -23,7 +23,7 @@ func randomString(length int) string {
 	return string(b)
 }
 
-func setup(t *testing.T) string {
+func setup(t *testing.T, withTemplatesFolder bool) string {
 	t.Log("SETUP: Checking for local cluster ...")
 	cmd := exec.Command("oc", []string{"whoami"}...)
 	_, err := cmd.CombinedOutput()
@@ -32,12 +32,16 @@ func setup(t *testing.T) string {
 	} else if os.Getenv("LAUNCH_LOCAL_CLUSTER") == "yes" {
 		launchLocalCluster(t)
 	}
-	makeTemplateFolder(t)
+	if withTemplatesFolder {
+		makeTemplateFolder(t)
+	}
 	return makeTestProject(t)
 }
 
-func teardown(t *testing.T, project string) {
-	cleanupTemplateFolder(t)
+func teardown(t *testing.T, project string, withTemplatesFolder bool) {
+	if withTemplatesFolder {
+		cleanupTemplateFolder(t)
+	}
 	deleteTestProject(t, project)
 }
 

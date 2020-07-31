@@ -1,0 +1,20 @@
+Comparing templates in imagestream/1 with OCP namespace {{ .Project }}.
+Limiting resources to is.
+Found 1 resource in OCP cluster (current state) and 1 resource in processed templates (desired state).
+
+~ is/foo to update
+--- Current State (OpenShift cluster)
++++ Desired State (Processed template)
+@@ -2,6 +2,8 @@
+ kind: ImageStream
+ metadata:
+   annotations: {}
++  labels:
++    app: foo
+   name: foo
+ spec:
+   lookupPolicy:
+
+Summary: 0 in sync, 0 to create, 1 to update, 0 to delete
+
+Updating is/foo ... done

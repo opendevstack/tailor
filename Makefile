@@ -13,7 +13,7 @@ test-unit: imports
 .PHONY: test-unit
 
 test-e2e: imports internal/test/e2e/tailor-test
-	@(go test -v -cover github.com/opendevstack/tailor/internal/test/e2e)
+	@(go test -v -cover -timeout 20m github.com/opendevstack/tailor/internal/test/e2e)
 .PHONY: test-e2e
 
 test: test-unit test-e2e

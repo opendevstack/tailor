@@ -65,6 +65,9 @@ func (l *ResourceList) appendItems(source, itemsField string, inputs ...[]byte) 
 		if err != nil {
 			return err
 		}
+		if items == nil {
+			return errors.New("Cannot find items to append")
+		}
 		for _, v := range items.([]interface{}) {
 			item, err := NewResourceItem(v.(map[string]interface{}), source)
 			if err != nil {
