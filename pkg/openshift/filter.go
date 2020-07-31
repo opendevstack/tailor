@@ -24,6 +24,8 @@ var availableKinds = []string{
 	"serviceaccount",
 	"cronjob",
 	"job",
+	"limitrange",
+	"quota",
 }
 
 type ResourceFilter struct {
