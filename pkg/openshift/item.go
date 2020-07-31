@@ -33,6 +33,8 @@ var (
 		"/metadata/uid",
 		"/imagePullSecrets",
 		"/secrets",
+		"/spec/selector/matchLabels/controller-uid",
+		"/spec/template/metadata/labels/controller-uid",
 	}
 	platformManagedRegexFields = []string{
 		"^/spec/triggers/[0-9]*/imageChangeParams/lastTriggeredImage",
