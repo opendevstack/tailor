@@ -88,10 +88,10 @@ YAML template, which is written to `STDOUT`. Tailor applies three optimisations 
 
 Please consult the [OpenShift Templates documentation](https://docs.openshift.com/container-platform/3.11/dev_guide/templates.html) on how to write templates to express the desired state. Tailor processes the templates using standard `oc process`, before the resulting resource list gets applied via `oc apply`. For in-depth knowledge about how the configuration in the templates gets applied to the current state in the cluster, read [Declarative Management of Kubernetes Objects Using Configuration Files](https://kubernetes.io/docs/tasks/manage-kubernetes-objects/declarative-config/).
 
-Following are some tipps to ease authoring templates:
+Following is some guidance on how to author templates:
 
 * If the template specifies a parameter `TAILOR_NAMESPACE`, it is automatically filled based on the namespace against which Tailor is executed.
-* Some resource fields have useful server defaults (such as `.spec.host` of `Route` resources or `.spec.storageClassName` of `PersistentVolumeClaim` resources). It is possible to leave out of the template, but Tailor will detect drift after the resource has been created because the value is present in the live configuration, but absent in the template. One can use e.g. `--preserve route:/spec/host` to prevent this. Alternatively, some of those fields are also immutable, so using `--preserve-immutable-fields` can also work well.
+* Some resource fields have useful server defaults (such as `.spec.host` of `Route` resources or `.spec.storageClassName` of `PersistentVolumeClaim` resources). It is possible to leave them out of the template, but Tailor will detect drift after the resource has been created (because the value is present in the live configuration, but absent in the template). One can use e.g. `--preserve route:/spec/host` to prevent this. Alternatively, some of those fields are also immutable, so using `--preserve-immutable-fields` can also work well.
 * Often it is easier to start authoring templates by exporting live configuration instead of starting from scratch. Also, sometimes it can be easier to apply a change in the UI and then figure out what needs to be updated in the template by running `tailor diff`.
 
 ### Working with Secrets
