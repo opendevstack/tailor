@@ -1,0 +1,39 @@
+name: Continous Integration Tests
+on: [push, pull_request]
+jobs:
+  tailor:
+    name: Run tests
+    runs-on: ubuntu-latest
+    steps:
+      -
+        name: Checkout repository
+        uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
+      -
+        name: Setup Go
+        uses: actions/setup-go@v2
+        with:
+          version: 1.14
+      -
+        name: Download Go tools
+        run: |
+          curl -sfL https://install.goreleaser.com/github.com/golangci/golangci-lint.sh | sh -s -- -b $(go env GOPATH)/bin v1.25.0
+          go get golang.org/x/tools/cmd/goimports
+      -
+        name: Run lint
+        run: |
+          export PATH=$PATH:$(go env GOPATH)/bin
+          make lint
+      -
+        name: Setup OpenShift
+        uses: manusa/actions-setup-openshift@v1.0.5
+        with:
+          oc version: 'v3.11.0'
+          github token: ${{ secrets.GITHUB_TOKEN }}
+      -
+        name: Run tests
+        run: |
+          export PATH=$PATH:$(go env GOPATH)/bin
+          sudo chown -R runner:docker openshift.local.clusterup/
+          make test
