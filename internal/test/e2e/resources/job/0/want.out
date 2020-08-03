@@ -1,0 +1,47 @@
+Comparing templates in job/0 with OCP namespace {{ .Project }}.
+Limiting resources to job.
+Found 0 resources in OCP cluster (current state) and 1 resource in processed templates (desired state).
+
++ job/pi to create
+--- Current State (OpenShift cluster)
++++ Desired State (Processed template)
+@@ -1 +1,35 @@
++apiVersion: batch/v1
++kind: Job
++metadata:
++  labels:
++    job-name: pi
++  name: pi
++spec:
++  backoffLimit: 6
++  completions: 1
++  parallelism: 1
++  selector:
++    matchLabels:
++      job-name: pi
++  template:
++    metadata:
++      labels:
++        job-name: pi
++      name: pi
++    spec:
++      containers:
++      - command:
++        - perl
++        - -Mbignum=bpi
++        - -wle
++        - print bpi(2000)
++        image: perl
++        imagePullPolicy: Always
++        name: pi
++        terminationMessagePath: /dev/termination-log
++        terminationMessagePolicy: File
++      dnsPolicy: ClusterFirst
++      restartPolicy: OnFailure
++      schedulerName: default-scheduler
++      terminationGracePeriodSeconds: 30
+ 
+
+Summary: 0 in sync, 1 to create, 0 to update, 0 to delete
+
+Creating job/pi ... done

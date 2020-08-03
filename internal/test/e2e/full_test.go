@@ -10,8 +10,8 @@ import (
 )
 
 func TestFullScope(t *testing.T) {
-	testProjectName := setup(t)
-	defer teardown(t, testProjectName)
+	testProjectName := setup(t, true)
+	defer teardown(t, testProjectName, true)
 
 	tailorBinary := getTailorBinary()
 
