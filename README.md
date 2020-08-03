@@ -1,6 +1,6 @@
 # Tailor
 
-Tailor is a tool to drive the configuration of your OpenShift cluster via
+Tailor is a tool to drive the configuration of your OpenShift resources via
 templates under version control. Any drift between your desired state (the YAML templates) and the current state (resources in the cluster) can be detected, reviewed and reconciled using a CLI interface. Tailor is required by other OpenDevStack repositories, but is fully standalone and may be used in completely different contexts. It uses `oc` commands under the hood, and is based on
 plain OpenShift templates.
 
@@ -86,13 +86,17 @@ YAML template, which is written to `STDOUT`. Tailor applies three optimisations 
 
 ### Template Authoring
 
-Please consult the [OpenShift Templates documentation](https://docs.openshift.com/container-platform/3.11/dev_guide/templates.html) on how to write templates to express the desired state. Tailor processes the templates using standard `oc process`, with one addition: if the template specifies a parameter `TAILOR_NAMESPACE`, it is automatically filled based on the namespace against which Tailor is executed.
+Please consult the [OpenShift Templates documentation](https://docs.openshift.com/container-platform/3.11/dev_guide/templates.html) on how to write templates to express the desired state. Tailor processes the templates using standard `oc process`, before the resulting resource list gets applied via `oc apply`. For in-depth knowledge about how the configuration in the templates gets applied to the current state in the cluster, read [Declarative Management of Kubernetes Objects Using Configuration Files](https://kubernetes.io/docs/tasks/manage-kubernetes-objects/declarative-config/).
 
-For in-depth knowledge about how the configuration in the templates gets applied to the current state in the cluster, read [Declarative Management of Kubernetes Objects Using Configuration Files](https://kubernetes.io/docs/tasks/manage-kubernetes-objects/declarative-config/).
+Following are some tipps to ease authoring templates:
+
+* If the template specifies a parameter `TAILOR_NAMESPACE`, it is automatically filled based on the namespace against which Tailor is executed.
+* Some resource fields have useful server defaults (such as `.spec.host` of `Route` resources or `.spec.storageClassName` of `PersistentVolumeClaim` resources). It is possible to leave out of the template, but Tailor will detect drift after the resource has been created because the value is present in the live configuration, but absent in the template. One can use e.g. `--preserve route:/spec/host` to prevent this. Alternatively, some of those fields are also immutable, so using `--preserve-immutable-fields` can also work well.
+* Often it is easier to start authoring templates by exporting live configuration instead of starting from scratch. Also, sometimes it can be easier to apply a change in the UI and then figure out what needs to be updated in the template by running `tailor diff`.
 
 ### Working with Secrets
 
-Keeping the OpenShift configuration under version control necessitates to store secrets. To this end Tailor comes with a `secrets` subcommand that allows to encrypt those secrets using PGP. The subcommands offers to `edit`, `re-encrypt` and `reveal` secrets, as well as adding new keypairs via `generate-key`.
+Keeping the OpenShift configuration under version control necessitates to store secrets. To make it easy to do so in a safe fashion, Tailor comes with a `secrets` subcommand that allows to encrypt those secrets using PGP. The subcommands offers to `edit`, `re-encrypt` and `reveal` secrets, as well as adding new keypairs via `generate-key`.
 
 In general, secrets are just a special kind of params. Typically, params are located in `*.env` files, e.g. `FOO=bar`. Secrets an be kept in a `*.env.enc` file, where each line is e.g. `QUX=<encrypted content>`. When Tailor is processing templates, it merges `*.env` and `*.env.enc` files together. All params in `.env.enc` files are base64-encoded automatically by Tailor so that they can be used directly in OpenShift `Secret` resources. If you have a secret value that is a multiline string (such as a certificate), you can base64-encode it (e.g. `cat cert | base64`) and add the encoded string as a parameter into the `.env.enc` file like this: `FOO.B64=abc...`. The `.B64` suffix tells Tailor that the value is already in base64 encoding.
 
@@ -145,11 +149,15 @@ eval "$(tailor --completion-script-$(echo $SHELL | awk -F/ '{print $NF}'))"
 * Tailor targets OpenShift, Helm targets Kubernetes. Using Helm for OpenShift has limitations / bugs around dealing with OpenShift resources such as `BuildConfig` or `Route`.
 * Tailor allows to check for drift, and allows to review the difference between live configuration and desired state before applying.
 
-## Troubleshooting
+## FAQ / Troubleshooting
 
 ### Tailor does not recognize a certain resource kind
 
 Tailor currently supports `BuildConfig`, `CronJob`, `Job`, `Deployment`, `DeploymentConfig`, `ImageStream`, `LimitRange`, `PersistentVolumeClaim`, `ResourceQuota`, `RoleBinding`, `Route`, `Secret`, `Service`, `ServiceAccount`, `Template`. Some resources like `Build`, `Event`, `ImageStreamImage`, `ImageStreamTag`, `PersistentVolume`, `Pod`, `ReplicationController` are not supported by design as they are created and managed automatically by OpenShift. If you want to control a resource with Tailor that is not supported yet, but would be suitable, please [open an issue](https://github.com/opendevstack/tailor/issues/new).
+
+### Why is it required to specify fields which have server defaults?
+
+When a field (such as `.spec.revisionHistoryLimit` of `DeploymentConfig` resources) is absent from a template, the server will default it when the template is applied. However, in subsequent runs, Tailor will detect drift for that field, suggesting to remove it (even though the path would not actually be removed as the server would default it again). Technically, it would be possible to prevent detecting drift for those circumstances (based on previously applied configuration), but it would run the risk that changes are made in the UI which would not be detected by Tailor, and therefore lead to situations where the live configuration does not match the desired state. Because of this, Tailor detects drift unless the field is also defined in the template, or the live value is preserved (via `--preserve ...`)
 
 ---
 
