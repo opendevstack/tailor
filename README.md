@@ -153,7 +153,7 @@ Tailor currently supports `BuildConfig`, `CronJob`, `Job`, `Deployment`, `Deploy
 
 ---
 
-[![Build Status](https://travis-ci.com/opendevstack/tailor.svg?branch=master)](https://travis-ci.com/opendevstack/tailor)
+![](https://github.com/opendevstack/tailor/workflows/Continous%20Integration%20Tests/badge.svg?branch=master)
 
 
 
