@@ -17,12 +17,14 @@ import (
 type testCaseSteps []testCaseStep
 
 type testCaseStep struct {
+	Before        string                       `json:"before"`
 	Command       string                       `json:"command"`
 	WantStdout    bool                         `json:"wantStdout"`
 	WantStderr    bool                         `json:"wantStderr"`
 	WantErr       bool                         `json:"wantErr"`
 	WantResources map[string]bool              `json:"wantResources"`
 	WantFields    map[string]map[string]string `json:"wantFields"`
+	After         string                       `json:"after"`
 }
 
 type outputData struct {
@@ -103,7 +105,7 @@ func walkSubdirs(t *testing.T, dir string, fun func(subdir string)) {
 }
 
 func runTestCase(t *testing.T, testProjectName string, tailorBinary string, testCase string) {
-	t.Log("Running steps for test case", testCase)
+	t.Log("Running steps for test case:", testCase)
 	tcs, err := readTestCaseSteps(testCase)
 	if err != nil {
 		t.Fatal(err)
@@ -115,6 +117,7 @@ func runTestCase(t *testing.T, testProjectName string, tailorBinary string, test
 			templateData := outputData{
 				Project: testProjectName,
 			}
+			runSurroundingCmd(t, "before", tc.Before, templateData)
 			args := []string{
 				"--non-interactive",
 				"-n", testProjectName,
@@ -128,9 +131,39 @@ func runTestCase(t *testing.T, testProjectName string, tailorBinary string, test
 			checkStdout(t, tc.WantStdout, gotStdout, templateData, stepDir)
 			checkResources(t, tc.WantResources, testProjectName)
 			checkFields(t, tc.WantFields, testProjectName)
+			runSurroundingCmd(t, "after", tc.After, templateData)
 		})
 	}
 
+}
+
+func runSurroundingCmd(t *testing.T, kind string, command string, templateData outputData) {
+	if len(command) > 0 {
+		var cmdBuffer bytes.Buffer
+		tmpl, err := template.New(kind).Parse(command)
+		if err != nil {
+			t.Fatalf("Error parsing template: %s", err)
+		}
+		tmplErr := tmpl.Execute(&cmdBuffer, templateData)
+		if tmplErr != nil {
+			t.Fatalf("Error rendering template: %s", tmplErr)
+		}
+		commandParts := strings.Split(cmdBuffer.String(), " ")
+		commandCmd := commandParts[0]
+		commandArgs := commandParts[1:]
+		t.Logf("Running '%s' comamnd: %s %s", kind, commandCmd, strings.Join(commandArgs, " "))
+		commandStdout, commandStderr, commandErr := runCmd(commandCmd, commandArgs)
+		if commandErr != nil {
+			t.Fatalf(
+				"Error running '%s' command:\nerr:\n%s\nstderr:\n%s\nstdout:\n%s",
+				kind,
+				commandErr,
+				commandStderr,
+				commandStdout,
+			)
+		}
+		t.Logf("'%s' result: %s", kind, commandStdout)
+	}
 }
 
 func checkErr(t *testing.T, wantErr bool, gotErr error, gotStderr []byte) {
@@ -148,8 +181,11 @@ func checkErr(t *testing.T, wantErr bool, gotErr error, gotStderr []byte) {
 func checkStderr(t *testing.T, wantStderr bool, gotStderr []byte, templateData outputData, stepDir string) {
 	if wantStderr {
 		var wantStderr bytes.Buffer
-		tmpl := template.Must(template.ParseFiles(fmt.Sprintf("%s/want.err", stepDir)))
-		err := tmpl.Execute(&wantStderr, templateData)
+		tmpl, err := template.ParseFiles(fmt.Sprintf("%s/want.err", stepDir))
+		if err != nil {
+			t.Fatal(err)
+		}
+		err = tmpl.Execute(&wantStderr, templateData)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -162,8 +198,11 @@ func checkStderr(t *testing.T, wantStderr bool, gotStderr []byte, templateData o
 func checkStdout(t *testing.T, wantStdout bool, gotStdout []byte, templateData outputData, stepDir string) {
 	if wantStdout {
 		var wantStdout bytes.Buffer
-		tmpl := template.Must(template.ParseFiles(fmt.Sprintf("%s/want.out", stepDir)))
-		err := tmpl.Execute(&wantStdout, templateData)
+		tmpl, err := template.ParseFiles(fmt.Sprintf("%s/want.out", stepDir))
+		if err != nil {
+			t.Fatal(err)
+		}
+		err = tmpl.Execute(&wantStdout, templateData)
 		if err != nil {
 			t.Fatal(err)
 		}
