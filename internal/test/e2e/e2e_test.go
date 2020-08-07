@@ -32,8 +32,8 @@ type outputData struct {
 }
 
 func TestE2E(t *testing.T) {
-	testProjectName := setup(t, false)
-	defer teardown(t, testProjectName, false)
+	testProjectName := setup(t)
+	defer teardown(t, testProjectName)
 
 	err := os.Chdir("testdata")
 	if err != nil {

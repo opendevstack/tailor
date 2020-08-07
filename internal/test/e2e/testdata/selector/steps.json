@@ -1,0 +1,60 @@
+[
+    {
+        "command": "apply -l app=foo",
+        "wantStdout": true,
+        "wantResources": {
+            "cm/foo": true,
+            "svc/foo": true,
+            "cm/bar": false,
+            "svc/bar": false
+        },
+        "wantFields": {
+            "cm/foo": {
+                ".data.bar": "baz"
+            },
+            "svc/foo": {
+                ".spec.selector.name": "foo"
+            }
+        }
+    },
+    {
+        "command": "apply -l app=bar",
+        "wantStdout": true,
+        "wantResources": {
+            "cm/foo": true,
+            "svc/foo": true,
+            "cm/bar": true,
+            "svc/bar": true
+        },
+        "wantFields": {
+            "cm/bar": {
+                ".data.bar": "baz"
+            },
+            "svc/bar": {
+                ".spec.selector.name": "bar"
+            }
+        }
+    },
+    {
+        "command": "diff -l app=foo",
+        "wantStdout": true,
+        "wantErr": false,
+        "wantResources": {
+            "cm/foo": true,
+            "svc/foo": true,
+            "cm/bar": true,
+            "svc/bar": true
+        }
+    },
+    {
+        "command": "diff -l app=bar",
+        "wantStdout": true,
+        "wantErr": true,
+        "wantResources": {
+            "cm/foo": true,
+            "svc/foo": true,
+            "cm/bar": true,
+            "svc/bar": true
+        }
+    }
+]

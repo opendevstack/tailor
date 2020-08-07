@@ -1,0 +1,29 @@
+apiVersion: v1
+kind: Template
+metadata:
+  name: configmap
+objects:
+- apiVersion: v1
+  kind: ConfigMap
+  metadata:
+    name: bar
+    labels:
+      app: bar
+  data:
+    bar: qux
+- apiVersion: v1
+  kind: Service
+  metadata:
+    labels:
+      app: bar
+    name: bar
+  spec:
+    ports:
+    - name: web
+      port: 80
+      protocol: TCP
+      targetPort: 8080
+    selector:
+      name: bar
+    sessionAffinity: None
+    type: ClusterIP

@@ -1,0 +1,19 @@
+Comparing templates in selector/3 with OCP namespace {{ .Project }}.
+Limiting to resources with selector app=bar.
+Found 2 resources in OCP cluster (current state) and 2 resources in processed templates (desired state).
+
+* svc/bar is in sync
+~ cm/bar to update
+--- Current State (OpenShift cluster)
++++ Desired State (Processed template)
+@@ -1,6 +1,6 @@
+ apiVersion: v1
+ data:
+-  bar: baz
++  bar: qux
+ kind: ConfigMap
+ metadata:
+   annotations: {}
+
+Summary: 1 in sync, 0 to create, 1 to update, 0 to delete
+
