@@ -1,0 +1,39 @@
+[
+    {
+        "command": "apply route/foo",
+        "wantStdout": true,
+        "wantResources": {
+            "route/foo": true
+        },
+        "wantFields": {
+            "route/foo": {
+                ".spec.host": "foo.example.com"
+            }
+        }
+    },
+    {
+        "command": "apply route/foo",
+        "wantStderr": true,
+        "wantErr": true,
+        "wantResources": {
+            "route/foo": true
+        },
+        "wantFields": {
+            "route/foo": {
+                ".spec.host": "foo.example.com"
+            }
+        }
+    },
+    {
+        "command": "apply route/foo --allow-recreate",
+        "wantStdout": true,
+        "wantResources": {
+            "route/foo": true
+        },
+        "wantFields": {
+            "route/foo": {
+                ".spec.host": "foobar.example.com"
+            }
+        }
+    }
+]

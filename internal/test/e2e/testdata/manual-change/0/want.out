@@ -1,0 +1,19 @@
+Comparing templates in manual-change/0 with OCP namespace {{ .Project }}.
+Limiting resources to cm/foo.
+Found 0 resources in OCP cluster (current state) and 1 resource in processed templates (desired state).
+
++ cm/foo to create
+--- Current State (OpenShift cluster)
++++ Desired State (Processed template)
+@@ -1 +1,7 @@
++apiVersion: v1
++data:
++  bar: baz
++kind: ConfigMap
++metadata:
++  name: foo
+ 
+
+Summary: 0 in sync, 1 to create, 0 to update, 0 to delete
+
+Creating cm/foo ... done

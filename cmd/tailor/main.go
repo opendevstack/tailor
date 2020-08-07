@@ -241,6 +241,8 @@ var (
 )
 
 func main() {
+	log.SetFlags(0)
+
 	defer func() {
 		err := recover()
 		if err != nil {

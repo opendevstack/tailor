@@ -1,0 +1,20 @@
+[
+    {
+        "command": "apply cm/foo",
+        "wantStdout": true,
+        "wantResources": {
+            "cm/foo": true
+        },
+        "wantFields": {
+            "cm/foo": {
+                ".data.bar": "baz"
+            }
+        }
+    },
+    {
+        "before": "oc -n {{ .Project }} patch cm/foo -p {\"data\":{\"bar\":\"qux\"}}",
+        "command": "diff cm/foo",
+        "wantStdout": true,
+        "wantErr": true
+    }
+]
