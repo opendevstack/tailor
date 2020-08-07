@@ -29,13 +29,13 @@ type outputData struct {
 	Project string
 }
 
-func TestResources(t *testing.T) {
+func TestE2E(t *testing.T) {
 	testProjectName := setup(t, false)
 	defer teardown(t, testProjectName, false)
 
-	err := os.Chdir("resources")
+	err := os.Chdir("testdata")
 	if err != nil {
-		t.Fatalf("SETUP: Fail to chdir resources: %s", err)
+		t.Fatalf("Fail to chdir to testdata: %s", err)
 	}
 
 	tailorBinary := getTailorBinary()

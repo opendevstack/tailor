@@ -1,0 +1,52 @@
+Comparing templates in recreate/2 with OCP namespace {{ .Project }}.
+Limiting resources to route/foo.
+Found 1 resource in OCP cluster (current state) and 1 resource in processed templates (desired state).
+
+- route/foo to delete
+--- Current State (OpenShift cluster)
++++ Desired State (Processed template)
+@@ -1,18 +1 @@
+-apiVersion: route.openshift.io/v1
+-kind: Route
+-metadata:
+-  annotations: {}
+-  labels:
+-    app: foo-route
+-  name: foo
+-spec:
+-  host: foo.example.com
+-  tls:
+-    insecureEdgeTerminationPolicy: Redirect
+-    termination: edge
+-  to:
+-    kind: Service
+-    name: foo
+-    weight: 100
+-  wildcardPolicy: None
+ 
++ route/foo to create
+--- Current State (OpenShift cluster)
++++ Desired State (Processed template)
+@@ -1 +1,17 @@
++apiVersion: route.openshift.io/v1
++kind: Route
++metadata:
++  labels:
++    app: foo-route
++  name: foo
++spec:
++  host: foobar.example.com
++  tls:
++    insecureEdgeTerminationPolicy: Redirect
++    termination: edge
++  to:
++    kind: Service
++    name: foo
++    weight: 100
++  wildcardPolicy: None
+ 
+
+Summary: 0 in sync, 1 to create, 0 to update, 1 to delete
+
+Deleting route/foo ... done
+Creating route/foo ... done

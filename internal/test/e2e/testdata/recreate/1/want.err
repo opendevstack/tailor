@@ -1,0 +1,9 @@
+Path '/spec/host' of 'route/foo' is immutable.
+Changing its value would require to delete and re-create the whole resource, which Tailor prevents by default.
+
+You may pick one of the following options to resolve this:
+
+* pass --allow-recreate to give permission to recreate the resource
+* use --preserve-immutable-fields to keep the cluster state for all immutable paths
+* change the template to be in sync with the cluster state
+* exclude the resource from comparison via --exclude route/foo
