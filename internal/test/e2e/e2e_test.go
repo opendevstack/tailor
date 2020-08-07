@@ -40,9 +40,54 @@ func TestE2E(t *testing.T) {
 
 	tailorBinary := getTailorBinary()
 
+	tempDir := exportInitialState(t, testProjectName, tailorBinary)
+	defer os.RemoveAll(tempDir)
+
 	walkSubdirs(t, ".", func(subdir string) {
+		ensureProjectIsInitialState(t, testProjectName, tailorBinary, tempDir)
 		runTestCase(t, testProjectName, tailorBinary, subdir)
 	})
+}
+
+func ensureProjectIsInitialState(t *testing.T, testProjectName string, tailorBinary string, tempDir string) {
+	args := []string{
+		"--non-interactive",
+		"-n", testProjectName,
+		"--template-dir", tempDir,
+		"apply", "--verify",
+	}
+	t.Logf("Apply and verify initial state: %s", strings.Join(args, " "))
+	applyAndVerifyStdout, applyAndVerifyStderr, applyAndVerifyErr := runCmd(tailorBinary, args)
+	if applyAndVerifyErr != nil {
+		t.Fatalf(
+			"Could not apply and verify initial state:\nerr:\n%s\nstderr:\n%s\nstdout:\n%s",
+			applyAndVerifyErr, applyAndVerifyStderr, applyAndVerifyStdout,
+		)
+	}
+}
+
+func exportInitialState(t *testing.T, testProjectName string, tailorBinary string) string {
+	args := []string{
+		"--non-interactive",
+		"-n", testProjectName,
+		"export",
+	}
+	t.Logf("Running initial export: %s", strings.Join(args, " "))
+	exportStdout, exportStderr, exportErr := runCmd(tailorBinary, args)
+	if exportErr != nil {
+		t.Fatalf("Could not export initial state: %s\n%s", exportErr, exportStderr)
+	}
+	tempDir, tempDirErr := ioutil.TempDir("..", "initial-export-")
+	if tempDirErr != nil {
+		t.Fatalf("Could not create temp dir: %s", tempDirErr)
+	}
+	writeErr := ioutil.WriteFile(tempDir+"/template.yml", exportStdout, 0644)
+	if writeErr != nil {
+		t.Logf("Failed to write file template.yml into %s", tempDir)
+		os.RemoveAll(tempDir)
+		t.Fatal(writeErr)
+	}
+	return tempDir
 }
 
 func walkSubdirs(t *testing.T, dir string, fun func(subdir string)) {
