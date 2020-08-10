@@ -10,6 +10,7 @@ import (
 
 	"github.com/opendevstack/tailor/pkg/cli"
 	"github.com/opendevstack/tailor/pkg/openshift"
+	"golang.org/x/sync/errgroup"
 )
 
 // Diff prints the drift between desired and current state to STDOUT.
@@ -57,17 +58,31 @@ func calculateChangeset(w io.Writer, compareOptions *cli.CompareOptions, ocClien
 		return updateRequired, &openshift.Changeset{}, err
 	}
 
-	templateBasedList, err := assembleTemplateBasedResourceList(
-		filter,
-		compareOptions,
-		ocClient,
-	)
-	if err != nil {
-		return updateRequired, &openshift.Changeset{}, err
-	}
+	var templateBasedList *openshift.ResourceList
+	var platformBasedList *openshift.ResourceList
 
-	platformBasedList, err := assemblePlatformBasedResourceList(filter, compareOptions, ocClient)
-	if err != nil {
+	eg := new(errgroup.Group)
+	eg.Go(func() error {
+		l, err := assembleTemplateBasedResourceList(
+			filter,
+			compareOptions,
+			ocClient,
+		)
+		if err != nil {
+			return err
+		}
+		templateBasedList = l
+		return nil
+	})
+	eg.Go(func() error {
+		l, err := assemblePlatformBasedResourceList(filter, compareOptions, ocClient)
+		if err != nil {
+			return err
+		}
+		platformBasedList = l
+		return nil
+	})
+	if err := eg.Wait(); err != nil {
 		return updateRequired, &openshift.Changeset{}, err
 	}
 
