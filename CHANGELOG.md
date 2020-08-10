@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## [1.2.0] - 2020-08-10
+
 ### Added
 
 - Handle `Job` resoures ([#212](https://github.com/opendevstack/tailor/pull/212)).
