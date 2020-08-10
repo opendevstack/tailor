@@ -2,6 +2,19 @@
 
 ## Unreleased
 
+### Added
+
+- Handle `Job` resoures ([#212](https://github.com/opendevstack/tailor/pull/212)).
+
+### Changed
+
+- Do not print timestamps when errors occur ([b378a89](https://github.com/opendevstack/tailor/commit/b378a89be243037c00bee0d2c9fdb9870b69b69e)).
+- Change test infrastructure to GitHub Actions ([#186](https://github.com/opendevstack/tailor/pull/186) and [#216](https://github.com/opendevstack/tailor/pull/216)), and implement easier to maintain approach for end-to-end tests ([#215](https://github.com/opendevstack/tailor/pull/215) and [#219](https://github.com/opendevstack/tailor/pull/219)).
+
+### Fixed
+
+- Export `LimitRange` and `Quota` resources ([decfae9](https://github.com/opendevstack/tailor/commit/decfae93d5542c0d9ca9e9b3c61e8e697d88c124)). Support for those resources was added in 1.0.0, but they were not exported, only applied. Note that this change may lead to differences in diff output compared to 1.1.4.
+
 ## [1.1.4] - 2020-07-20
 
 ### Fixed
