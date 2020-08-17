@@ -146,7 +146,7 @@ eval "$(tailor --completion-script-$(echo $SHELL | awk -F/ '{print $NF}'))"
 * Compared to Helm v2, Tailor does not need a highly privileged Tiller. Helm v3 does not need it either.
 * Tailor works with plain OpenShift templates instead of Helm charts. OpenShift templates are simpler, and can easily be generated from existing resources in OpenShift.
 * Tailor has a narrower scope - it is basically an "`oc` on steroids". Helm has more extensive features like searching for charts etc.
-* Tailor targets OpenShift, Helm targets Kubernetes. Using Helm for OpenShift has limitations / bugs around dealing with OpenShift resources such as `BuildConfig` or `Route`.
+* Tailor targets OpenShift, Helm targets Kubernetes. Using Helm for OpenShift has limitations / bugs around dealing with OpenShift resources such as `BuildConfig` or `Route` (note those look fixed in [OpenShift 4.4](https://access.redhat.com/errata/RHBA-2020:0581)).
 * Tailor allows to check for drift, and allows to review the difference between live configuration and desired state before applying.
 
 ## FAQ / Troubleshooting
