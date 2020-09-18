@@ -16,8 +16,9 @@ import (
 var (
 	annotationsPath             = "/metadata/annotations"
 	platformManagedSimpleFields = []string{
-		"/metadata/generation",
 		"/metadata/creationTimestamp",
+		"/metadata/generation",
+		"/metadata/managedFields",
 		"/spec/tags",
 		"/status",
 		"/spec/volumeName",
