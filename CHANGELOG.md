@@ -2,6 +2,14 @@
 
 ## Unreleased
 
+### Changed
+
+- Export resources and process templates concurrently ([#220](https://github.com/opendevstack/tailor/pull/220)). This should not cause any change in behaviour, but you should notice Tailor being faster,especially against slow clusters.
+
+### Fixed
+
+- Ignore `managedFields` ([#222](https://github.com/opendevstack/tailor/pull/222)). The fixed problem only occurs when Tailor is used against OpenShift 4.
+
 ## [1.2.0] - 2020-08-10
 
 ### Added
