@@ -1,0 +1,51 @@
+[
+    {
+        "command": "apply dc,secret",
+        "wantStdout": true,
+        "wantResources": {
+            "dc/foo": true
+        },
+        "wantFields": {
+            "dc/foo": {
+                ".metadata.name": "foo",
+                ".spec.template.spec.containers[0].env[0].name": "FOO",
+                ".spec.template.spec.containers[0].env[0].value": "abc",
+                ".spec.template.spec.containers[0].env[1].name": "QUX",
+                ".spec.template.spec.containers[0].env[1].valueFrom.secretKeyRef.name": "foo-user",
+                ".spec.template.spec.containers[0].env[2].name": "BAZ",
+                ".spec.template.spec.containers[0].env[2].value": "http://baz.{{ .Project }}.svc:8080/"
+            }
+        }
+    },
+    {
+        "command": "apply dc,secret",
+        "wantStdout": true,
+        "wantResources": {
+            "dc/foo": true
+        },
+        "wantFields": {
+            "dc/foo": {
+                ".metadata.labels.app": "foo",
+                ".spec.template.spec.containers[0].image": "docker-registry.default.svc:5000/{{ .Project }}/foo:latest",
+                ".spec.template.spec.containers[0].env[0].name": "FOO",
+                ".spec.template.spec.containers[0].env[0].value": "abc",
+                ".spec.template.spec.containers[0].env[1].name": "BAZ",
+                ".spec.template.spec.containers[0].env[1].value": "http://baz.{{ .Project }}.svc:8080/"
+            }
+        }
+    },
+    {
+        "command": "apply dc,secret",
+        "wantStdout": true,
+        "wantErr": true,
+        "wantResources": {
+            "dc/foo": true
+        }
+    },
+    {
+        "command": "apply dc,secret --force",
+        "wantResources": {
+            "dc/foo": false
+        }
+    }
+]
