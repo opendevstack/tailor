@@ -1,0 +1,9 @@
+Comparing templates in deploymentconfig/2 with OCP namespace {{ .Project }}.
+Limiting resources to dc,secret.
+Found 2 resources in OCP cluster (current state) and 0 resources in processed templates (desired state).
+
+No items where found in desired state. Possible reasons are:
+* No templates are located in deploymentconfig/2
+* No templates contain resources of kinds: dc,secret
+
+Refusing to continue without --force

@@ -130,7 +130,7 @@ func runTestCase(t *testing.T, testProjectName string, tailorBinary string, test
 			checkStderr(t, tc.WantStderr, gotStderr, templateData, stepDir)
 			checkStdout(t, tc.WantStdout, gotStdout, templateData, stepDir)
 			checkResources(t, tc.WantResources, testProjectName)
-			checkFields(t, tc.WantFields, testProjectName)
+			checkFields(t, tc.WantFields, testProjectName, templateData)
 			runSurroundingCmd(t, "after", tc.After, templateData)
 		})
 	}
@@ -222,9 +222,9 @@ func checkResources(t *testing.T, wantResources map[string]bool, projectName str
 	}
 }
 
-func checkFields(t *testing.T, wantFields map[string]map[string]string, projectName string) {
+func checkFields(t *testing.T, wantFields map[string]map[string]string, projectName string, templateData outputData) {
 	for res, jsonPaths := range wantFields {
-		for jsonPath, wantVal := range jsonPaths {
+		for jsonPath, wantValTpl := range jsonPaths {
 			gotVal, _, err := runCmd("oc", []string{
 				"-n", projectName,
 				"get", res,
@@ -233,6 +233,16 @@ func checkFields(t *testing.T, wantFields map[string]map[string]string, projectN
 			if err != nil {
 				t.Fatalf("Could not get path %s of resource %s: %s", jsonPath, res, err)
 			}
+			tmpl, err := template.New("attachment").Parse(wantValTpl)
+			if err != nil {
+				t.Fatalf("Error parsing wanted value template: %s", err)
+			}
+			var wantValBuffer bytes.Buffer
+			err = tmpl.Execute(&wantValBuffer, templateData)
+			if err != nil {
+				t.Fatal(err)
+			}
+			wantVal := wantValBuffer.String()
 			if string(gotVal) != wantVal {
 				t.Fatalf("Field %s %s: want val=%s, got val=%s\n", res, jsonPath, wantVal, gotVal)
 			}

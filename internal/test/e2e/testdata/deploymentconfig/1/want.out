@@ -1,0 +1,24 @@
+Comparing templates in deploymentconfig/1 with OCP namespace {{ .Project }}.
+Limiting resources to dc,secret.
+Found 2 resources in OCP cluster (current state) and 2 resources in processed templates (desired state).
+
+* secret/foo-user is in sync
+~ dc/foo to update
+--- Current State (OpenShift cluster)
++++ Desired State (Processed template)
+@@ -29,11 +29,6 @@
+       - env:
+         - name: FOO
+           value: abc
+-        - name: QUX
+-          valueFrom:
+-            secretKeyRef:
+-              key: username
+-              name: foo-user
+         - name: BAZ
+           value: http://baz.{{ .Project }}.svc:8080/
+         image: docker-registry.default.svc:5000/{{ .Project }}/foo:latest
+
+Summary: 1 in sync, 0 to create, 1 to update, 0 to delete
+
+Updating dc/foo ... done
