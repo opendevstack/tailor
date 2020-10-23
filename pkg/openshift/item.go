@@ -79,6 +79,7 @@ var (
 		"limitrange":            "LimitRange",
 		"resourcequota":         "ResourceQuota",
 		"quota":                 "ResourceQuota",
+		"hpa":                   "HorizontalPodAutoscaler",
 	}
 )
 

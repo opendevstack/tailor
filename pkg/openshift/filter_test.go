@@ -72,6 +72,17 @@ func TestNewResourceFilter(t *testing.T) {
 	if err != nil || !reflect.DeepEqual(actual, expected) {
 		t.Errorf("Kinds incorrect, got: %v, want: %v.", actual, expected)
 	}
+
+	actual, err = NewResourceFilter("hpa", "", []string{})
+	expected = &ResourceFilter{
+		Kinds: []string{"HorizontalPodAutoscaler"},
+		Name:  "",
+		Label: "",
+	}
+	if err != nil || !reflect.DeepEqual(actual, expected) {
+		t.Errorf("Kinds incorrect, got: %v, want: %v.", actual, expected)
+	}
+
 }
 
 func TestSatisfiedBy(t *testing.T) {

@@ -26,6 +26,7 @@ var availableKinds = []string{
 	"job",
 	"limitrange",
 	"quota",
+	"hpa",
 }
 
 type ResourceFilter struct {
