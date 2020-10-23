@@ -2,11 +2,15 @@
 
 ## Unreleased
 
+### Added
+
+- Handle `HorizontalPodAutoscaler` resoures ([#227](https://github.com/opendevstack/tailor/pull/227)).
+
 ## [1.2.1] - 2020-09-21
 
 ### Changed
 
-- Export resources and process templates concurrently ([#220](https://github.com/opendevstack/tailor/pull/220)). This should not cause any change in behaviour, but you should notice Tailor being faster,especially against slow clusters.
+- Export resources and process templates concurrently ([#220](https://github.com/opendevstack/tailor/pull/220)). This should not cause any change in behaviour, but you should notice Tailor being faster, especially against slow clusters.
 
 ### Fixed
 
