@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## [1.2.2] - 2020-10-27
+
 ### Added
 
 - Handle `HorizontalPodAutoscaler` resoures ([#227](https://github.com/opendevstack/tailor/pull/227)).
