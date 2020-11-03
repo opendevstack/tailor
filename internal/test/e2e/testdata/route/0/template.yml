@@ -1,0 +1,20 @@
+apiVersion: v1
+kind: Template
+parameters:
+- name: TAILOR_NAMESPACE
+  required: true
+objects:
+- apiVersion: v1
+  kind: Route
+  metadata:
+    name: foo
+  spec:
+    host: foo-${TAILOR_NAMESPACE}.example.com
+    tls:
+      insecureEdgeTerminationPolicy: Redirect
+      termination: edge
+    to:
+      kind: Service
+      name: foo
+      weight: 100
+    wildcardPolicy: None
