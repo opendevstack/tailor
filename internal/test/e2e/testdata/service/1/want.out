@@ -1,0 +1,20 @@
+Comparing templates in service/1 with OCP namespace {{ .Project }}.
+Limiting resources to svc.
+Found 1 resource in OCP cluster (current state) and 1 resource in processed templates (desired state).
+
+~ svc/foo to update
+--- Current State (OpenShift cluster)
++++ Desired State (Processed template)
+@@ -10,7 +10,7 @@
+     protocol: TCP
+     targetPort: 8080
+   selector:
+-    bar: baz
++    bar: qux
+   sessionAffinity: None
+   type: ClusterIP
+ 
+
+Summary: 0 in sync, 0 to create, 1 to update, 0 to delete
+
+Updating svc/foo ... done

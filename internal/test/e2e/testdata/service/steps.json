@@ -1,0 +1,41 @@
+[
+    {
+        "command": "apply svc",
+        "wantStdout": true,
+        "wantResources": {
+            "svc/foo": true
+        },
+        "wantFields": {
+            "svc/foo": {
+                ".spec.selector.bar": "baz"
+            }
+        }
+    },
+    {
+        "command": "apply svc",
+        "wantStdout": true,
+        "wantResources": {
+            "svc/foo": true
+        },
+        "wantFields": {
+            "svc/foo": {
+                ".spec.selector.bar": "qux"
+            }
+        }
+    },
+    {
+        "command": "apply svc",
+        "wantStdout": true,
+        "wantErr": true,
+        "wantResources": {
+            "svc/foo": true
+        }
+    },
+    {
+        "command": "apply svc --force",
+        "wantStdout": true,
+        "wantResources": {
+            "is/foo": false
+        }
+    }
+]
