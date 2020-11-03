@@ -1,0 +1,40 @@
+apiVersion: v1
+kind: Template
+objects:
+- apiVersion: v1
+  kind: BuildConfig
+  metadata:
+    name: foo
+  spec:
+    output:
+      to:
+        kind: ImageStreamTag
+        name: 'foo:latest'
+    postCommit: {}
+    resources:
+      limits:
+        cpu: "1"
+        memory: 256Mi
+      requests:
+        cpu: 500m
+        memory: 128Mi
+    runPolicy: Serial
+    source:
+      git:
+        ref: master
+        uri: https://github.com/opendevstack/tailor.git
+      sourceSecret:
+        name: token
+      type: Git
+    strategy:
+      dockerStrategy:
+        forcePull: true
+        noCache: true
+        buildArgs:
+          - name: foo
+            value: bar
+      type: Docker
+    successfulBuildsHistoryLimit: 5
+    failedBuildsHistoryLimit: 5
+    nodeSelector: null
+    triggers: []

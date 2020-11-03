@@ -1,0 +1,42 @@
+[
+    {
+        "command": "apply bc",
+        "wantStdout": true,
+        "wantResources": {
+            "bc/foo": true
+        },
+        "wantFields": {
+            "bc/foo": {
+                ".spec.source.git.ref": "master"
+            }
+        }
+    },
+    {
+        "command": "apply bc",
+        "wantStdout": true,
+        "wantResources": {
+            "bc/foo": true
+        },
+        "wantFields": {
+            "bc/foo": {
+                ".spec.source.git.ref": "master",
+                ".spec.source.contextDir": "baz"
+            }
+        }
+    },
+    {
+        "command": "apply bc",
+        "wantStdout": true,
+        "wantErr": true,
+        "wantResources": {
+            "bc/foo": true
+        }
+    },
+    {
+        "command": "apply bc --force",
+        "wantStdout": true,
+        "wantResources": {
+            "bc/foo": false
+        }
+    }
+]
