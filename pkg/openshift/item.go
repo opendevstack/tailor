@@ -41,15 +41,15 @@ var (
 		"^/spec/triggers/[0-9]*/imageChangeParams/lastTriggeredImage",
 	}
 	immutableFields = map[string][]string{
-		"PersistentVolumeClaim": []string{
+		"PersistentVolumeClaim": {
 			"/spec/accessModes",
 			"/spec/storageClassName",
 			"/spec/resources/requests/storage",
 		},
-		"Route": []string{
+		"Route": {
 			"/spec/host",
 		},
-		"Secret": []string{
+		"Secret": {
 			"/type",
 		},
 	}
