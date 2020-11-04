@@ -16,40 +16,40 @@ import (
 var (
 	annotationsPath             = "/metadata/annotations"
 	platformManagedSimpleFields = []string{
+		"/groupNames",
+		"/imagePullSecrets",
 		"/metadata/creationTimestamp",
 		"/metadata/generation",
 		"/metadata/managedFields",
-		"/spec/tags",
-		"/status",
-		"/spec/volumeName",
-		"/spec/template/metadata/creationTimestamp",
-		"/spec/jobTemplate/metadata/creationTimestamp",
-		"/spec/jobTemplate/spec/template/metadata/creationTimestamp",
-		"/groupNames",
-		"/userNames",
-		"/spec/clusterIP",
 		"/metadata/namespace",
 		"/metadata/resourceVersion",
 		"/metadata/selfLink",
 		"/metadata/uid",
-		"/imagePullSecrets",
 		"/secrets",
+		"/spec/clusterIP",
+		"/spec/jobTemplate/metadata/creationTimestamp",
+		"/spec/jobTemplate/spec/template/metadata/creationTimestamp",
 		"/spec/selector/matchLabels/controller-uid",
+		"/spec/tags",
+		"/spec/template/metadata/creationTimestamp",
 		"/spec/template/metadata/labels/controller-uid",
+		"/spec/volumeName",
+		"/status",
+		"/userNames",
 	}
 	platformManagedRegexFields = []string{
 		"^/spec/triggers/[0-9]*/imageChangeParams/lastTriggeredImage",
 	}
 	immutableFields = map[string][]string{
-		"PersistentVolumeClaim": []string{
+		"PersistentVolumeClaim": {
 			"/spec/accessModes",
 			"/spec/storageClassName",
 			"/spec/resources/requests/storage",
 		},
-		"Route": []string{
+		"Route": {
 			"/spec/host",
 		},
-		"Secret": []string{
+		"Secret": {
 			"/type",
 		},
 	}

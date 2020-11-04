@@ -1,0 +1,27 @@
+Comparing templates in service/0 with OCP namespace {{ .Project }}.
+Limiting resources to svc.
+Found 0 resources in OCP cluster (current state) and 1 resource in processed templates (desired state).
+
++ svc/foo to create
+--- Current State (OpenShift cluster)
++++ Desired State (Processed template)
+@@ -1 +1,15 @@
++apiVersion: v1
++kind: Service
++metadata:
++  name: foo
++spec:
++  ports:
++  - name: 8080-tcp
++    port: 8080
++    protocol: TCP
++    targetPort: 8080
++  selector:
++    bar: baz
++  sessionAffinity: None
++  type: ClusterIP
+ 
+
+Summary: 0 in sync, 1 to create, 0 to update, 0 to delete
+
+Creating svc/foo ... done

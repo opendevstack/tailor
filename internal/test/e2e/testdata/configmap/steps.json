@@ -1,0 +1,41 @@
+[
+    {
+        "command": "apply cm",
+        "wantStdout": true,
+        "wantResources": {
+            "cm/foo": true
+        },
+        "wantFields": {
+            "cm/foo": {
+                ".data.database-name": "bar"
+            }
+        }
+    },
+    {
+        "command": "apply cm",
+        "wantStdout": true,
+        "wantResources": {
+            "cm/foo": true
+        },
+        "wantFields": {
+            "cm/foo": {
+                ".data.database-name": "baz"
+            }
+        }
+    },
+    {
+        "command": "apply cm",
+        "wantStdout": true,
+        "wantErr": true,
+        "wantResources": {
+            "cm/foo": true
+        }
+    },
+    {
+        "command": "apply cm --force",
+        "wantStdout": true,
+        "wantResources": {
+            "cm/foo": false
+        }
+    }
+]

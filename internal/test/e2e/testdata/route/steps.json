@@ -1,0 +1,41 @@
+[
+    {
+        "command": "apply route",
+        "wantStdout": true,
+        "wantResources": {
+            "route/foo": true
+        },
+        "wantFields": {
+            "route/foo": {
+                ".spec.tls.insecureEdgeTerminationPolicy": "Redirect"
+            }
+        }
+    },
+    {
+        "command": "apply route",
+        "wantStdout": true,
+        "wantResources": {
+            "route/foo": true
+        },
+        "wantFields": {
+            "route/foo": {
+                ".spec.tls.insecureEdgeTerminationPolicy": "None"
+            }
+        }
+    },
+    {
+        "command": "apply route",
+        "wantStdout": true,
+        "wantErr": true,
+        "wantResources": {
+            "route/foo": true
+        }
+    },
+    {
+        "command": "apply route --force",
+        "wantStdout": true,
+        "wantResources": {
+            "route/foo": false
+        }
+    }
+]

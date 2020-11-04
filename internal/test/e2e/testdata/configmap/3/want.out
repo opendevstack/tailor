@@ -1,0 +1,22 @@
+Comparing templates in configmap/3 with OCP namespace {{ .Project }}.
+Limiting resources to cm.
+Found 1 resource in OCP cluster (current state) and 0 resources in processed templates (desired state).
+
+- cm/foo to delete
+--- Current State (OpenShift cluster)
++++ Desired State (Processed template)
+@@ -1,10 +1 @@
+-apiVersion: v1
+-data:
+-  database-name: baz
+-kind: ConfigMap
+-metadata:
+-  annotations:
+-    kubectl.kubernetes.io/last-applied-configuration: |
+-      {"apiVersion":"v1","data":{"database-name":"baz"},"kind":"ConfigMap","metadata":{"annotations":{},"name":"foo","namespace":"{{ .Project }}"}}
+-  name: foo
+ 
+
+Summary: 0 in sync, 0 to create, 0 to update, 1 to delete
+
+Deleting cm/foo ... done
