@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## [1.3.0] - 2020-11-13
+
 - Use `oc get` without `--export` flag, which has been removed in Kubernetes 1.19 ([#230](https://github.com/opendevstack/tailor/pull/230)).
 
 ## [1.2.2] - 2020-10-27
