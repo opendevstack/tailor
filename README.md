@@ -1,8 +1,8 @@
 # Tailor
 
-Tailor is a tool to drive the configuration of your OpenShift resources via
-templates under version control. Any drift between your desired state (the YAML templates) and the current state (resources in the cluster) can be detected, reviewed and reconciled using a CLI interface. Tailor is required by other OpenDevStack repositories, but is fully standalone and may be used in completely different contexts. It uses `oc` commands under the hood, and is based on
-plain OpenShift templates.
+Tailor is a tool to drive the configuration of your OpenShift resources via templates under version control. Any drift between your desired state (the YAML templates) and the current state (resources in the cluster) can be detected, reviewed and reconciled using a CLI interface. Tailor is required by other OpenDevStack repositories, but is fully standalone and may be used in completely different contexts. It uses `oc` commands under the hood, and is based on plain OpenShift templates.
+
+The main target of Tailor is OpenShift 3.11. Tailor also works against OpenShift 4, but it is recommended to transition to other tools, such as Helm or kustomize, which have become popular and work well against OpenShift 4. If you are interested how Tailor compares to those tools, please see [comparison to other tools](https://github.com/opendevstack/tailor#comparison-to-other-tools).
 
 ## Benefits of using infrastructure-as-code
 
@@ -19,11 +19,9 @@ plain OpenShift templates.
 * Simple interface which avoids having to stitch multiple commands together and massage their output to achieve the desired result.
 * Options can be stored in a `Tailorfile` to ease invocation and ensure consistency within teams.
 
-If you are interested how Tailor compares to other tools such as Helm, please see [comparison to other tools](https://github.com/opendevstack/tailor#comparison-to-other-tools).
-
 ## Installation
 
-The latest release is 1.3.0 and requires oc >= v3.9.0. OpenShift 4 is not officially supported yet although 1.0.0 and above work in principle.
+The latest release is 1.3.0 and requires oc = v3.11. OpenShift 4 is not officially supported yet although 1.3.0 is known to work with OpenShift 4.6. Note that Tailor is now considered to be feature-complete and will only receive bug fixes going forward.
 Please have a look at the [changelog](https://github.com/opendevstack/tailor/blob/master/CHANGELOG.md) when upgrading.
 
 MacOS:
@@ -146,8 +144,15 @@ eval "$(tailor --completion-script-$(echo $SHELL | awk -F/ '{print $NF}'))"
 * Compared to Helm v2, Tailor does not need a highly privileged Tiller. Helm v3 does not need it either.
 * Tailor works with plain OpenShift templates instead of Helm charts. OpenShift templates are simpler, and can easily be generated from existing resources in OpenShift.
 * Tailor has a narrower scope - it is basically an "`oc` on steroids". Helm has more extensive features like searching for charts etc.
-* Tailor targets OpenShift, Helm targets Kubernetes. Using Helm for OpenShift has limitations / bugs around dealing with OpenShift resources such as `BuildConfig` or `Route` (note those look fixed in [OpenShift 4.4](https://access.redhat.com/errata/RHBA-2020:0581)).
+* Tailor targets OpenShift, Helm targets Kubernetes. Using Helm for OpenShift 3.11 has limitations / bugs around dealing with OpenShift resources such as `BuildConfig` or `Route`. Note those are fixed in [OpenShift 4.4](https://access.redhat.com/errata/RHBA-2020:0581).
 * Tailor allows to check for drift, and allows to review the difference between live configuration and desired state before applying.
+
+If you are a Tailor user wanting to migrate to Helm, check out the [migration guide](https://github.com/opendevstack/tailor/wiki/Migrating-from-Tailor-to-Helm).
+
+### Tailor vs. kustomize
+* Tailor targets OpenShift, kustomize targets Kubernetes
+* Tailor uses a templating approach, kustomize uses patching
+* Tailor comes with its own drift/diff mechanism, whereas kustomize only focuses on specifying resources. However, newer versions of Kubernetes support `kubectl diff`, which can be used to view differences.
 
 ## FAQ / Troubleshooting
 
