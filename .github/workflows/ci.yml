@@ -27,7 +27,7 @@ jobs:
           make lint
       -
         name: Setup OpenShift
-        uses: manusa/actions-setup-openshift@v1.1.0
+        uses: manusa/actions-setup-openshift@v1.1.2
         with:
           oc version: 'v3.11.0'
           enable: 'centos-imagestreams,persistent-volumes,registry,router'
