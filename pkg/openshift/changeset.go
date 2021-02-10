@@ -24,11 +24,12 @@ var (
 		"Job":                     "j",
 		"ImageStream":             "k",
 		"BuildConfig":             "l",
-		"DeploymentConfig":        "m",
-		"Deployment":              "n",
-		"HorizontalPodAutoscaler": "o",
-		"Service":                 "p",
-		"Route":                   "q",
+		"StatefulSet":             "m",
+		"DeploymentConfig":        "n",
+		"Deployment":              "o",
+		"HorizontalPodAutoscaler": "p",
+		"Service":                 "q",
+		"Route":                   "r",
 	}
 )
 

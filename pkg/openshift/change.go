@@ -23,6 +23,7 @@ var (
 		"LimitRange":              "limitrange",
 		"ResourceQuota":           "quota",
 		"HorizontalPodAutoscaler": "hpa",
+		"StatefulSet":             "statefulset",
 	}
 )
 

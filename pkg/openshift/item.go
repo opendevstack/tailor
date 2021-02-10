@@ -80,6 +80,7 @@ var (
 		"resourcequota":         "ResourceQuota",
 		"quota":                 "ResourceQuota",
 		"hpa":                   "HorizontalPodAutoscaler",
+		"statefulset":           "StatefulSet",
 	}
 )
 
