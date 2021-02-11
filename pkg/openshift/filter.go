@@ -27,6 +27,7 @@ var availableKinds = []string{
 	"limitrange",
 	"quota",
 	"hpa",
+	"statefulset",
 }
 
 type ResourceFilter struct {

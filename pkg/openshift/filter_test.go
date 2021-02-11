@@ -83,6 +83,16 @@ func TestNewResourceFilter(t *testing.T) {
 		t.Errorf("Kinds incorrect, got: %v, want: %v.", actual, expected)
 	}
 
+	actual, err = NewResourceFilter("statefulset", "", []string{})
+	expected = &ResourceFilter{
+		Kinds: []string{"StatefulSet"},
+		Name:  "",
+		Label: "",
+	}
+	if err != nil || !reflect.DeepEqual(actual, expected) {
+		t.Errorf("Kinds incorrect, got: %v, want: %v.", actual, expected)
+	}
+
 }
 
 func TestSatisfiedBy(t *testing.T) {
