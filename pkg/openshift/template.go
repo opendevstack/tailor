@@ -94,12 +94,12 @@ func templateContainsTailorNamespaceParam(filename string) (bool, error) {
 	default:
 		return false, errors.New("Not a valid template. Please see https://github.com/opendevstack/tailor#template-authoring")
 	}
-	objectsPointer, _ := gojsonpointer.NewJsonPointer("/parameters")
-	items, _, err := objectsPointer.Get(m)
-	if err != nil {
+	parametersPointer, _ := gojsonpointer.NewJsonPointer("/parameters")
+	parameters, _, err := parametersPointer.Get(m)
+	if err != nil || parameters == nil {
 		return false, nil
 	}
-	for _, v := range items.([]interface{}) {
+	for _, v := range parameters.([]interface{}) {
 		nameVal := v.(map[string]interface{})["name"]
 		if nameVal == nil {
 			return false, errors.New("Template parameter without 'name' property found")

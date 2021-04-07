@@ -30,6 +30,11 @@ func TestTemplateContainsTailorNamespaceParam(t *testing.T) {
 			wantContains: false,
 			wantError:    "Not a valid template. Did you forget to add the template header?\n\napiVersion: v1\nkind: Template\nobjects: [...]",
 		},
+		"template with blank parameters": {
+			filename:     "template-blank-parameters.yml",
+			wantContains: false,
+			wantError:    "",
+		},
 		"garbage": {
 			filename:     "garbage.yml",
 			wantContains: false,
