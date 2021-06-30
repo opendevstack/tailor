@@ -21,27 +21,27 @@ The main target of Tailor is OpenShift 3.11. Tailor also works against OpenShift
 
 ## Installation
 
-The latest release is 1.3.1 and requires oc = v3.11. OpenShift 4 is not officially supported yet although 1.3.0 is known to work with OpenShift 4.6. Note that Tailor is now considered to be feature-complete and will only receive bug fixes going forward.
+The latest release is 1.3.2 and requires oc = v3.11. OpenShift 4 is not officially supported yet although 1.3.0 is known to work with OpenShift 4.6. Note that Tailor is now considered to be feature-complete and will only receive bug fixes going forward.
 Please have a look at the [changelog](https://github.com/opendevstack/tailor/blob/master/CHANGELOG.md) when upgrading.
 
 MacOS:
 
 ```
-curl -LO "https://github.com/opendevstack/tailor/releases/download/v1.3.1/tailor-darwin-amd64" && \
+curl -LO "https://github.com/opendevstack/tailor/releases/download/v1.3.2/tailor-darwin-amd64" && \
 chmod +x tailor-darwin-amd64 && mv tailor-darwin-amd64 /usr/local/bin/tailor
 ```
 
 Linux:
 
 ```
-curl -LO "https://github.com/opendevstack/tailor/releases/download/v1.3.1/tailor-linux-amd64" && \
+curl -LO "https://github.com/opendevstack/tailor/releases/download/v1.3.2/tailor-linux-amd64" && \
 chmod +x tailor-linux-amd64 && mv tailor-linux-amd64 /usr/local/bin/tailor
 ```
 
 Windows (using Git Bash):
 
 ```
-curl -LO "https://github.com/opendevstack/tailor/releases/download/v1.3.1/tailor-windows-amd64.exe" && \
+curl -LO "https://github.com/opendevstack/tailor/releases/download/v1.3.2/tailor-windows-amd64.exe" && \
 chmod +x tailor-windows-amd64.exe && mv tailor-windows-amd64.exe /mingw64/bin/tailor.exe
 ```
 

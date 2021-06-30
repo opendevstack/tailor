@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## [1.3.2] - 2021-06-30
+
 ### Fixed
 
 - Avoid panic on template with empty parameters([#238](https://github.com/opendevstack/tailor/pull/238))
