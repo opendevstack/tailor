@@ -102,7 +102,7 @@ var (
 	diffPreservePathFlag = diffCommand.Flag(
 		"preserve",
 		"Path(s) per kind/name for which to preserve current state (e.g. because they are externally modified) in RFC 6901 format.",
-	).Default("svc:/spec/clusterIPs").PlaceHolder("bc:foobar:/spec/output/to/name").Strings()
+	).PlaceHolder("bc:foobar:/spec/output/to/name").Strings()
 	diffPreserveImmutableFieldsFlag = diffCommand.Flag(
 		"preserve-immutable-fields",
 		"Preserve current state of all immutable fields (such as host of a route, or storageClassName of a PVC).",
