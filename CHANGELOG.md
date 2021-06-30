@@ -5,6 +5,7 @@
 ### Fixed
 
 - Avoid panic on template with empty parameters([#238](https://github.com/opendevstack/tailor/pull/238))
+- Preserve svc cluster ips by default ([#242](https://github.com/opendevstack/tailor/pull/242))
 
 ## [1.3.1] - 2021-02-11
 

@@ -27,6 +27,7 @@ var (
 		"/metadata/uid",
 		"/secrets",
 		"/spec/clusterIP",
+		"/spec/clusterIPs",
 		"/spec/jobTemplate/metadata/creationTimestamp",
 		"/spec/jobTemplate/spec/template/metadata/creationTimestamp",
 		"/spec/selector/matchLabels/controller-uid",
