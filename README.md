@@ -127,7 +127,7 @@ param BAZ=qux
 
 bc,is,dc,svc
 ```
-Please note that boolean flags need to be specified with a value, e.g. `upsert-only true`.
+Please note that boolean flags need to be specified with a value, e.g. `allow-deletion true`.
 
 Tailor will automatically pick up any file named `Tailorfile.<namespace>` or `Tailorfile` in the working directory. Alternatively, a specific file can be selected via `tailor -f somefile`.
 

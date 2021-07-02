@@ -111,9 +111,9 @@ var (
 		"ignore-unknown-parameters",
 		"If true, will not stop processing if a provided parameter does not exist in the template.",
 	).Bool()
-	diffUpsertOnlyFlag = diffCommand.Flag(
-		"upsert-only",
-		"Don't delete resource, only create / update.",
+	diffAllowDeletionFlag = diffCommand.Flag(
+		"allow-deletion",
+		"Allow deletion of resource as well.",
 	).Short('u').Bool()
 	diffAllowRecreateFlag = diffCommand.Flag(
 		"allow-recreate",
@@ -159,9 +159,9 @@ var (
 		"ignore-unknown-parameters",
 		"If true, will not stop processing if a provided parameter does not exist in the template.",
 	).Bool()
-	applyUpsertOnlyFlag = applyCommand.Flag(
-		"upsert-only",
-		"Don't delete resource, only create / apply.",
+	applyAllowDeletionFlag = applyCommand.Flag(
+		"allow-deletion",
+		"Allow deletion of resource as well.",
 	).Short('u').Bool()
 	applyAllowRecreateFlag = applyCommand.Flag(
 		"allow-recreate",
@@ -362,7 +362,7 @@ func main() {
 			preservePathFlag,
 			*diffPreserveImmutableFieldsFlag,
 			*diffIgnoreUnknownParametersFlag,
-			*diffUpsertOnlyFlag,
+			*diffAllowDeletionFlag,
 			*diffAllowRecreateFlag,
 			*diffRevealSecretsFlag,
 			false, // verification only when changes are applied
@@ -399,7 +399,7 @@ func main() {
 			preservePathFlag,
 			*applyPreserveImmutableFieldsFlag,
 			*applyIgnoreUnknownParametersFlag,
-			*applyUpsertOnlyFlag,
+			*applyAllowDeletionFlag,
 			*applyAllowRecreateFlag,
 			*applyRevealSecretsFlag,
 			*applyVerifyFlag,
