@@ -48,10 +48,7 @@ func ProcessTemplate(templateDir string, name string, paramDir string, compareOp
 			return []byte{}, err
 		}
 		
-		tempParamFile, err := ioutil.TempFile("", ".combined.*.env")
-		if err != nil {
-			log.Fatal(err)
-		}
+		tempParamFile,_ := ioutil.TempFile("", ".combined.*.env")
 
 		defer os.Remove(tempParamFile.Name())
 
