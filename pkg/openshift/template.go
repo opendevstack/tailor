@@ -53,7 +53,7 @@ func ProcessTemplate(templateDir string, name string, paramDir string, compareOp
 		defer os.Remove(tempParamFile.Name())
 
 		cli.DebugMsg("Writing contents of param files into", tempParamFile.Name())
-		err = tempParamFile.Write(paramFileBytes)
+		_, err = tempParamFile.Write(paramFileBytes)
 		if err != nil {
 			tempParamFile.Close()
 			return []byte{}, err
