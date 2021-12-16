@@ -47,13 +47,22 @@ func ProcessTemplate(templateDir string, name string, paramDir string, compareOp
 		if err != nil {
 			return []byte{}, err
 		}
-		tempParamFile := ".combined.env"
-		defer os.Remove(tempParamFile)
-		cli.DebugMsg("Writing contents of param files into", tempParamFile)
-		err = ioutil.WriteFile(tempParamFile, paramFileBytes, 0644)
+		
+		tempParamFile, err := ioutil.TempFile("", ".combined.*.env")
 		if err != nil {
+			log.Fatal(err)
+		}
+
+		defer os.Remove(tempParamFile.Name())
+
+		cli.DebugMsg("Writing contents of param files into", tempParamFile.Name())
+		err = tempParamFile.Write(paramFileBytes)
+		if err != nil {
+			tempParamFile.Close()
 			return []byte{}, err
 		}
+		tempParamFile.Close()
+		
 		args = append(args, "--param-file="+tempParamFile)
 	}
 
