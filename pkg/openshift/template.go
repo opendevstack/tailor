@@ -60,7 +60,7 @@ func ProcessTemplate(templateDir string, name string, paramDir string, compareOp
 		}
 		tempParamFile.Close()
 		
-		args = append(args, "--param-file="+tempParamFile)
+		args = append(args, "--param-file="+tempParamFile.Name())
 	}
 
 	if compareOptions.IgnoreUnknownParameters {
