@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+### Fixed
+
+- Parallel execution errors out with: `Cannot stat ".combined.env"` ([#243](https://github.com/opendevstack/tailor/issues/243))
+
 ## [1.3.2] - 2021-06-30
 
 ### Fixed
