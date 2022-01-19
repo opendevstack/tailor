@@ -93,6 +93,61 @@ func TestNewResourceFilter(t *testing.T) {
 		t.Errorf("Kinds incorrect, got: %v, want: %v.", actual, expected)
 	}
 
+	actual, err = NewResourceFilter("", "", []string{"rolebinding", "serviceaccount"})
+	expected = &ResourceFilter{
+		ExcludedKinds: []string{"RoleBinding", "ServiceAccount"},
+		Kinds:         []string{},
+		Name:          "",
+		Label:         "",
+	}
+	if err != nil || !reflect.DeepEqual(actual, expected) {
+		t.Errorf("Kinds incorrect, got: %v, want: %v.", actual, expected)
+	}
+
+}
+
+func TestConvertToKinds(t *testing.T) {
+	tests := map[string]struct {
+		filter *ResourceFilter
+		want   string
+	}{
+		"kinds": {
+			filter: &ResourceFilter{
+				ExcludedKinds: []string{},
+				Kinds:         []string{"RoleBinding", "ServiceAccount"},
+				Name:          "",
+				Label:         "",
+			},
+			want: "RoleBinding,ServiceAccount",
+		},
+		"excluded kinds": {
+			filter: &ResourceFilter{
+				ExcludedKinds: []string{"RoleBinding", "ServiceAccount"},
+				Kinds:         []string{},
+				Name:          "",
+				Label:         "",
+			},
+			want: "Service,Route,DeploymentConfig,Deployment,BuildConfig,ImageStream,PersistentVolumeClaim,Template,ConfigMap,Secret,CronJob,Job,LimitRange,ResourceQuota,HorizontalPodAutoscaler,StatefulSet",
+		},
+		"kinds and excluded kinds": {
+			filter: &ResourceFilter{
+				ExcludedKinds: []string{"RoleBinding", "Route"},
+				Kinds:         []string{"Service", "Route", "DeploymentConfig"},
+				Name:          "",
+				Label:         "",
+			},
+			want: "Service,DeploymentConfig",
+		},
+	}
+
+	for name, tc := range tests {
+		t.Run(name, func(t *testing.T) {
+			got := tc.filter.ConvertToKinds()
+			if got != tc.want {
+				t.Errorf("Got: %+v, want: %+v. Filter is: %+v", got, tc.want, tc.filter)
+			}
+		})
+	}
 }
 
 func TestSatisfiedBy(t *testing.T) {

@@ -10,24 +10,24 @@ import (
 )
 
 var availableKinds = []string{
-	"svc",
-	"route",
-	"dc",
-	"deployment",
-	"bc",
-	"is",
-	"pvc",
-	"template",
-	"cm",
-	"secret",
-	"rolebinding",
-	"serviceaccount",
-	"cronjob",
-	"job",
-	"limitrange",
-	"quota",
-	"hpa",
-	"statefulset",
+	"Service",
+	"Route",
+	"DeploymentConfig",
+	"Deployment",
+	"BuildConfig",
+	"ImageStream",
+	"PersistentVolumeClaim",
+	"Template",
+	"ConfigMap",
+	"Secret",
+	"RoleBinding",
+	"ServiceAccount",
+	"CronJob",
+	"Job",
+	"LimitRange",
+	"ResourceQuota",
+	"HorizontalPodAutoscaler",
+	"StatefulSet",
 }
 
 type ResourceFilter struct {
@@ -186,5 +186,11 @@ func (f *ResourceFilter) ConvertToKinds() string {
 	if len(kinds) == 0 {
 		kinds = availableKinds
 	}
-	return strings.Join(kinds, ",")
+	kindsWithoutExcluded := []string{}
+	for _, k := range kinds {
+		if !utils.Includes(f.ExcludedKinds, k) {
+			kindsWithoutExcluded = append(kindsWithoutExcluded, k)
+		}
+	}
+	return strings.Join(kindsWithoutExcluded, ",")
 }
