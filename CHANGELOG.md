@@ -4,6 +4,10 @@
 
 ## [1.3.4] - 2022-01-19
 
+### Fixed
+
+- Excluded kinds are exported from the server ([#245](https://github.com/opendevstack/tailor/issues/245))
+
 ## [1.3.3] - 2021-12-17
 
 ### Fixed
