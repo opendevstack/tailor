@@ -40,7 +40,7 @@ type Changeset struct {
 	Noop   []*Change
 }
 
-func NewChangeset(platformBasedList, templateBasedList *ResourceList, upsertOnly bool, allowRecreate bool, preservePaths []string) (*Changeset, error) {
+func NewChangeset(platformBasedList, templateBasedList *ResourceList, allowDeletion bool, allowRecreate bool, preservePaths []string) (*Changeset, error) {
 	changeset := &Changeset{
 		Create: []*Change{},
 		Delete: []*Change{},
@@ -49,7 +49,7 @@ func NewChangeset(platformBasedList, templateBasedList *ResourceList, upsertOnly
 	}
 
 	// items to delete
-	if !upsertOnly {
+	if allowDeletion {
 		for _, item := range platformBasedList.Items {
 			if _, err := templateBasedList.getItem(item.Kind, item.Name); err != nil {
 				change := &Change{

@@ -51,13 +51,13 @@ func TestNewChangesetCreationOfResources(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
-			upsertOnly := false
+			allowDeletion := true
 			allowRecreate := false
 			preservePaths := []string{}
 			cs, err := NewChangeset(
 				platformBasedList,
 				templateBasedList,
-				upsertOnly,
+				allowDeletion,
 				allowRecreate,
 				preservePaths,
 			)
@@ -598,9 +598,29 @@ items:
 	filter := &ResourceFilter{
 		Kinds: []string{"PersistentVolumeClaim"},
 	}
-	changeset := getChangeset(t, filter, platformInput, templateInput, false, true, []string{})
-	if len(changeset.Delete) != 1 {
-		t.Errorf("Changeset.Delete is blank but should not be")
+
+	tests := map[string]struct {
+		allowDeletion bool
+		wantChanges   int
+	}{
+		"when deletion is not allowed": {
+			allowDeletion: false, // default
+			wantChanges:   0,
+		},
+		"when deletion is allowed": {
+			allowDeletion: true,
+			wantChanges:   1,
+		},
+	}
+
+	for name, tc := range tests {
+		t.Run(name, func(t *testing.T) {
+			changeset := getChangeset(t, filter, platformInput, templateInput, tc.allowDeletion, true, []string{})
+			gotChanges := len(changeset.Delete)
+			if gotChanges != tc.wantChanges {
+				t.Errorf("Changeset.Delete is %d but should not be %d", gotChanges, tc.wantChanges)
+			}
+		})
 	}
 }
 
@@ -635,7 +655,7 @@ func TestCalculateChangesImmutableFields(t *testing.T) {
 	}
 }
 
-func getChangeset(t *testing.T, filter *ResourceFilter, platformInput, templateInput []byte, upsertOnly bool, allowRecreate bool, preservePaths []string) *Changeset {
+func getChangeset(t *testing.T, filter *ResourceFilter, platformInput, templateInput []byte, allowDeletion bool, allowRecreate bool, preservePaths []string) *Changeset {
 	platformBasedList, err := NewPlatformBasedResourceList(filter, platformInput)
 	if err != nil {
 		t.Error("Could not create platform based list:", err)
@@ -644,7 +664,7 @@ func getChangeset(t *testing.T, filter *ResourceFilter, platformInput, templateI
 	if err != nil {
 		t.Error("Could not create template based list:", err)
 	}
-	changeset, err := NewChangeset(platformBasedList, templateBasedList, upsertOnly, allowRecreate, preservePaths)
+	changeset, err := NewChangeset(platformBasedList, templateBasedList, allowDeletion, allowRecreate, preservePaths)
 	if err != nil {
 		t.Error("Could not create changeset:", err)
 	}
