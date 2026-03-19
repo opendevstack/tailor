@@ -5,7 +5,6 @@ import (
 	"bytes"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"log"
 	"os"
 	"os/exec"
@@ -136,7 +135,7 @@ func AskForAction(question string, options []string, reader *bufio.Reader) strin
 
 // EditEnvFile opens content in EDITOR, and returns saved content.
 func EditEnvFile(content string) (string, error) {
-	err := ioutil.WriteFile(".ENV.DEC", []byte(content), 0644)
+	err := os.WriteFile(".ENV.DEC", []byte(content), 0644)
 	if err != nil {
 		return "", err
 	}
@@ -160,7 +159,7 @@ func EditEnvFile(content string) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	data, err := ioutil.ReadFile(".ENV.DEC")
+	data, err := os.ReadFile(".ENV.DEC")
 	if err != nil {
 		return "", err
 	}

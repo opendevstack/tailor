@@ -2,7 +2,6 @@ package helper
 
 import (
 	"fmt"
-	"io/ioutil"
 	"os"
 	"path"
 	"runtime"
@@ -48,5 +47,5 @@ func readFile(name string) ([]byte, error) {
 		return []byte{}, fmt.Errorf("Could not get filename when looking for %s", name)
 	}
 	filepath := path.Join(path.Dir(filename), name)
-	return ioutil.ReadFile(filepath)
+	return os.ReadFile(filepath)
 }
