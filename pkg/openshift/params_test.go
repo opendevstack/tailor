@@ -1,6 +1,7 @@
 package openshift
 
 import (
+	"os"
 	"strings"
 	"testing"
 )
