@@ -7,18 +7,18 @@ jobs:
     steps:
       -
         name: Checkout repository
-        uses: actions/checkout@v2
+        uses: actions/checkout@v4
         with:
           fetch-depth: 0
       -
         name: Setup Go
-        uses: actions/setup-go@v2
+        uses: actions/setup-go@v4
         with:
-          version: 1.14
+          version: 1.21
       -
         name: Download Go tools
         run: |
-          curl -sfL https://install.goreleaser.com/github.com/golangci/golangci-lint.sh | sh -s -- -b $(go env GOPATH)/bin v1.25.0
+          curl -sfL https://install.goreleaser.com/github.com/golangci/golangci-lint.sh | sh -s -- -b $(go env GOPATH)/bin v1.56.2
           go get golang.org/x/tools/cmd/goimports
       -
         name: Run lint
