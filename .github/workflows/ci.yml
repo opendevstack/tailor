@@ -20,10 +20,10 @@ jobs:
         run: |
           curl -sfL https://install.goreleaser.com/github.com/golangci/golangci-lint.sh | sh -s -- -b $(go env GOPATH)/bin v1.56.2
           go get golang.org/x/tools/cmd/goimports
+          echo "PATH=$PATH:$(go env GOPATH)/bin" >> $GITHUB_ENV
       -
         name: Run lint
         run: |
-          export PATH=$PATH:$(go env GOPATH)/bin
           make lint
       -
         name: Setup OpenShift
@@ -35,6 +35,5 @@ jobs:
       -
         name: Run tests
         run: |
-          export PATH=$PATH:$(go env GOPATH)/bin
           sudo chown -R runner:docker openshift.local.clusterup/
           make test
