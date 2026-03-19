@@ -3,7 +3,7 @@ on: [push, pull_request]
 jobs:
   tailor:
     name: Run tests
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-latest
     steps:
       -
         name: Checkout repository
@@ -26,15 +26,19 @@ jobs:
         run: |
           make lint
       -
-        name: Setup OpenShift
-        uses: manusa/actions-setup-openshift@v1.1.4
-        timeout-minutes: 15
-        with:
-          oc version: 'v3.11.0'
-          enable: 'centos-imagestreams,persistent-volumes,registry,router'
-          github token: ${{ secrets.GITHUB_TOKEN }}
-      -
-        name: Run tests
-        run: |
-          sudo chown -R runner:docker openshift.local.clusterup/
-          make test
+        name: Run Unit tests (cannot run openshift tests due to requiring Github runner with ubuntu 20.04)
+        run: make test-unit
+
+      # -
+      #   name: Setup OpenShift
+      #   uses: manusa/actions-setup-openshift@v1.1.4
+      #   timeout-minutes: 15
+      #   with:
+      #     oc version: 'v3.11.0'
+      #     enable: 'centos-imagestreams,persistent-volumes,registry,router'
+      #     github token: ${{ secrets.GITHUB_TOKEN }}
+      # -
+      #   name: Run tests
+      #   run: |
+      #     sudo chown -R runner:docker openshift.local.clusterup/
+      #     make test
