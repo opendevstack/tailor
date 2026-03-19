@@ -3,7 +3,6 @@ package openshift
 import (
 	"encoding/base64"
 	"fmt"
-	"io/ioutil"
 	"os"
 	"regexp"
 	"strings"
@@ -112,7 +111,7 @@ func newWriteConverter(previous, publicKeyDir, privateKey, passphrase string) (*
 
 	// Read public keys
 	cli.DebugMsg(fmt.Sprintf("Looking for public keys in '%s'", publicKeyDir))
-	files, err := ioutil.ReadDir(publicKeyDir)
+	files, err := os.ReadDir(publicKeyDir)
 	if err != nil {
 		return nil, err
 	}

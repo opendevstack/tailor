@@ -5,7 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"io/ioutil"
+	"os"
 	"regexp"
 
 	"github.com/opendevstack/tailor/pkg/cli"
@@ -198,7 +198,7 @@ func printUpdateChange(w io.Writer, change *openshift.Change, revealSecrets bool
 func assembleTemplateBasedResourceList(filter *openshift.ResourceFilter, compareOptions *cli.CompareOptions, ocClient cli.OcClientProcessor) (*openshift.ResourceList, error) {
 	var inputs [][]byte
 
-	files, err := ioutil.ReadDir(compareOptions.TemplateDir)
+	files, err := os.ReadDir(compareOptions.TemplateDir)
 	if err != nil {
 		return nil, fmt.Errorf("Cannot get files in template directory '%s': %s", compareOptions.TemplateDir, err)
 	}

@@ -6,7 +6,6 @@ import (
 	"encoding/base64"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"os"
 
 	"golang.org/x/crypto/openpgp"
@@ -136,7 +135,7 @@ func Encrypt(secret string, entityList openpgp.EntityList) (string, error) {
 	}
 
 	// Return as base64 encoded string
-	bytes, err := ioutil.ReadAll(buf)
+	bytes, err := io.ReadAll(buf)
 	if err != nil {
 		return "", err
 	}
@@ -158,6 +157,6 @@ func Decrypt(encoded string, entityList openpgp.EntityList) (string, error) {
 	if err != nil {
 		return "", fmt.Errorf("Decrypting '%s' failed: %s", encoded, err)
 	}
-	bytes, err := ioutil.ReadAll(md.UnverifiedBody)
+	bytes, err := io.ReadAll(md.UnverifiedBody)
 	return string(bytes), err
 }
