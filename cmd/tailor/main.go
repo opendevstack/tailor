@@ -11,6 +11,8 @@ import (
 	"github.com/opendevstack/tailor/pkg/commands"
 )
 
+var Version = "dev"
+
 var (
 	app = kingpin.New(
 		"tailor",
@@ -253,7 +255,7 @@ func main() {
 	command := kingpin.MustParse(app.Parse(os.Args[1:]))
 
 	if command == versionCommand.FullCommand() {
-		fmt.Println("1.3.4+master")
+		fmt.Println(Version)
 		return
 	}
 

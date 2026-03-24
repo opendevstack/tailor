@@ -43,8 +43,15 @@ jobs:
       - name: Run unit tests
         run: make test-unit
 
+      - name: Extract version from tag
+        id: version
+        run: |
+          TAG=${{ github.event.release.tag_name }}
+          VERSION=${TAG#v}
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+
       - name: Build binaries
-        run: make build
+        run: make build VERSION=${{ steps.version.outputs.version }}
 
       - name: Upload Linux binary
         uses: actions/upload-release-asset@v1
