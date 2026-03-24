@@ -31,6 +31,15 @@ jobs:
       - name: Run lint
         run: make lint
 
+      -
+        name: Download OpenShift client
+        run: |
+          mkdir -p ~/oc
+          cd ~/oc
+          curl -L https://mirror.openshift.com/pub/openshift-v4/clients/ocp/latest/openshift-client-linux.tar.gz -o oc.tar.gz
+          tar -xzf oc.tar.gz
+          echo "$HOME/oc" >> $GITHUB_PATH
+
       - name: Run unit tests
         run: make test-unit
 
