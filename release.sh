@@ -1,5 +1,9 @@
 #!/usr/bin/env bash
 
+#
+# Use GitHub action instead of this script to release new versions.It is a legacy script that is not used anymore, but it is kept here for reference and in case we need to do a manual release in the future.
+#
+
 set -eux
 
 version=$1
