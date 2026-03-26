@@ -44,17 +44,17 @@ build: imports build-linux build-darwin build-windows
 
 ## Build Linux binary.
 build-linux: imports
-	cd cmd/tailor && GOOS=linux GOARCH=amd64 CGO_ENABLED=0 go build -gcflags "all=-trimpath=$(CURDIR);$(shell go env GOPATH)" -o tailor-linux-amd64
+	cd cmd/tailor && GOOS=linux GOARCH=amd64 CGO_ENABLED=0 go build -gcflags "all=-trimpath=$(CURDIR);$(shell go env GOPATH)" -ldflags "-X main.Version=$(VERSION)" -o tailor-linux-amd64
 .PHONY: build-linux
 
 ## Build macOS binary.
 build-darwin: imports
-	cd cmd/tailor && GOOS=darwin GOARCH=amd64 CGO_ENABLED=0 go build -gcflags "all=-trimpath=$(CURDIR);$(shell go env GOPATH)" -o tailor-darwin-amd64
+	cd cmd/tailor && GOOS=darwin GOARCH=amd64 CGO_ENABLED=0 go build -gcflags "all=-trimpath=$(CURDIR);$(shell go env GOPATH)" -ldflags "-X main.Version=$(VERSION)" -o tailor-darwin-amd64
 .PHONY: build-darwin
 
 ## Build Windows binary.
 build-windows: imports
-	cd cmd/tailor && GOOS=windows GOARCH=amd64 CGO_ENABLED=0 go build -gcflags "all=-trimpath=$(CURDIR);$(shell go env GOPATH)" -o tailor-windows-amd64.exe
+	cd cmd/tailor && GOOS=windows GOARCH=amd64 CGO_ENABLED=0 go build -gcflags "all=-trimpath=$(CURDIR);$(shell go env GOPATH)" -ldflags "-X main.Version=$(VERSION)" -o tailor-windows-amd64.exe
 .PHONY: build-windows
 
 internal/test/e2e/tailor-test: cmd/tailor/main.go go.mod go.sum pkg/cli/* pkg/commands/* pkg/openshift/* pkg/utils/*

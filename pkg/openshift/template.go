@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
-	"io/ioutil"
 	"os"
 	"strings"
 
@@ -48,7 +47,7 @@ func ProcessTemplate(templateDir string, name string, paramDir string, compareOp
 			return []byte{}, err
 		}
 
-		tempParamFile, err := ioutil.TempFile("", ".combined.*.env")
+		tempParamFile, err := os.CreateTemp("", ".combined.*.env")
 		if err != nil {
 			return []byte{}, err
 		}
@@ -84,7 +83,7 @@ func ProcessTemplate(templateDir string, name string, paramDir string, compareOp
 
 // Returns true if template contains a param like "name: TAILOR_NAMESPACE"
 func templateContainsTailorNamespaceParam(filename string) (bool, error) {
-	b, err := ioutil.ReadFile(filename)
+	b, err := os.ReadFile(filename)
 	if err != nil {
 		return false, fmt.Errorf("Could not read file '%s': %s", filename, err)
 	}
@@ -159,7 +158,7 @@ func readParamFileBytes(paramFiles []string, privateKey string, passphrase strin
 	paramFileBytes := []byte{}
 	for _, f := range paramFiles {
 		cli.DebugMsg("Reading content of param file", f)
-		b, err := ioutil.ReadFile(f)
+		b, err := os.ReadFile(f)
 		if err != nil {
 			return []byte{}, err
 		}
@@ -173,7 +172,7 @@ func readParamFileBytes(paramFiles []string, privateKey string, passphrase strin
 		encFile := f + ".enc"
 		if _, err := os.Stat(encFile); err == nil {
 			cli.DebugMsg("Reading content of encrypted param file", encFile)
-			b, err := ioutil.ReadFile(encFile)
+			b, err := os.ReadFile(encFile)
 			if err != nil {
 				return []byte{}, err
 			}

@@ -2,7 +2,6 @@ package commands
 
 import (
 	"fmt"
-	"io/ioutil"
 	"os"
 	"regexp"
 	"strings"
@@ -74,7 +73,7 @@ func ReEncrypt(secretsOptions *cli.SecretsOptions, filename string) error {
 		}
 	} else {
 		paramDir := secretsOptions.ParamDir
-		files, err := ioutil.ReadDir(paramDir)
+		files, err := os.ReadDir(paramDir)
 		if err != nil {
 			return err
 		}
@@ -171,7 +170,7 @@ func writeEncryptedContent(filename, newContent, previousContent, privateKey, pa
 		return fmt.Errorf("Could not encrypt content: %s", err)
 	}
 
-	err = ioutil.WriteFile(filename, []byte(updatedContent), 0644)
+	err = os.WriteFile(filename, []byte(updatedContent), 0644)
 	if err != nil {
 		return fmt.Errorf("Could not write file: %s", err)
 	}

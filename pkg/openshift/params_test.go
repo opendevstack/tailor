@@ -1,7 +1,7 @@
 package openshift
 
 import (
-	"io/ioutil"
+	"os"
 	"strings"
 	"testing"
 )
@@ -63,7 +63,7 @@ func TestEncryptedParams(t *testing.T) {
 }
 
 func readFileContent(t *testing.T, filename string) string {
-	bytes, err := ioutil.ReadFile(filename)
+	bytes, err := os.ReadFile(filename)
 	if err != nil {
 		t.Error(err)
 	}

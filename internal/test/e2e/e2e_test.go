@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
 	"os"
 	"os/exec"
 	"strings"
@@ -79,11 +78,11 @@ func exportInitialState(t *testing.T, testProjectName string, tailorBinary strin
 	if exportErr != nil {
 		t.Fatalf("Could not export initial state: %s\n%s", exportErr, exportStderr)
 	}
-	tempDir, tempDirErr := ioutil.TempDir("..", "initial-export-")
+	tempDir, tempDirErr := os.MkdirTemp("..", "initial-export-")
 	if tempDirErr != nil {
 		t.Fatalf("Could not create temp dir: %s", tempDirErr)
 	}
-	writeErr := ioutil.WriteFile(tempDir+"/template.yml", exportStdout, 0644)
+	writeErr := os.WriteFile(tempDir+"/template.yml", exportStdout, 0644)
 	if writeErr != nil {
 		t.Logf("Failed to write file template.yml into %s", tempDir)
 		os.RemoveAll(tempDir)
@@ -93,7 +92,7 @@ func exportInitialState(t *testing.T, testProjectName string, tailorBinary strin
 }
 
 func walkSubdirs(t *testing.T, dir string, fun func(subdir string)) {
-	files, err := ioutil.ReadDir(dir)
+	files, err := os.ReadDir(dir)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -262,7 +261,7 @@ func runCmd(executable string, args []string) (outBytes, errBytes []byte, err er
 }
 
 func readTestCaseSteps(folder string) (testCaseSteps, error) {
-	content, err := ioutil.ReadFile(folder + "/steps.json")
+	content, err := os.ReadFile(folder + "/steps.json")
 	if err != nil {
 		return nil, fmt.Errorf("Cannot read file: %w", err)
 	}

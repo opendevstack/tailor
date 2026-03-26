@@ -1,7 +1,6 @@
 package utils
 
 import (
-	"io/ioutil"
 	"os"
 )
 
@@ -21,7 +20,7 @@ func ReadFile(filename string) (string, error) {
 	if _, err := os.Stat(filename); err != nil {
 		return "", err
 	}
-	bytes, err := ioutil.ReadFile(filename)
+	bytes, err := os.ReadFile(filename)
 	if err != nil {
 		return "", err
 	}

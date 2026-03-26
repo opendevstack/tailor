@@ -3,7 +3,6 @@ package cli
 import (
 	"errors"
 	"fmt"
-	"io/ioutil"
 	"os"
 	"os/exec"
 	"strings"
@@ -619,7 +618,7 @@ func getFileFlags(filename string, verbose bool) (map[string]string, error) {
 		return fileFlags, err
 	}
 
-	b, err := ioutil.ReadFile(filename)
+	b, err := os.ReadFile(filename)
 	if err != nil {
 		return fileFlags, err
 	}
