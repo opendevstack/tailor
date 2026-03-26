@@ -11,6 +11,9 @@ import (
 	"github.com/opendevstack/tailor/pkg/commands"
 )
 
+// Version will be set during build time using ldflags to the current version from git tags (already prepared in the Makefile).
+// For example: make build VERSION=1.0.0
+// If the version cannot be determined (e.g. when building from source manually and no version is specified), it will default to "dev".
 var Version = "dev"
 
 var (
