@@ -45,7 +45,7 @@ type CompareOptions struct {
 	PreservePaths           []string
 	PreserveImmutableFields bool
 	IgnoreUnknownParameters bool
-	UpsertOnly              bool
+	AllowDeletion           bool
 	AllowRecreate           bool
 	RevealSecrets           bool
 	Verify                  bool
@@ -158,7 +158,7 @@ func NewCompareOptions(
 	preserveFlag []string,
 	preserveImmutableFieldsFlag bool,
 	ignoreUnknownParametersFlag bool,
-	upsertOnlyFlag bool,
+	allowDeletionFlag bool,
 	allowRecreateFlag bool,
 	revealSecretsFlag bool,
 	verifyFlag bool,
@@ -283,10 +283,10 @@ func NewCompareOptions(
 		o.IgnoreUnknownParameters = true
 	}
 
-	if upsertOnlyFlag {
-		o.UpsertOnly = true
-	} else if fileFlags["upsert-only"] == "true" {
-		o.UpsertOnly = true
+	if allowDeletionFlag {
+		o.AllowDeletion = true
+	} else if fileFlags["allow-deletion"] == "true" {
+		o.AllowDeletion = true
 	}
 
 	if allowRecreateFlag {

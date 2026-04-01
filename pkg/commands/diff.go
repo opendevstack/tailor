@@ -136,7 +136,7 @@ func calculateChangeset(w io.Writer, compareOptions *cli.CompareOptions, ocClien
 		w,
 		platformBasedList,
 		templateBasedList,
-		compareOptions.UpsertOnly,
+		compareOptions.AllowDeletion,
 		compareOptions.AllowRecreate,
 		compareOptions.RevealSecrets,
 		compareOptions.PathsToPreserve(),
@@ -148,8 +148,8 @@ func calculateChangeset(w io.Writer, compareOptions *cli.CompareOptions, ocClien
 	return updateRequired, changeset, nil
 }
 
-func compare(w io.Writer, remoteResourceList *openshift.ResourceList, localResourceList *openshift.ResourceList, upsertOnly bool, allowRecreate bool, revealSecrets bool, preservePaths []string) (*openshift.Changeset, error) {
-	changeset, err := openshift.NewChangeset(remoteResourceList, localResourceList, upsertOnly, allowRecreate, preservePaths)
+func compare(w io.Writer, remoteResourceList *openshift.ResourceList, localResourceList *openshift.ResourceList, allowDeletion bool, allowRecreate bool, revealSecrets bool, preservePaths []string) (*openshift.Changeset, error) {
+	changeset, err := openshift.NewChangeset(remoteResourceList, localResourceList, allowDeletion, allowRecreate, preservePaths)
 	if err != nil {
 		return changeset, err
 	}
